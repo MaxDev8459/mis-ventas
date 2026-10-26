@@ -48,7 +48,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | | | ⏳ |
 | 7.6 | Notificar falta de sync | Media | S2 | | | ⏳ |
 
-**Avance MVP:** 24 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
+**Avance (26-oct-2026):** 24 de 44 RF terminados (✅), de los cuales 3 se adelantaron del Sprint 2 (2.9, 4.2 y la pantalla de 4.4). Del alcance MVP faltan: 1.2 en verificación, 3.5 parcial (solo semilla, sin pantalla) y 7.2 en desarrollo (indicador sin sincronización real). 2.8 en verificación (adelantado).
 
 **Fase 1 (26-oct-2026):** capa de datos lista para los RF en 🔨 (Room, transacciones y consultas). Pruebas: `DineroTest` (4, JVM) + `VentaCajaTest` y `CatalogoInventarioTest` (23, en el teléfono 2412DPC0AG), todas pasan. Faltan dominio (Fase 2) y pantallas (Fase 3).
 
