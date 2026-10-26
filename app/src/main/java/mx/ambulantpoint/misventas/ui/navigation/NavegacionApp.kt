@@ -25,6 +25,10 @@ import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.domain.puertos.EstadoSesion
 import mx.ambulantpoint.misventas.ui.auth.PantallaLogin
 import mx.ambulantpoint.misventas.ui.auth.PantallaRegistro
+import mx.ambulantpoint.misventas.ui.caja.PantallaCaja
+import mx.ambulantpoint.misventas.ui.historial.PantallaDetalleVenta
+import mx.ambulantpoint.misventas.ui.historial.PantallaHistorial
+import mx.ambulantpoint.misventas.ui.venta.PantallaVenta
 import mx.ambulantpoint.misventas.ui.catalogo.PantallaCatalogo
 import mx.ambulantpoint.misventas.ui.catalogo.PantallaProductoForm
 import mx.ambulantpoint.misventas.ui.categorias.PantallaCategorias
@@ -40,6 +44,9 @@ private object Ruta {
     const val INICIO = "inicio"
     const val PRODUCTO = "producto"
     const val PRODUCTO_NUEVO = "producto_nuevo"
+    const val VENTA = "venta"
+    const val CORTE = "corte"
+    const val CORTES = "cortes"
     fun de(destino: Destino) = destino.name.lowercase()
 }
 
@@ -103,10 +110,23 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
         composable("${Ruta.PRODUCTO}/{id}") { entrada ->
             PantallaProductoForm(entrada.arguments?.getString("id"), regresar)
         }
-        // Módulos de las siguientes entregas de la Fase 3 (3C–3D).
-        for (d in listOf(Destino.VENDER, Destino.CAJA, Destino.HISTORIAL, Destino.EXISTENCIAS)) {
-            composable(Ruta.de(d)) { PantallaEnConstruccion(d.titulo, regresar) }
+        composable(Ruta.de(Destino.VENDER)) { PantallaVenta(regresar) }
+        composable(Ruta.de(Destino.CAJA)) {
+            PantallaCaja(
+                alRegresar = regresar,
+                alVender = { nav.navigate(Ruta.de(Destino.VENDER)) },
+                alCorte = { nav.navigate(Ruta.CORTE) },
+                alCortes = { nav.navigate(Ruta.CORTES) },
+            )
         }
+        composable(Ruta.de(Destino.HISTORIAL)) {
+            PantallaHistorial(regresar) { id -> nav.navigate("${Ruta.VENTA}/$id") }
+        }
+        composable("${Ruta.VENTA}/{id}") { e -> PantallaDetalleVenta(e.arguments?.getString("id").orEmpty(), regresar) }
+        // Siguiente entrega de la Fase 3 (3D).
+        composable(Ruta.de(Destino.EXISTENCIAS)) { PantallaEnConstruccion(Destino.EXISTENCIAS.titulo, regresar) }
+        composable(Ruta.CORTE) { PantallaEnConstruccion("Corte de caja", regresar) }
+        composable(Ruta.CORTES) { PantallaEnConstruccion("Cortes de caja", regresar) }
     }
 }
 
