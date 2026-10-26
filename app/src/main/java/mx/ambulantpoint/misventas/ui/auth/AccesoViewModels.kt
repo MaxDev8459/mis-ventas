@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import mx.ambulantpoint.misventas.AppContainer
+import mx.ambulantpoint.misventas.domain.usecase.Campos
 import mx.ambulantpoint.misventas.domain.usecase.FormularioRegistro
 import mx.ambulantpoint.misventas.domain.usecase.IniciarSesion
 import mx.ambulantpoint.misventas.domain.usecase.RegistrarVendedor
@@ -24,7 +25,23 @@ class RegistroViewModel(c: AppContainer) : ViewModel() {
     var cargando by mutableStateOf(false)
         private set
 
-    fun cambiar(nuevo: FormularioRegistro) { formulario = nuevo }
+    /** Al corregir un campo se quita su alerta. */
+    fun cambiar(nuevo: FormularioRegistro) {
+        val v = formulario
+        formulario = nuevo
+        val corregidos = buildSet {
+            if (v.nombres != nuevo.nombres) add(Campos.NOMBRES)
+            if (v.apellidoPaterno != nuevo.apellidoPaterno) add(Campos.APELLIDO_PATERNO)
+            if (v.apellidoMaterno != nuevo.apellidoMaterno) add(Campos.APELLIDO_MATERNO)
+            if (v.telefono != nuevo.telefono) add(Campos.TELEFONO)
+            if (v.nombreNegocio != nuevo.nombreNegocio) add(Campos.NOMBRE_NEGOCIO)
+            if (v.correo != nuevo.correo) add(Campos.CORREO)
+            if (v.contrasena != nuevo.contrasena) add(Campos.CONTRASENA)
+            if (v.confirmarContrasena != nuevo.confirmarContrasena) add(Campos.CONFIRMAR_CONTRASENA)
+            if (v.aceptaAvisoPrivacidad != nuevo.aceptaAvisoPrivacidad) add(Campos.AVISO_PRIVACIDAD)
+        }
+        if (corregidos.isNotEmpty()) errores = errores - corregidos
+    }
 
     fun registrar() {
         if (cargando) return

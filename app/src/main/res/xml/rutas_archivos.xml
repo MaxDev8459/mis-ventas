@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Carpeta temporal donde la cámara deja la foto del producto. -->
+<paths>
+    <cache-path name="camara" path="camara/" />
+</paths>

@@ -14,6 +14,7 @@ import mx.ambulantpoint.misventas.data.repository.ProductoRepo
 import mx.ambulantpoint.misventas.data.repository.ReporteRepo
 import mx.ambulantpoint.misventas.data.repository.VentaRepo
 import mx.ambulantpoint.misventas.data.auth.AuthRepoLocal
+import mx.ambulantpoint.misventas.data.imagen.ProcesadorImagen
 import mx.ambulantpoint.misventas.domain.puertos.PuertoAuth
 import mx.ambulantpoint.misventas.ui.components.Notificador
 
@@ -36,4 +37,6 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
 
     /** Mensajes de una sola vez (snackbar) que sobreviven al cambiar de pantalla. */
     val notificador = Notificador()
+
+    val procesadorImagen by lazy { ProcesadorImagen(contexto) }
 }

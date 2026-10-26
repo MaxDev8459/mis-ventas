@@ -107,6 +107,7 @@ object Mensajes {
         const val CONTRASENAS_NO_COINCIDEN = "Las contraseñas no coinciden"
         const val ACEPTAR_AVISO = "Debe aceptar el aviso de privacidad"
         const val IMAGEN_OBLIGATORIA = "Agregue una imagen del producto"
+        const val IMAGEN_NO_LEIDA = "No se pudo usar la imagen, elija otra"
         const val NOMBRE_YA_REGISTRADO = "Ese nombre ya está registrado"
         const val PRECIO_NO_VALIDO = "El precio debe ser mayor a cero, con hasta dos decimales"
         const val CANTIDAD_ENTERA = "La cantidad debe ser un número entero"

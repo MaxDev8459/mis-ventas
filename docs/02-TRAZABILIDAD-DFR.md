@@ -10,13 +10,13 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 1.4 | Recuperar contraseña | Media | S2 | | | ⏳ |
 | 1.5 | Consultar perfil | Baja | MVP | `ui/perfil` | | ✅ |
 | 1.6 | Editar perfil | Baja | S2 | | | ⏳ |
-| 2.1 | Registrar producto | Alta | MVP | `ui/catalogo/FormProducto` · `RegistrarProducto` | Nombre único, precio, existencia por tipo, compresión | 🔨 |
-| 2.2 | Editar producto | Alta | MVP | `ui/catalogo/FormProducto` · `EditarProducto` | Cambio de tipo solo con existencia 0 | 🔨 |
-| 2.3 | Desactivar producto | Media | MVP | `ui/catalogo` | | 🔨 |
-| 2.4 | Reactivar producto | Media | MVP | `ui/catalogo` | | 🔨 |
-| 2.5 | Consultar productos | Alta | MVP | `ui/catalogo/Lista` | Búsqueda/filtros | 🔨 |
-| 2.6 | Crear categorías | Media | MVP | `ui/categorias` | Nombre único | 🔨 |
-| 2.7 | Consultar categorías | Media | MVP | `ui/categorias` | | 🔨 |
+| 2.1 | Registrar producto | Alta | MVP | `ui/catalogo/FormProducto` · `RegistrarProducto` | Nombre único, precio, existencia por tipo, compresión | ✅ |
+| 2.2 | Editar producto | Alta | MVP | `ui/catalogo/FormProducto` · `EditarProducto` | Cambio de tipo solo con existencia 0 | ✅ |
+| 2.3 | Desactivar producto | Media | MVP | `ui/catalogo` | | ✅ |
+| 2.4 | Reactivar producto | Media | MVP | `ui/catalogo` | | ✅ |
+| 2.5 | Consultar productos | Alta | MVP | `ui/catalogo/Lista` | Búsqueda/filtros | ✅ |
+| 2.6 | Crear categorías | Media | MVP | `ui/categorias` | Nombre único | ✅ |
+| 2.7 | Consultar categorías | Media | MVP | `ui/categorias` | | ✅ |
 | 2.8 | Modificar categoría | Media | S2 | | | ⏳ |
 | 2.9 | Eliminar categoría | Media | S2 | | | ⏳ |
 | 3.1 | Registrar venta | Alta | MVP | `ui/venta/PantallaVenta` | Total, tope por existencia, kg×precio | 🔨 |
@@ -48,10 +48,12 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | | | ⏳ |
 | 7.6 | Notificar falta de sync | Media | S2 | | | ⏳ |
 
-**Avance MVP:** 3 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
+**Avance MVP:** 10 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
 
 **Fase 1 (26-oct-2026):** capa de datos lista para los RF en 🔨 (Room, transacciones y consultas). Pruebas: `DineroTest` (4, JVM) + `VentaCajaTest` y `CatalogoInventarioTest` (23, en el teléfono 2412DPC0AG), todas pasan. Faltan dominio (Fase 2) y pantallas (Fase 3).
 
 **Fase 2 (26-oct-2026):** dominio listo: `core/Mensajes.kt` (literales del DFR + alertas de campo propuestas, pendientes de validar), `Validadores`, `LectorNumeros`, `Formato`, reglas (descuento, cobro, existencia baja, corte), `Carrito` y casos de uso por módulo. 48 pruebas JVM pasan.
 
 **Fase 3A (26-oct-2026):** registro, pantalla principal, perfil y cerrar sesión probados en el teléfono (adb). 1.2 en verificación: no se pudo probar el inicio de sesión en el teléfono porque cerrar sesión siempre se bloquea por registros pendientes (no hay sincronización en el MVP). 56 pruebas JVM.
+
+**Fase 3B (26-oct-2026):** categorías (crear, duplicado, renombrar, eliminar con y sin productos) y catálogo (registro con foto de galería comprimida a 576×1024 y 135 KB, búsqueda, filtros, edición, desactivar/reactivar, bloqueo de cambio de tipo con existencia) probados en el teléfono. 2.8 y 2.9 adelantados del Sprint 2 porque ya estaban hechos en datos y dominio.

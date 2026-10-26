@@ -25,6 +25,9 @@ import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.domain.puertos.EstadoSesion
 import mx.ambulantpoint.misventas.ui.auth.PantallaLogin
 import mx.ambulantpoint.misventas.ui.auth.PantallaRegistro
+import mx.ambulantpoint.misventas.ui.catalogo.PantallaCatalogo
+import mx.ambulantpoint.misventas.ui.catalogo.PantallaProductoForm
+import mx.ambulantpoint.misventas.ui.categorias.PantallaCategorias
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.contenedor
 import mx.ambulantpoint.misventas.ui.inicio.Destino
@@ -35,6 +38,8 @@ private object Ruta {
     const val REGISTRO = "registro"
     const val LOGIN = "login"
     const val INICIO = "inicio"
+    const val PRODUCTO = "producto"
+    const val PRODUCTO_NUEVO = "producto_nuevo"
     fun de(destino: Destino) = destino.name.lowercase()
 }
 
@@ -86,8 +91,20 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
             PantallaInicio(alElegir = { nav.navigate(Ruta.de(it)) }, alVenderSinCaja = alVenderSinCaja)
         }
         composable(Ruta.de(Destino.PERFIL)) { PantallaPerfil(regresar) }
-        // Módulos de las siguientes entregas de la Fase 3 (3B–3D).
-        for (d in listOf(Destino.VENDER, Destino.CAJA, Destino.HISTORIAL, Destino.CATALOGO, Destino.CATEGORIAS, Destino.EXISTENCIAS)) {
+        composable(Ruta.de(Destino.CATEGORIAS)) { PantallaCategorias(regresar) }
+        composable(Ruta.de(Destino.CATALOGO)) {
+            PantallaCatalogo(
+                alRegresar = regresar,
+                alNuevo = { nav.navigate(Ruta.PRODUCTO_NUEVO) },
+                alEditar = { id -> nav.navigate("${Ruta.PRODUCTO}/$id") },
+            )
+        }
+        composable(Ruta.PRODUCTO_NUEVO) { PantallaProductoForm(null, regresar) }
+        composable("${Ruta.PRODUCTO}/{id}") { entrada ->
+            PantallaProductoForm(entrada.arguments?.getString("id"), regresar)
+        }
+        // Módulos de las siguientes entregas de la Fase 3 (3C–3D).
+        for (d in listOf(Destino.VENDER, Destino.CAJA, Destino.HISTORIAL, Destino.EXISTENCIAS)) {
             composable(Ruta.de(d)) { PantallaEnConstruccion(d.titulo, regresar) }
         }
     }
