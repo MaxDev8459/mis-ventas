@@ -11,7 +11,11 @@ App Android de punto de venta offline-first para Max Carlotas (venta ambulante, 
 ## Stack
 Kotlin · Jetpack Compose + Material 3 · MVVM (`ui` → `domain` → `data`) · Room · DI manual (`AppContainer`) · minSdk 26 · solo vertical.
 **MVP 100 % local (decisión 26-oct-2026):** auth local (`AuthRepoLocal`, hash PBKDF2). Firebase (Auth/Firestore/Storage) entra en Sprint 2 detrás de las mismas interfaces; no agregues dependencias de Firebase antes.
-Ruta del proyecto: `C:\Users\MaxDev\Documents\SEMESTRE AGOSTO DICIEMBRE 2026\GESTION DE PROYECTOS DE SOFTWARE\documentos del proyecto\mis-ventas` (no trabajar en la copia de Google Drive).
+Ruta del proyecto (se trabaja en Windows y en CachyOS; el código viaja solo por git, nunca por Google Drive):
+- Windows: `C:\Users\MaxDev\Documents\SEMESTRE AGOSTO DICIEMBRE 2026\GESTION DE PROYECTOS DE SOFTWARE\documentos del proyecto\mis-ventas`
+- Linux: `~/SEMESTRE AGOSTO DICIEMBRE 2026/GESTION DE PROYECTOS DE SOFTWARE/documentos del proyecto/mis-ventas`
+
+Al empezar: `git pull`. Al terminar: commit y `git push`.
 
 ## Convenciones
 - Paquete `mx.ambulantpoint.misventas`. Código y nombres en español (dominio del negocio), convenciones oficiales de Kotlin.
@@ -22,7 +26,11 @@ Ruta del proyecto: `C:\Users\MaxDev\Documents\SEMESTRE AGOSTO DICIEMBRE 2026\GES
 - Commits por RF: `feat(RF-x.y): descripción`.
 
 ## Compilar
-`JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"` · `./gradlew test assembleDebug`
+`./gradlew test assembleDebug`, con JAVA_HOME según el sistema:
+- Windows: `JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"`
+- Linux: `JAVA_HOME=/usr/lib/jvm/java-21-openjdk` (o el `jbr` de Android Studio si se instaló)
+
+`local.properties` (ruta del SDK) es propio de cada sistema y no se sube.
 
 Pruebas en el teléfono: **siempre** con `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`.
 Sin esa opción, `connectedDebugAndroidTest` desinstala la app al terminar y **borra todos sus datos**
@@ -33,7 +41,7 @@ Datos de demo: `./gradlew connectedDebugAndroidTest -Pandroid.injected.androidTe
 -Pandroid.testInstrumentationRunnerArguments.demo=1` (ver `app/src/androidTest/.../demo/`).
 
 ## Código de referencia (proyecto anterior)
-`C:\Users\MaxDev\ClaudeCodeProyects\AmbulantPoint` — **solo lectura**. Úsalo como referencia según la tabla de `docs/00-PLAN-MVP.md` §4.1. No lo edites, no copies su modelo de datos (usa `Double` e `Int`), y descarta cualquier regla suya que no esté en el DFR.
+Windows: `C:\Users\MaxDev\ClaudeCodeProyects\AmbulantPoint` · Linux: `~/ClaudeCodeProyects/AmbulantPoint` (solo si se copió; si no existe, trabajar sin él) — **solo lectura**. Úsalo como referencia según la tabla de `docs/00-PLAN-MVP.md` §4.1. No lo edites, no copies su modelo de datos (usa `Double` e `Int`), y descarta cualquier regla suya que no esté en el DFR.
 
 ## Agentes
 Ver `docs/01-ARQUITECTURA-AGENTICA.md` y `.claude/agents/`. Cada agente edita solo su carpeta.
