@@ -59,6 +59,18 @@ sealed interface FallaDatos : Falla {
     /** RF 5.3: falta el corte o quedó desactualizado por ventas/cancelaciones posteriores. */
     data object CorteNoVigente : FallaDatos
 
+    /** RF 1.1: el correo ya está registrado. */
+    data object CorreoYaRegistrado : FallaDatos
+
+    /** RF 1.1 (MVP local): el teléfono ya tiene la cuenta de otro vendedor (una cuenta por dispositivo). */
+    data object YaHayOtraCuenta : FallaDatos
+
+    /** RF 1.2: "Correo electrónico o contraseña incorrectos". */
+    data object CredencialesIncorrectas : FallaDatos
+
+    /** RF 1.3: no se cierra sesión con registros pendientes de sincronizar. */
+    data object PendientesDeSincronizar : FallaDatos
+
     /** Cantidad o monto fuera de rango (ej. cero o negativo). */
     data object CantidadInvalida : FallaDatos
 }

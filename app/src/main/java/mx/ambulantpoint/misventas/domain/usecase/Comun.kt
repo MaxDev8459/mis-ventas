@@ -81,7 +81,10 @@ internal fun traducir(falla: Falla, general: String, campoNombre: String = Campo
     FallaDatos.CategoriaConProductos -> mensaje(Mensajes.CATEGORIA_CON_PRODUCTOS)
     FallaDatos.EfectivoNoModificable -> mensaje(Mensajes.Campo.EFECTIVO_NO_MODIFICABLE)
     FallaDatos.TipoVentaNoModificable -> campo(Campos.TIPO_VENTA, Mensajes.Campo.TIPO_VENTA_CON_EXISTENCIA)
-    FallaDatos.NoEncontrado, FallaDatos.CantidadInvalida -> mensaje(general)
+    FallaDatos.CorreoYaRegistrado -> campo(Campos.CORREO, Mensajes.Campo.CORREO_YA_REGISTRADO)
+    FallaDatos.CredencialesIncorrectas -> mensaje(Mensajes.CREDENCIALES_INCORRECTAS)
+    FallaDatos.PendientesDeSincronizar -> mensaje(Mensajes.PENDIENTES_AL_CERRAR_SESION)
+    FallaDatos.NoEncontrado, FallaDatos.CantidadInvalida, FallaDatos.YaHayOtraCuenta -> mensaje(general)
     else -> mensaje(general)
 }
 

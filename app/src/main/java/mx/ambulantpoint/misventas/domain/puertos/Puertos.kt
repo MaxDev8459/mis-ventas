@@ -53,6 +53,28 @@ interface PuertoInventario {
     ): Resultado<Long>
 }
 
+/** Estado de la cuenta en el dispositivo (RF 1.1 – 1.3). */
+enum class EstadoSesion { SIN_CUENTA, SIN_SESION, ACTIVA }
+
+/** Datos ya validados del registro (RF 1.1). */
+data class DatosRegistro(
+    val nombres: String,
+    val apellidoPaterno: String,
+    val apellidoMaterno: String,
+    val telefono: String,
+    val nombreNegocio: String,
+    val correo: String,
+    val contrasena: String,
+)
+
+/** MVP: AuthRepoLocal. Sprint 2: AuthRepoFirebase, sin cambiar pantallas ni dominio. */
+interface PuertoAuth {
+    val estado: kotlinx.coroutines.flow.StateFlow<EstadoSesion>
+    suspend fun registrar(datos: DatosRegistro): Resultado<mx.ambulantpoint.misventas.data.local.entity.Perfil>
+    suspend fun iniciarSesion(correo: String, contrasena: String): Resultado<Unit>
+    suspend fun cerrarSesion(): Resultado<Unit>
+}
+
 interface PuertoVentasRecientes {
     suspend fun ventasRecientes(productoId: String): VentasRecientes
 }

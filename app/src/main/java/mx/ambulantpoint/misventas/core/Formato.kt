@@ -1,6 +1,9 @@
 package mx.ambulantpoint.misventas.core
 
 import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.abs
 
 /** Formatos de la RNF de interfaz: montos "$0,000.00" y cantidades con unidad (pzas o kg). */
@@ -40,6 +43,15 @@ object Formato {
         val signo = if (milesimas < 0) "−" else "+"
         return signo + cantidad(abs(milesimas), tipoVenta)
     }
+
+    private val LOCALE_MX: Locale = Locale.forLanguageTag("es-MX")
+
+    /** 1790000000000 → "26/09/2026 09:46" (hora local del teléfono). */
+    fun fechaHora(ms: Long): String = SimpleDateFormat("dd/MM/yyyy HH:mm", LOCALE_MX).format(Date(ms))
+
+    fun fecha(ms: Long): String = SimpleDateFormat("dd/MM/yyyy", LOCALE_MX).format(Date(ms))
+
+    fun hora(ms: Long): String = SimpleDateFormat("HH:mm", LOCALE_MX).format(Date(ms))
 
     private fun agruparMiles(n: Long): String {
         val s = abs(n).toString()
