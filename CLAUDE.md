@@ -24,6 +24,14 @@ Ruta del proyecto: `C:\Users\MaxDev\Documents\SEMESTRE AGOSTO DICIEMBRE 2026\GES
 ## Compilar
 `JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"` · `./gradlew test assembleDebug`
 
+Pruebas en el teléfono: **siempre** con `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`.
+Sin esa opción, `connectedDebugAndroidTest` desinstala la app al terminar y **borra todos sus datos**
+(pasó el 26-oct-2026). Nunca correrlas sin ella después de cargar datos de demo.
+
+Datos de demo: `./gradlew connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+-Pandroid.testInstrumentationRunnerArguments.class=mx.ambulantpoint.misventas.demo.CargarDatosDemo
+-Pandroid.testInstrumentationRunnerArguments.demo=1` (ver `app/src/androidTest/.../demo/`).
+
 ## Código de referencia (proyecto anterior)
 `C:\Users\MaxDev\ClaudeCodeProyects\AmbulantPoint` — **solo lectura**. Úsalo como referencia según la tabla de `docs/00-PLAN-MVP.md` §4.1. No lo edites, no copies su modelo de datos (usa `Double` e `Int`), y descarta cualquier regla suya que no esté en el DFR.
 
