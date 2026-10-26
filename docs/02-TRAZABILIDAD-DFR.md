@@ -4,11 +4,11 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 
 | RF | Nombre | Prioridad | Sprint | Pantalla / Caso de uso | Pruebas | Estado |
 |----|--------|:---:|:---:|---|---|:---:|
-| 1.1 | Registrar vendedor | Alta | MVP (local) / S2 Firebase | `ui/auth/Registro` · `AuthRepoLocal.registrar` | Validadores registro | ⬜ |
-| 1.2 | Iniciar sesión | Alta | MVP (local, sin biometría) | `ui/auth/Login` · `AuthRepoLocal` | Validadores login | ⬜ |
-| 1.3 | Cerrar sesión | Media | MVP | `ui/perfil` · `CerrarSesion` | Bloqueo con pendientes | ⬜ |
+| 1.1 | Registrar vendedor | Alta | MVP (local) / S2 Firebase | `ui/auth/Registro` · `AuthRepoLocal.registrar` | Validadores registro | ✅ |
+| 1.2 | Iniciar sesión | Alta | MVP (local, sin biometría) | `ui/auth/Login` · `AuthRepoLocal` | Validadores login | 🔍 |
+| 1.3 | Cerrar sesión | Media | MVP | `ui/perfil` · `CerrarSesion` | Bloqueo con pendientes | ✅ |
 | 1.4 | Recuperar contraseña | Media | S2 | | | ⏳ |
-| 1.5 | Consultar perfil | Baja | MVP | `ui/perfil` | | ⬜ |
+| 1.5 | Consultar perfil | Baja | MVP | `ui/perfil` | | ✅ |
 | 1.6 | Editar perfil | Baja | S2 | | | ⏳ |
 | 2.1 | Registrar producto | Alta | MVP | `ui/catalogo/FormProducto` · `RegistrarProducto` | Nombre único, precio, existencia por tipo, compresión | 🔨 |
 | 2.2 | Editar producto | Alta | MVP | `ui/catalogo/FormProducto` · `EditarProducto` | Cambio de tipo solo con existencia 0 | 🔨 |
@@ -42,14 +42,16 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 6.5 | Reporte de inventario | Media | S2 | | | ⏳ |
 | 6.6 | Exportar reportes | Media | S2 | | | ⏳ |
 | 7.1 | Sincronizar automáticamente | Alta | S2 | | Idempotencia | ⏳ |
-| 7.2 | Estado de sincronización | Alta | MVP | `ui/components/IndicadorSync` | | ⬜ |
+| 7.2 | Estado de sincronización | Alta | MVP | `ui/components/IndicadorSync` | | 🔨 |
 | 7.3 | Sincronizar manualmente | Media | Stretch / S2 | | | ⏳ |
 | 7.4 | Recuperar en dispositivo nuevo | Alta | S2 | | | ⏳ |
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | | | ⏳ |
 | 7.6 | Notificar falta de sync | Media | S2 | | | ⏳ |
 
-**Avance MVP:** 0 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
+**Avance MVP:** 3 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
 
 **Fase 1 (26-oct-2026):** capa de datos lista para los RF en 🔨 (Room, transacciones y consultas). Pruebas: `DineroTest` (4, JVM) + `VentaCajaTest` y `CatalogoInventarioTest` (23, en el teléfono 2412DPC0AG), todas pasan. Faltan dominio (Fase 2) y pantallas (Fase 3).
 
 **Fase 2 (26-oct-2026):** dominio listo: `core/Mensajes.kt` (literales del DFR + alertas de campo propuestas, pendientes de validar), `Validadores`, `LectorNumeros`, `Formato`, reglas (descuento, cobro, existencia baja, corte), `Carrito` y casos de uso por módulo. 48 pruebas JVM pasan.
+
+**Fase 3A (26-oct-2026):** registro, pantalla principal, perfil y cerrar sesión probados en el teléfono (adb). 1.2 en verificación: no se pudo probar el inicio de sesión en el teléfono porque cerrar sesión siempre se bloquea por registros pendientes (no hay sincronización en el MVP). 56 pruebas JVM.

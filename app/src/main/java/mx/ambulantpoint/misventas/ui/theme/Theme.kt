@@ -20,6 +20,17 @@ private val EsquemaClaro = lightColorScheme(
     outline = Contorno,
     error = Error,
     onError = Color.White,
+    // Superficies neutras con matiz verde (sin esto Material 3 usa su morado por defecto).
+    secondaryContainer = VerdeContenedor,
+    onSecondaryContainer = VerdeSobreContenedor,
+    tertiary = VerdeLogo,
+    surfaceVariant = Color(0xFFE1E6DC),
+    surfaceTint = VerdeAccion,
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF1F5EE),
+    surfaceContainer = Color(0xFFEBF0E8),
+    surfaceContainerHigh = Color(0xFFE5EBE2),
+    surfaceContainerHighest = Color(0xFFDFE5DC),
 )
 
 /** Tema de la app. Sin colores dinámicos: siempre la identidad del logo. */
