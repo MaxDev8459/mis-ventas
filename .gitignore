@@ -27,3 +27,6 @@ Thumbs.db
 *.jks
 *.keystore
 google-services.json
+
+# DFR: contiene datos personales de contacto; no se publica (decisión 26-oct-2026)
+docs/dfr/

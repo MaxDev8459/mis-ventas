@@ -11,6 +11,6 @@ Desarrollado por **Ambulant Point** — Gestión de Proyectos de Software, ITZ, 
 | [docs/03-GUION-DEMO.md](docs/03-GUION-DEMO.md) | Guion de la exposición de avance |
 | [docs/04-ARQUITECTURA-APP.md](docs/04-ARQUITECTURA-APP.md) | Capas del código, decisiones de diseño y qué viene del DFR |
 | [docs/05-VERIFICACION-DFR.md](docs/05-VERIFICACION-DFR.md) | Verificación del MVP contra el DFR: mensajes, reglas, desviaciones y pendientes |
-| [docs/dfr/](docs/dfr/) | DFR v1.2 (fuente de verdad) |
+| `docs/dfr/` | DFR v1.2 (fuente de verdad). **No se publica** porque contiene datos personales; está en la carpeta del proyecto de la materia |
 
 Stack: Kotlin · Jetpack Compose · Material 3 · MVVM · Room · Firebase · Android 8.0+.
