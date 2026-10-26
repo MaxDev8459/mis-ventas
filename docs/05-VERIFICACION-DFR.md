@@ -87,7 +87,7 @@ Revisado para no introducir cambios no autorizados. Ninguno agrega reglas de neg
 | Validar al capturar e indicar el campo con error | ✅ (alerta debajo del campo; se quita al corregir) |
 | Imagen ≤ 1024 px y ≤ 300 KB | ✅ (foto real: 576 × 1024, 135 KB) |
 | MVVM por capas, convenciones Kotlin | ✅ ([04-ARQUITECTURA-APP.md](04-ARQUITECTURA-APP.md)) |
-| Git **alojado en GitHub** | ⚠️ Git local listo; **falta subirlo a GitHub** |
+| Git **alojado en GitHub** | ✅ https://github.com/MaxDev8459/mis-ventas (público; el DFR no se publica por datos personales) |
 | Versión del APK identificada | ✅ 0.1.0 |
 | Android 8.0+ | ✅ minSdk 26 |
 
@@ -95,7 +95,7 @@ Revisado para no introducir cambios no autorizados. Ninguno agrega reglas de neg
 
 ## 6. Correcciones pendientes, por prioridad
 
-1. **Subir el repositorio a GitHub** (RNF Mantenimiento).
+1. ~~Subir el repositorio a GitHub~~ ✅ hecho el 26-oct-2026.
 2. **Pantalla de formas de pago** (RF 3.5).
 3. Validar con el cliente las alertas de campo y el aviso de privacidad.
 4. Filtro de fechas en movimientos de inventario (RF 4.4, opcional).
