@@ -17,8 +17,8 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 2.5 | Consultar productos | Alta | MVP | `ui/catalogo/Lista` | Búsqueda/filtros | ✅ |
 | 2.6 | Crear categorías | Media | MVP | `ui/categorias` | Nombre único | ✅ |
 | 2.7 | Consultar categorías | Media | MVP | `ui/categorias` | | ✅ |
-| 2.8 | Modificar categoría | Media | S2 | | | ⏳ |
-| 2.9 | Eliminar categoría | Media | S2 | | | ⏳ |
+| 2.8 | Modificar categoría | Media | MVP (adelantado) | | | 🔍 |
+| 2.9 | Eliminar categoría | Media | MVP (adelantado) | | | ✅ |
 | 3.1 | Registrar venta | Alta | MVP | `ui/venta/PantallaVenta` | Total, tope por existencia, kg×precio | 🔨 |
 | 3.2 | Cobrar venta | Alta | MVP | `ui/venta/Cobro` · `CobrarVenta` | Cambio, monto insuficiente, atomicidad | 🔨 |
 | 3.3 | Cancelar venta | Media | MVP | `ui/historial` · `CancelarVenta` | Regreso de existencia, solo caja abierta | 🔨 |
@@ -48,7 +48,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | | | ⏳ |
 | 7.6 | Notificar falta de sync | Media | S2 | | | ⏳ |
 
-**Avance MVP:** 10 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
+**Avance MVP:** 11 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
 
 **Fase 1 (26-oct-2026):** capa de datos lista para los RF en 🔨 (Room, transacciones y consultas). Pruebas: `DineroTest` (4, JVM) + `VentaCajaTest` y `CatalogoInventarioTest` (23, en el teléfono 2412DPC0AG), todas pasan. Faltan dominio (Fase 2) y pantallas (Fase 3).
 
