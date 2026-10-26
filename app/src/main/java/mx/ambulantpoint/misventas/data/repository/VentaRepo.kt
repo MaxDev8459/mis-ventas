@@ -14,6 +14,7 @@ import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
 import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
 import mx.ambulantpoint.misventas.data.local.entity.Venta
 import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
+import mx.ambulantpoint.misventas.domain.puertos.PuertoVentas
 
 /** Un producto y su cantidad en la venta (milésimas: 2 pzas = 2000; 0.250 kg = 250). */
 data class LineaVenta(val productoId: String, val cantidadMilesimas: Long)
@@ -42,7 +43,7 @@ data class VentaCobrada(
 )
 
 /** RF 3.1 – 3.4. */
-class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoVentas {
     private val ventaDao = db.ventaDao()
     private val productoDao = db.productoDao()
     private val movimientoDao = db.movimientoDao()
@@ -63,7 +64,7 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
      * RF 3.2: guarda venta + detalle + movimientos y descuenta existencias, todo o nada.
      * El importe usa el precio vigente del producto en este momento.
      */
-    suspend fun cobrar(solicitud: SolicitudCobro): Resultado<VentaCobrada> = db.transaccion {
+    override suspend fun cobrar(solicitud: SolicitudCobro): Resultado<VentaCobrada> = db.transaccion {
         if (solicitud.lineas.isEmpty()) fallar(FallaDatos.VentaSinProductos)
         val caja = cajaDao.abierta() ?: fallar(FallaDatos.SinCajaAbierta)
         val forma = db.formaPagoDao().porId(solicitud.formaPagoId)
@@ -165,7 +166,7 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
      * RF 3.3: solo ventas registradas de la caja abierta. Cambia el estado a "Cancelada" y regresa
      * las cantidades a la existencia con un movimiento CANCELACION por producto.
      */
-    suspend fun cancelar(ventaId: String): Resultado<Venta> = db.transaccion {
+    override suspend fun cancelar(ventaId: String): Resultado<Venta> = db.transaccion {
         val venta = ventaDao.porId(ventaId) ?: fallar(FallaDatos.NoEncontrado)
         val caja = cajaDao.porId(venta.cajaId) ?: fallar(FallaDatos.NoEncontrado)
         if (venta.estado != EstadoVenta.REGISTRADA || caja.estado != EstadoCaja.ABIERTA) {

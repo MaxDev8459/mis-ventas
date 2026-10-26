@@ -16,14 +16,16 @@ import mx.ambulantpoint.misventas.data.local.entity.Perfil
 import mx.ambulantpoint.misventas.data.local.entity.Producto
 import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
 import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
+import mx.ambulantpoint.misventas.domain.puertos.PuertoCategorias
+import mx.ambulantpoint.misventas.domain.puertos.PuertoProductos
 
 /** RF 2.6 – 2.9. */
-class CategoriaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class CategoriaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCategorias {
     private val dao = db.categoriaDao()
 
     fun observarTodas(): Flow<List<Categoria>> = dao.observarTodas()
 
-    suspend fun crear(nombre: String): Resultado<Categoria> = db.transaccion {
+    override suspend fun crear(nombre: String): Resultado<Categoria> = db.transaccion {
         val ahora = reloj.ahora()
         val categoria = Categoria(
             id = nuevoId(), nombre = nombre.trim(), nombreNormalizado = normalizarNombre(nombre),
@@ -34,7 +36,7 @@ class CategoriaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
     }
 
     /** RF 2.8: el cambio se refleja en sus productos porque estos guardan el id, no el nombre. */
-    suspend fun renombrar(id: String, nuevoNombre: String): Resultado<Categoria> = db.transaccion {
+    override suspend fun renombrar(id: String, nuevoNombre: String): Resultado<Categoria> = db.transaccion {
         val actual = dao.porId(id) ?: fallar(FallaDatos.NoEncontrado)
         val cambiada = actual.copy(
             nombre = nuevoNombre.trim(), nombreNormalizado = normalizarNombre(nuevoNombre),
@@ -45,7 +47,7 @@ class CategoriaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
     }
 
     /** RF 2.9: solo si no tiene productos (activos o inactivos). */
-    suspend fun eliminar(id: String): Resultado<Unit> = db.transaccion {
+    override suspend fun eliminar(id: String): Resultado<Unit> = db.transaccion {
         if (dao.porId(id) == null) fallar(FallaDatos.NoEncontrado)
         if (dao.contarProductos(id) > 0) fallar(FallaDatos.CategoriaConProductos)
         dao.eliminar(id)
@@ -75,7 +77,7 @@ data class CambiosProducto(
 )
 
 /** RF 2.1 – 2.5. */
-class ProductoRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class ProductoRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoProductos {
     private val dao = db.productoDao()
 
     fun observar(texto: String = "", categoriaId: String? = null, activo: Boolean? = true): Flow<List<ProductoConCategoria>> =
@@ -88,7 +90,7 @@ class ProductoRepo(private val db: MisVentasDb, private val reloj: Reloj) {
     suspend fun porId(id: String): Producto? = dao.porId(id)
 
     /** Registra el producto; si trae existencia inicial, queda como primer movimiento (ENTRADA). */
-    suspend fun registrar(nuevo: NuevoProducto): Resultado<Producto> = db.transaccion {
+    override suspend fun registrar(nuevo: NuevoProducto): Resultado<Producto> = db.transaccion {
         if (nuevo.precioCentavos <= 0 || nuevo.existenciaInicialMilesimas < 0) fallar(FallaDatos.CantidadInvalida)
         if (!cantidadValida(nuevo.tipoVenta, nuevo.existenciaInicialMilesimas)) fallar(FallaDatos.CantidadInvalida)
         if (db.categoriaDao().porId(nuevo.categoriaId) == null) fallar(FallaDatos.NoEncontrado)
@@ -118,7 +120,7 @@ class ProductoRepo(private val db: MisVentasDb, private val reloj: Reloj) {
         producto
     }
 
-    suspend fun actualizar(id: String, cambios: CambiosProducto): Resultado<Producto> = db.transaccion {
+    override suspend fun actualizar(id: String, cambios: CambiosProducto): Resultado<Producto> = db.transaccion {
         val actual = dao.porId(id) ?: fallar(FallaDatos.NoEncontrado)
         if (cambios.precioCentavos <= 0) fallar(FallaDatos.CantidadInvalida)
         if (cambios.tipoVenta != actual.tipoVenta && actual.existenciaMilesimas != 0L) {
@@ -140,7 +142,7 @@ class ProductoRepo(private val db: MisVentasDb, private val reloj: Reloj) {
     }
 
     /** RF 2.3 / 2.4. */
-    suspend fun cambiarEstado(id: String, activo: Boolean): Resultado<Unit> = db.transaccion {
+    override suspend fun cambiarEstado(id: String, activo: Boolean): Resultado<Unit> = db.transaccion {
         if (dao.cambiarEstado(id, activo, reloj.ahora()) == 0) fallar(FallaDatos.NoEncontrado)
         Unit
     }

@@ -51,3 +51,5 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 **Avance MVP:** 0 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
 
 **Fase 1 (26-oct-2026):** capa de datos lista para los RF en 🔨 (Room, transacciones y consultas). Pruebas: `DineroTest` (4, JVM) + `VentaCajaTest` y `CatalogoInventarioTest` (23, en el teléfono 2412DPC0AG), todas pasan. Faltan dominio (Fase 2) y pantallas (Fase 3).
+
+**Fase 2 (26-oct-2026):** dominio listo: `core/Mensajes.kt` (literales del DFR + alertas de campo propuestas, pendientes de validar), `Validadores`, `LectorNumeros`, `Formato`, reglas (descuento, cobro, existencia baja, corte), `Carrito` y casos de uso por módulo. 48 pruebas JVM pasan.

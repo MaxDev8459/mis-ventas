@@ -14,9 +14,11 @@ import mx.ambulantpoint.misventas.data.local.dao.VentasRecientes
 import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
 import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
+import mx.ambulantpoint.misventas.domain.puertos.PuertoInventario
+import mx.ambulantpoint.misventas.domain.puertos.PuertoVentasRecientes
 
 /** RF 4.1 – 4.4. Cada cambio de existencia deja su movimiento en la misma transacción. */
-class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoInventario {
     private val productoDao = db.productoDao()
     private val movimientoDao = db.movimientoDao()
 
@@ -24,7 +26,7 @@ class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) {
         movimientoDao.observarPorProducto(productoId, desde, hasta)
 
     /** RF 4.1. Devuelve la nueva existencia. */
-    suspend fun registrarEntrada(productoId: String, cantidadMilesimas: Long): Resultado<Long> = db.transaccion {
+    override suspend fun registrarEntrada(productoId: String, cantidadMilesimas: Long): Resultado<Long> = db.transaccion {
         val producto = productoDao.porId(productoId) ?: fallar(FallaDatos.NoEncontrado)
         if (cantidadMilesimas <= 0 || !cantidadValida(producto.tipoVenta, cantidadMilesimas)) {
             fallar(FallaDatos.CantidadInvalida)
@@ -42,12 +44,12 @@ class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) {
     }
 
     /** RF 4.2. Una disminución no puede dejar la existencia debajo de cero. Devuelve la nueva existencia. */
-    suspend fun ajustar(
+    override suspend fun ajustar(
         productoId: String,
         aumentar: Boolean,
         cantidadMilesimas: Long,
         motivo: MotivoAjuste,
-        especificacion: String? = null,
+        especificacion: String?,
     ): Resultado<Long> = db.transaccion {
         val producto = productoDao.porId(productoId) ?: fallar(FallaDatos.NoEncontrado)
         if (cantidadMilesimas <= 0 || !cantidadValida(producto.tipoVenta, cantidadMilesimas)) {
@@ -78,7 +80,7 @@ class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) {
 }
 
 /** Módulo 6 y RF 4.5: lectura de agregados; los cálculos (promedios, porcentajes) son del dominio. */
-class ReporteRepo(db: MisVentasDb) {
+class ReporteRepo(db: MisVentasDb) : PuertoVentasRecientes {
     private val dao = db.reporteDao()
 
     suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo = dao.resumenPeriodo(desde, hasta)
@@ -86,5 +88,5 @@ class ReporteRepo(db: MisVentasDb) {
     suspend fun totalesPorFormaPago(desde: Long, hasta: Long): List<TotalFormaPago> = dao.totalesPorFormaPago(desde, hasta)
     suspend fun productosVendidos(desde: Long, hasta: Long): List<ProductoVendido> = dao.productosVendidos(desde, hasta)
     suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria> = dao.totalesPorCategoria(desde, hasta)
-    suspend fun ventasRecientes(productoId: String): VentasRecientes = dao.ventasRecientes(productoId)
+    override suspend fun ventasRecientes(productoId: String): VentasRecientes = dao.ventasRecientes(productoId)
 }

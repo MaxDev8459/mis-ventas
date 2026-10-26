@@ -8,6 +8,8 @@ import mx.ambulantpoint.misventas.data.local.MisVentasDb
 import mx.ambulantpoint.misventas.data.local.entity.Caja
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
 import mx.ambulantpoint.misventas.data.local.entity.EstadoCaja
+import mx.ambulantpoint.misventas.domain.puertos.PuertoCaja
+import mx.ambulantpoint.misventas.domain.regla.ReglaCorte
 
 /** Resumen del corte (RF 5.2 / 5.5). */
 data class CorteCaja(
@@ -25,7 +27,7 @@ data class CorteCaja(
 }
 
 /** RF 5.1 – 5.5. */
-class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCaja {
     private val dao = db.cajaDao()
 
     fun observarAbierta(): Flow<Caja?> = dao.observarAbierta()
@@ -37,7 +39,7 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
     fun observarCorteFormaPago(cajaId: String): Flow<List<CorteFormaPago>> = dao.observarCorteFormaPago(cajaId)
 
     /** RF 5.1: fondo ≥ 0 y solo una caja abierta a la vez. */
-    suspend fun abrir(fondoCentavos: Long): Resultado<Caja> = db.transaccion {
+    override suspend fun abrir(fondoCentavos: Long): Resultado<Caja> = db.transaccion {
         if (fondoCentavos < 0) fallar(FallaDatos.CantidadInvalida)
         if (dao.abierta() != null) fallar(FallaDatos.CajaYaAbierta)
         val ahora = reloj.ahora()
@@ -53,14 +55,14 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
      * RF 5.2: calcula y guarda el corte de la caja abierta (no la cierra).
      * Efectivo esperado = fondo + ventas en efectivo; diferencia = contado − esperado.
      */
-    suspend fun calcularCorte(efectivoContadoCentavos: Long): Resultado<CorteCaja> = db.transaccion {
+    override suspend fun calcularCorte(efectivoContadoCentavos: Long): Resultado<CorteCaja> = db.transaccion {
         if (efectivoContadoCentavos < 0) fallar(FallaDatos.CantidadInvalida)
         val caja = dao.abierta() ?: fallar(FallaDatos.SinCajaAbierta)
         val ahora = reloj.ahora()
         val resumen = dao.resumenVentas(caja.id)
         val porForma = dao.totalesPorFormaPago(caja.id)
         val ventasEfectivo = porForma.filter { it.esEfectivo }.sumOf { it.totalCentavos }
-        val esperado = caja.fondoCentavos + ventasEfectivo
+        val esperado = ReglaCorte.efectivoEsperado(caja.fondoCentavos, ventasEfectivo)
 
         val conCorte = caja.copy(
             corteCalculadoEn = ahora,
@@ -70,7 +72,7 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
             descuentosCentavos = resumen.descuentosCentavos,
             efectivoEsperadoCentavos = esperado,
             efectivoContadoCentavos = efectivoContadoCentavos,
-            diferenciaCentavos = efectivoContadoCentavos - esperado,
+            diferenciaCentavos = ReglaCorte.diferencia(efectivoContadoCentavos, esperado),
             actualizadoEn = ahora,
             pendienteSync = true,
         )
@@ -88,7 +90,7 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) {
     }
 
     /** RF 5.3: requiere corte vigente (sin ventas ni cancelaciones posteriores). */
-    suspend fun cerrar(): Resultado<Caja> = db.transaccion {
+    override suspend fun cerrar(): Resultado<Caja> = db.transaccion {
         val caja = dao.abierta() ?: fallar(FallaDatos.SinCajaAbierta)
         if (!caja.corteVigente) fallar(FallaDatos.CorteNoVigente)
         val ahora = reloj.ahora()
