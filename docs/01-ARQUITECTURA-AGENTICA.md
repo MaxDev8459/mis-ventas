@@ -1,6 +1,7 @@
 # Arquitectura agéntica de desarrollo — *Mis Ventas*
 
 Cómo usamos Claude Code y sus subagentes para construir la app sin perder la trazabilidad con el DFR.
+La arquitectura del código (capas, decisiones y su origen) está en [04-ARQUITECTURA-APP.md](04-ARQUITECTURA-APP.md).
 
 ## 1. Vista general
 
