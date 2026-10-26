@@ -70,6 +70,12 @@ data class TotalCategoria(
  * RF 4.5 / 6.5: cantidad vendida en los últimos (hasta 7) días con ventas del producto.
  * Si `dias` < 7 se usa el umbral fijo.
  */
+data class VentaDiaProducto(
+    val productoId: String,
+    val dia: String,
+    val cantidadMilesimas: Long,
+)
+
 data class VentasRecientes(
     val dias: Int,
     val cantidadMilesimas: Long,

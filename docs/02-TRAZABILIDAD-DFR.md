@@ -25,16 +25,16 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 3.4 | Historial de ventas | Media | MVP | `ui/historial` | | ✅ |
 | 3.5 | Formas de pago | Media | MVP parcial (semilla) / S2 pantalla | semilla Room | Efectivo no desactivable | 🟡 |
 | 3.6 | Descuentos | Baja | S2 | | | ⏳ |
-| 4.1 | Entrada de mercancía | Alta | MVP | `ui/inventario/Entrada` · `RegistrarEntrada` | Suma y movimiento | 🔨 |
-| 4.2 | Ajustar existencia | Media | S2 | | | ⏳ |
-| 4.3 | Consultar existencias | Alta | MVP | `ui/inventario/Existencias` | | 🔨 |
-| 4.4 | Movimientos de inventario | Baja | MVP (registro) / S2 (pantalla) | Room `MovimientoInventario` | | 🟡 |
-| 4.5 | Alertar existencia baja | Media | MVP | `EvaluarExistenciaBaja` | Promedio 7 días / umbral fijo | 🔍 |
+| 4.1 | Entrada de mercancía | Alta | MVP | `ui/inventario/Entrada` · `RegistrarEntrada` | Suma y movimiento | ✅ |
+| 4.2 | Ajustar existencia | Media | MVP (adelantado) | | | ✅ |
+| 4.3 | Consultar existencias | Alta | MVP | `ui/inventario/Existencias` | | ✅ |
+| 4.4 | Movimientos de inventario | Baja | MVP (registro) / S2 (pantalla) | Room `MovimientoInventario` | | ✅ |
+| 4.5 | Alertar existencia baja | Media | MVP | `EvaluarExistenciaBaja` | Promedio 7 días / umbral fijo | ✅ |
 | 5.1 | Abrir caja | Alta | MVP | `ui/caja/Abrir` | Una sola caja abierta | ✅ |
-| 5.2 | Calcular corte | Alta | MVP | `ui/caja/Corte` · `CalcularCorte` | Esperado, diferencia, excluye canceladas | 🔨 |
-| 5.3 | Cerrar caja | Alta | MVP | `ui/caja/Corte` · `CerrarCaja` | Requiere corte actualizado | 🔨 |
+| 5.2 | Calcular corte | Alta | MVP | `ui/caja/Corte` · `CalcularCorte` | Esperado, diferencia, excluye canceladas | ✅ |
+| 5.3 | Cerrar caja | Alta | MVP | `ui/caja/Corte` · `CerrarCaja` | Requiere corte actualizado | ✅ |
 | 5.4 | Notificar caja abierta | Baja | S2 | | | ⏳ |
-| 5.5 | Consultar cortes | Media | MVP | `ui/caja/Cortes` | | 🔨 |
+| 5.5 | Consultar cortes | Media | MVP | `ui/caja/Cortes` | | ✅ |
 | 6.1 | Reporte ventas por periodo | Alta | Stretch / S2 | | Ticket promedio | ⏳ |
 | 6.2 | Ventas por forma de pago | Media | S2 | | | ⏳ |
 | 6.3 | Productos más vendidos | Media | S2 | | | ⏳ |
@@ -48,7 +48,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | | | ⏳ |
 | 7.6 | Notificar falta de sync | Media | S2 | | | ⏳ |
 
-**Avance MVP:** 16 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
+**Avance MVP:** 24 / 23 RF completos + 2 parciales (3.5, 4.4) en alcance del MVP.
 
 **Fase 1 (26-oct-2026):** capa de datos lista para los RF en 🔨 (Room, transacciones y consultas). Pruebas: `DineroTest` (4, JVM) + `VentaCajaTest` y `CatalogoInventarioTest` (23, en el teléfono 2412DPC0AG), todas pasan. Faltan dominio (Fase 2) y pantallas (Fase 3).
 
@@ -59,3 +59,5 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 **Fase 3B (26-oct-2026):** categorías (crear, duplicado, renombrar, eliminar con y sin productos) y catálogo (registro con foto de galería comprimida a 576×1024 y 135 KB, búsqueda, filtros, edición, desactivar/reactivar, bloqueo de cambio de tipo con existencia) probados en el teléfono. 2.8 y 2.9 adelantados del Sprint 2 porque ya estaban hechos en datos y dominio.
 
 **Fase 3C (26-oct-2026):** probado en el teléfono: abrir caja ($100), venta de 1 producto en 4 toques (producto → Cobrar → Exacto → Confirmar), cambio con $100 ($40), venta por peso 0.250 kg × $86.50 = $21.63 con transferencia, aviso de existencia baja (5 pzas), tope por existencia, historial del día y cancelación de la venta de $60 (existencias regresan). 4.5 en verificación: falta probar el aviso tras entrada/ajuste (3D).
+
+**Fase 3D (26-oct-2026):** probado en el teléfono: existencias con baja resaltada, ajuste (validaciones, "Otro" sin especificar, disminución mayor a la existencia, merma −4 con aviso), entrada de 1.5 kg con nueva existencia, movimientos con signo y existencia resultante, corte (esperado $140, contado $150, sobrante $10, excluye cancelada), cierre con confirmación, venta de caja cerrada sin opción de cancelar, lista y detalle de cortes. 4.2 y 4.4 (pantalla) adelantados del Sprint 2.

@@ -228,6 +228,22 @@ interface ReporteDao {
         """,
     )
     suspend fun ventasRecientes(productoId: String): VentasRecientes
+
+    /**
+     * RF 4.3 / 4.5 para toda la lista de existencias de una vez: lo vendido por producto y día
+     * (no canceladas), del día más reciente al más antiguo. El dominio toma los primeros 7 de cada uno.
+     */
+    @Query(
+        """
+        SELECT d.productoId AS productoId, date(v.fechaHora / 1000, 'unixepoch', 'localtime') AS dia,
+               SUM(d.cantidadMilesimas) AS cantidadMilesimas
+        FROM venta_detalle d JOIN venta v ON v.id = d.ventaId
+        WHERE v.estado = 'REGISTRADA'
+        GROUP BY d.productoId, dia
+        ORDER BY d.productoId, dia DESC
+        """,
+    )
+    fun observarVentasPorDia(): Flow<List<VentaDiaProducto>>
 }
 
 /** RF 7.2 (Sprint 2): registros pendientes de sincronizar en todas las tablas. */

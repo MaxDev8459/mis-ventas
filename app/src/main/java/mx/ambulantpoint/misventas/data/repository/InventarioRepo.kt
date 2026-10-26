@@ -1,6 +1,8 @@
 package mx.ambulantpoint.misventas.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import mx.ambulantpoint.misventas.domain.regla.ReglaExistenciaBaja
 import mx.ambulantpoint.misventas.core.Reloj
 import mx.ambulantpoint.misventas.core.Resultado
 import mx.ambulantpoint.misventas.core.nuevoId
@@ -89,4 +91,12 @@ class ReporteRepo(db: MisVentasDb) : PuertoVentasRecientes {
     suspend fun productosVendidos(desde: Long, hasta: Long): List<ProductoVendido> = dao.productosVendidos(desde, hasta)
     suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria> = dao.totalesPorCategoria(desde, hasta)
     override suspend fun ventasRecientes(productoId: String): VentasRecientes = dao.ventasRecientes(productoId)
+
+    /** productoId → ventas de sus últimos (hasta 7) días con ventas. */
+    fun observarVentasRecientesDeTodos(): Flow<Map<String, VentasRecientes>> = dao.observarVentasPorDia().map { filas ->
+        filas.groupBy { it.productoId }.mapValues { (_, dias) ->
+            val ultimos = dias.take(ReglaExistenciaBaja.DIAS)
+            VentasRecientes(ultimos.size, ultimos.sumOf { it.cantidadMilesimas })
+        }
+    }
 }

@@ -26,6 +26,11 @@ import mx.ambulantpoint.misventas.domain.puertos.EstadoSesion
 import mx.ambulantpoint.misventas.ui.auth.PantallaLogin
 import mx.ambulantpoint.misventas.ui.auth.PantallaRegistro
 import mx.ambulantpoint.misventas.ui.caja.PantallaCaja
+import mx.ambulantpoint.misventas.ui.caja.PantallaCorte
+import mx.ambulantpoint.misventas.ui.caja.PantallaCortes
+import mx.ambulantpoint.misventas.ui.caja.PantallaDetalleCorte
+import mx.ambulantpoint.misventas.ui.inventario.PantallaExistencias
+import mx.ambulantpoint.misventas.ui.inventario.PantallaProductoInventario
 import mx.ambulantpoint.misventas.ui.historial.PantallaDetalleVenta
 import mx.ambulantpoint.misventas.ui.historial.PantallaHistorial
 import mx.ambulantpoint.misventas.ui.venta.PantallaVenta
@@ -47,6 +52,7 @@ private object Ruta {
     const val VENTA = "venta"
     const val CORTE = "corte"
     const val CORTES = "cortes"
+    const val INVENTARIO = "inventario"
     fun de(destino: Destino) = destino.name.lowercase()
 }
 
@@ -123,18 +129,15 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
             PantallaHistorial(regresar) { id -> nav.navigate("${Ruta.VENTA}/$id") }
         }
         composable("${Ruta.VENTA}/{id}") { e -> PantallaDetalleVenta(e.arguments?.getString("id").orEmpty(), regresar) }
-        // Siguiente entrega de la Fase 3 (3D).
-        composable(Ruta.de(Destino.EXISTENCIAS)) { PantallaEnConstruccion(Destino.EXISTENCIAS.titulo, regresar) }
-        composable(Ruta.CORTE) { PantallaEnConstruccion("Corte de caja", regresar) }
-        composable(Ruta.CORTES) { PantallaEnConstruccion("Cortes de caja", regresar) }
-    }
-}
-
-@Composable
-private fun PantallaEnConstruccion(titulo: String, alRegresar: () -> Unit) {
-    Scaffold(topBar = { BarraSuperior(titulo, alRegresar) }) { relleno ->
-        Box(Modifier.padding(relleno).fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-            Text("En construcción", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        composable(Ruta.de(Destino.EXISTENCIAS)) {
+            PantallaExistencias(regresar) { id -> nav.navigate("${Ruta.INVENTARIO}/$id") }
         }
+        composable("${Ruta.INVENTARIO}/{id}") { e -> PantallaProductoInventario(e.arguments?.getString("id").orEmpty(), regresar) }
+        composable(Ruta.CORTE) {
+            // Tras cerrar la caja se regresa a la pantalla principal.
+            PantallaCorte(regresar) { nav.popBackStack(Ruta.INICIO, inclusive = false) }
+        }
+        composable(Ruta.CORTES) { PantallaCortes(regresar) { id -> nav.navigate("${Ruta.CORTES}/$id") } }
+        composable("${Ruta.CORTES}/{id}") { e -> PantallaDetalleCorte(e.arguments?.getString("id").orEmpty(), regresar) }
     }
 }
