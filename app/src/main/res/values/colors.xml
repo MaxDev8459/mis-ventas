@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Verde salvia del logo (logo.jpeg) -->
+    <color name="verde_logo">#FF73966E</color>
+    <color name="blanco">#FFFFFFFF</color>
+    <color name="fondo">#FFF7FAF5</color>
+</resources>

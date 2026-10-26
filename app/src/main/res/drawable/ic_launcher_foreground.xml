@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Caja registradora del logo, en trazo blanco. Zona segura del ícono adaptativo: 18..90 dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group>
+        <!-- Pantalla del cliente y su soporte -->
+        <path
+            android:pathData="M57,29h13v8h-13z M63.5,37v4"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineJoin="round"
+            android:strokeLineCap="round" />
+        <!-- Bloque izquierdo con ventanilla -->
+        <path
+            android:pathData="M36,34h14v16h-14z M39,38h8v5h-8z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineJoin="round" />
+        <!-- Bloque derecho -->
+        <path
+            android:pathData="M50,41h21v9h-21z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineJoin="round" />
+        <!-- Cuerpo con teclado -->
+        <path
+            android:pathData="M36,50h35l4,17h-43z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M40,54h4v3h-4z M47,54h4v3h-4z M54,54h4v3h-4z M61,54h4v3h-4z
+                M39,60h4v3h-4z M46.5,60h4v3h-4z M54,60h4v3h-4z M61.5,60h4v3h-4z"
+            android:fillColor="#FFFFFF" />
+        <!-- Cajón -->
+        <path
+            android:pathData="M32,67h43v11h-43z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M49,72.5h9"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round" />
+    </group>
+</vector>
