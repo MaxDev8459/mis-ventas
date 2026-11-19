@@ -39,7 +39,7 @@ Ningún mensaje del MVP difiere del DFR.
 | 2.1 – 2.7 Catálogo y categorías | ✅ | HEIC puede no leerse en Android 8 – 8.1 (lo decodifica Android 9+); se muestra "No se pudo usar la imagen, elija otra" |
 | 2.8 – 2.9 Modificar / eliminar categoría | ✅ adelantado | Eran Sprint 2 |
 | 3.1 – 3.4 Ventas | ✅ | Descuento oculto porque está deshabilitado por defecto (RF 3.6 es Sprint 2) |
-| 3.5 Formas de pago | ⚠️ parcial | Solo "Efectivo" y "Transferencia" de fábrica; falta la pantalla para agregar/desactivar |
+| 3.5 Formas de pago | ✅ | Probada en teléfono (18-nov-2026): agregar, renombrar, activar/desactivar; Efectivo bloqueada; alertas de campo vacío y nombre registrado; mensaje "La forma de pago se guardó exitosamente" |
 | 4.1 – 4.3, 4.5 Inventario | ✅ | |
 | 4.2 Ajustar existencia | ✅ adelantado | Era Sprint 2 |
 | 4.4 Movimientos | ✅ | Falta el filtro opcional por rango de fechas en la pantalla (la consulta ya lo admite) |
@@ -66,8 +66,8 @@ Revisado para no introducir cambios no autorizados. Ninguno agrega reglas de neg
 | Comportamiento | Motivo |
 |---|---|
 | Botones de monto rápido en el cobro ("Exacto", $50, $100…) | Cumplir el RNF de 4 toques; el monto sigue capturándose |
-| Textos de las alertas de campo ("Este campo es obligatorio"…) | El DFR pide las alertas pero no su texto. **Pendiente: validar con el cliente** |
-| Aviso de privacidad | El DFR pide mostrarlo pero no da el texto. **Borrador pendiente del cliente** |
+| Textos de las alertas de campo ("Este campo es obligatorio"…) | El DFR pide las alertas pero no su texto. ✅ **Validados por el cliente el 18-nov-2026** (las 24 aprobadas sin cambios; validación sin firma) |
+| Aviso de privacidad | El DFR pide mostrarlo pero no da el texto. Texto completo aprobado por el cliente el 18-nov-2026; **pendiente**: domicilio y correo de contacto (serán públicos) y fecha. La app sigue mostrando el borrador corto |
 | La existencia inicial queda como primer movimiento "Entrada de mercancía" | Que el historial cuadre con la existencia |
 | No se puede renombrar "Efectivo" | El DFR solo permite renombrar las formas de pago adicionales |
 | Textos de ayuda: "Verifique que recibió el pago antes de confirmar", "(se modifica en Existencias)" | Recordatorios de reglas del DFR (RF 3.2 y 2.2) |
@@ -96,6 +96,7 @@ Revisado para no introducir cambios no autorizados. Ninguno agrega reglas de neg
 ## 6. Correcciones pendientes, por prioridad
 
 1. ~~Subir el repositorio a GitHub~~ ✅ hecho el 26-oct-2026.
-2. **Pantalla de formas de pago** (RF 3.5).
-3. Validar con el cliente las alertas de campo y el aviso de privacidad.
-4. Filtro de fechas en movimientos de inventario (RF 4.4, opcional).
+2. ~~Pantalla de formas de pago (RF 3.5)~~ ✅ hecha y probada en el teléfono el 18-nov-2026.
+3. ~~Validar con el cliente las alertas de campo~~ ✅ 18-nov-2026: el cliente aprobó las 24 sin cambios (`documentos del proyecto/Validacion_Textos_Cliente_Mis_Ventas.docx`, fuera del repo; sin firma).
+4. **Aviso de privacidad:** el cliente aprobó el texto completo del documento de validación, pero falta que defina el domicilio y el correo de contacto que se publicarán. Al tenerlos, reemplazar el borrador de `ui/auth/AccesoScreens.kt`.
+5. Filtro de fechas en movimientos de inventario (RF 4.4, opcional).
