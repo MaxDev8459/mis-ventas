@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -82,6 +84,8 @@ enum class Destino(val titulo: String, val icono: ImageVector) {
     CATALOGO("Catálogo", Icons.AutoMirrored.Filled.List),
     CATEGORIAS("Categorías", Icons.Filled.Menu),
     EXISTENCIAS("Existencias", Icons.Filled.Info),
+    REPORTES("Reportes", Icons.Filled.Search),
+    FORMAS_PAGO("Formas de pago", Icons.Filled.Settings),
     PERFIL("Perfil", Icons.Filled.AccountCircle),
 }
 

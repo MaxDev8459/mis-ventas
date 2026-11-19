@@ -37,6 +37,10 @@ import mx.ambulantpoint.misventas.ui.venta.PantallaVenta
 import mx.ambulantpoint.misventas.ui.catalogo.PantallaCatalogo
 import mx.ambulantpoint.misventas.ui.catalogo.PantallaProductoForm
 import mx.ambulantpoint.misventas.ui.categorias.PantallaCategorias
+import mx.ambulantpoint.misventas.ui.formaspago.PantallaFormasPago
+import mx.ambulantpoint.misventas.ui.reportes.PantallaReporteVentas
+import mx.ambulantpoint.misventas.ui.reportes.PantallaReportes
+import mx.ambulantpoint.misventas.ui.reportes.Reporte
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.contenedor
 import mx.ambulantpoint.misventas.ui.inicio.Destino
@@ -53,6 +57,7 @@ private object Ruta {
     const val CORTE = "corte"
     const val CORTES = "cortes"
     const val INVENTARIO = "inventario"
+    const val REPORTE = "reporte"
     fun de(destino: Destino) = destino.name.lowercase()
 }
 
@@ -105,6 +110,16 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
         }
         composable(Ruta.de(Destino.PERFIL)) { PantallaPerfil(regresar) }
         composable(Ruta.de(Destino.CATEGORIAS)) { PantallaCategorias(regresar) }
+        composable(Ruta.de(Destino.FORMAS_PAGO)) { PantallaFormasPago(regresar) }
+        composable(Ruta.de(Destino.REPORTES)) {
+            PantallaReportes(alRegresar = regresar, alAbrir = { nav.navigate("${Ruta.REPORTE}/${it.name}") })
+        }
+        composable("${Ruta.REPORTE}/{reporte}") { entrada ->
+            when (entrada.arguments?.getString("reporte")?.let { n -> Reporte.entries.firstOrNull { it.name == n } }) {
+                Reporte.VENTAS_PERIODO -> PantallaReporteVentas(regresar)
+                null -> LaunchedEffect(Unit) { regresar() }
+            }
+        }
         composable(Ruta.de(Destino.CATALOGO)) {
             PantallaCatalogo(
                 alRegresar = regresar,

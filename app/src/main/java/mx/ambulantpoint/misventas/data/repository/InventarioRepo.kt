@@ -17,6 +17,7 @@ import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
 import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
 import mx.ambulantpoint.misventas.domain.puertos.PuertoInventario
+import mx.ambulantpoint.misventas.domain.puertos.PuertoReportes
 import mx.ambulantpoint.misventas.domain.puertos.PuertoVentasRecientes
 
 /** RF 4.1 – 4.4. Cada cambio de existencia deja su movimiento en la misma transacción. */
@@ -82,11 +83,11 @@ class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) : Pu
 }
 
 /** Módulo 6 y RF 4.5: lectura de agregados; los cálculos (promedios, porcentajes) son del dominio. */
-class ReporteRepo(db: MisVentasDb) : PuertoVentasRecientes {
+class ReporteRepo(db: MisVentasDb) : PuertoVentasRecientes, PuertoReportes {
     private val dao = db.reporteDao()
 
-    suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo = dao.resumenPeriodo(desde, hasta)
-    suspend fun totalesPorDia(desde: Long, hasta: Long): List<TotalPorDia> = dao.totalesPorDia(desde, hasta)
+    override suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo = dao.resumenPeriodo(desde, hasta)
+    override suspend fun totalesPorDia(desde: Long, hasta: Long): List<TotalPorDia> = dao.totalesPorDia(desde, hasta)
     suspend fun totalesPorFormaPago(desde: Long, hasta: Long): List<TotalFormaPago> = dao.totalesPorFormaPago(desde, hasta)
     suspend fun productosVendidos(desde: Long, hasta: Long): List<ProductoVendido> = dao.productosVendidos(desde, hasta)
     suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria> = dao.totalesPorCategoria(desde, hasta)

@@ -23,7 +23,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 3.2 | Cobrar venta | Alta | MVP | `ui/venta/Cobro` · `CobrarVenta` | Cambio, monto insuficiente, atomicidad | ✅ |
 | 3.3 | Cancelar venta | Media | MVP | `ui/historial` · `CancelarVenta` | Regreso de existencia, solo caja abierta | ✅ |
 | 3.4 | Historial de ventas | Media | MVP | `ui/historial` | | ✅ |
-| 3.5 | Formas de pago | Media | MVP parcial (semilla) / S2 pantalla | semilla Room | Efectivo no desactivable | 🟡 |
+| 3.5 | Formas de pago | Media | MVP | `ui/formaspago` · `GuardarFormaPago` | Nombre obligatorio y único; Efectivo no se renombra ni desactiva; no se eliminan | ✅ |
 | 3.6 | Descuentos | Baja | S2 | | | ⏳ |
 | 4.1 | Entrada de mercancía | Alta | MVP | `ui/inventario/Entrada` · `RegistrarEntrada` | Suma y movimiento | ✅ |
 | 4.2 | Ajustar existencia | Media | MVP (adelantado) | | | ✅ |
@@ -35,7 +35,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 5.3 | Cerrar caja | Alta | MVP | `ui/caja/Corte` · `CerrarCaja` | Requiere corte actualizado | ✅ |
 | 5.4 | Notificar caja abierta | Baja | S2 | | | ⏳ |
 | 5.5 | Consultar cortes | Media | MVP | `ui/caja/Cortes` | | ✅ |
-| 6.1 | Reporte ventas por periodo | Alta | Stretch / S2 | | Ticket promedio | ⏳ |
+| 6.1 | Reporte ventas por periodo | Alta | S2 | `ui/reportes` · `GenerarReporteVentas` · `ReglaPeriodos` | Ticket promedio, periodos (semana desde el lunes), solo no canceladas | ✅ |
 | 6.2 | Ventas por forma de pago | Media | S2 | | | ⏳ |
 | 6.3 | Productos más vendidos | Media | S2 | | | ⏳ |
 | 6.4 | Ventas por categoría | Baja | S2 | | | ⏳ |
@@ -61,3 +61,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 **Fase 3C (26-oct-2026):** probado en el teléfono: abrir caja ($100), venta de 1 producto en 4 toques (producto → Cobrar → Exacto → Confirmar), cambio con $100 ($40), venta por peso 0.250 kg × $86.50 = $21.63 con transferencia, aviso de existencia baja (5 pzas), tope por existencia, historial del día y cancelación de la venta de $60 (existencias regresan). 4.5 en verificación: falta probar el aviso tras entrada/ajuste (3D).
 
 **Fase 3D (26-oct-2026):** probado en el teléfono: existencias con baja resaltada, ajuste (validaciones, "Otro" sin especificar, disminución mayor a la existencia, merma −4 con aviso), entrada de 1.5 kg con nueva existencia, movimientos con signo y existencia resultante, corte (esperado $140, contado $150, sobrante $10, excluye cancelada), cierre con confirmación, venta de caja cerrada sin opción de cancelar, lista y detalle de cortes. 4.2 y 4.4 (pantalla) adelantados del Sprint 2.
+
+**RF 3.5 (18-nov-2026):** pantalla "Formas de pago" en el menú principal: agregar, renombrar, activar y desactivar; Efectivo aparece como predeterminada y bloqueada. 7 pruebas JVM nuevas (63 en total). Probado en el teléfono: alerta de campo vacío, "transferencia" rechazada como nombre ya registrado, alta de "Tarjeta" con el mensaje del DFR, desactivar desde la lista, Efectivo sin diálogo ni cambio de estado, renombrar a "Tarjeta de crédito" conservando Inactiva. No se probó en el teléfono que una forma inactiva desaparezca del cobro (habría que abrir caja); lo cubre la consulta `observarActivas` usada por la pantalla de venta.
+
+**Sprint 2 · RF 6.1 (18-nov-2026):** menú "Reportes" y reporte de ventas por periodo con selector compartido (Hoy, Esta semana, Este mes, Rango). Decisión del equipo (el DFR no lo dice): la semana empieza en lunes. 13 pruebas JVM nuevas (76 en total). La carga de demo ahora genera 10 días hábiles de ventas (4 al 17-nov): 51 ventas, 3 canceladas, efectivo y transferencia, cortes con sobrante y faltante. Probado en el teléfono: Esta semana $429.50 / 8 ventas / ticket $53.69; Este mes $2,325.00 / 51 / 3 canceladas por $116.00; rango 16–17; Hoy sin ventas muestra el mensaje del DFR. Todo coincide con la base de datos. Se arregló el encabezado del selector de fechas (también en el historial).

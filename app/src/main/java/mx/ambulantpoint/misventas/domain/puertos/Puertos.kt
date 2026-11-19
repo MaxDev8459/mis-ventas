@@ -1,9 +1,12 @@
 package mx.ambulantpoint.misventas.domain.puertos
 
 import mx.ambulantpoint.misventas.core.Resultado
+import mx.ambulantpoint.misventas.data.local.dao.ResumenPeriodo
+import mx.ambulantpoint.misventas.data.local.dao.TotalPorDia
 import mx.ambulantpoint.misventas.data.local.dao.VentasRecientes
 import mx.ambulantpoint.misventas.data.local.entity.Caja
 import mx.ambulantpoint.misventas.data.local.entity.Categoria
+import mx.ambulantpoint.misventas.data.local.entity.FormaPago
 import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.data.local.entity.Producto
 import mx.ambulantpoint.misventas.data.local.entity.Venta
@@ -29,6 +32,12 @@ interface PuertoCategorias {
     suspend fun crear(nombre: String): Resultado<Categoria>
     suspend fun renombrar(id: String, nuevoNombre: String): Resultado<Categoria>
     suspend fun eliminar(id: String): Resultado<Unit>
+}
+
+/** RF 3.5. "Efectivo" no se renombra ni se desactiva (lo rechaza la capa de datos). */
+interface PuertoFormasPago {
+    suspend fun crear(nombre: String, activa: Boolean = true): Resultado<FormaPago>
+    suspend fun actualizar(id: String, nombre: String, activa: Boolean): Resultado<FormaPago>
 }
 
 interface PuertoCaja {
@@ -73,6 +82,12 @@ interface PuertoAuth {
     suspend fun registrar(datos: DatosRegistro): Resultado<mx.ambulantpoint.misventas.data.local.entity.Perfil>
     suspend fun iniciarSesion(correo: String, contrasena: String): Resultado<Unit>
     suspend fun cerrarSesion(): Resultado<Unit>
+}
+
+/** Módulo 6: agregados de solo lectura sobre las ventas del dispositivo (funcionan sin conexión). */
+interface PuertoReportes {
+    suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo
+    suspend fun totalesPorDia(desde: Long, hasta: Long): List<TotalPorDia>
 }
 
 interface PuertoVentasRecientes {

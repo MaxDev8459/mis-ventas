@@ -95,8 +95,9 @@ object Mensajes {
     const val NOTIFICACION_SIN_RESPALDO = "Llevas 3 días sin respaldar tu información. Conéctate a internet para sincronizar"
 
     /**
-     * Alertas de campo. PROPUESTA DEL EQUIPO, NO SON TEXTO DEL DFR: el DFR pide "alertas en pantalla"
-     * (campos sin llenar, correo no válido, etc.) sin dar la redacción. Pendiente de validar con el cliente.
+     * Alertas de campo. No son texto del DFR (pide "alertas en pantalla" sin dar la redacción): las propuso
+     * el equipo y el cliente las aprobó todas el 18-nov-2026 (Validacion_Textos_Cliente_Mis_Ventas.docx,
+     * sin firma). EXISTENCIA_NO_VALIDA no se muestra en ninguna pantalla y no se sometió a validación.
      */
     object Campo {
         const val OBLIGATORIO = "Este campo es obligatorio"

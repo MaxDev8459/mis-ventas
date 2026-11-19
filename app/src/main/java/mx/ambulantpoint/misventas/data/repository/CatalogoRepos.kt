@@ -17,6 +17,7 @@ import mx.ambulantpoint.misventas.data.local.entity.Producto
 import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
 import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
 import mx.ambulantpoint.misventas.domain.puertos.PuertoCategorias
+import mx.ambulantpoint.misventas.domain.puertos.PuertoFormasPago
 import mx.ambulantpoint.misventas.domain.puertos.PuertoProductos
 
 /** RF 2.6 – 2.9. */
@@ -155,13 +156,13 @@ internal fun cantidadValida(tipoVenta: TipoVenta, cantidadMilesimas: Long): Bool
 }
 
 /** RF 3.5. */
-class FormaPagoRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class FormaPagoRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoFormasPago {
     private val dao = db.formaPagoDao()
 
     fun observarTodas(): Flow<List<FormaPago>> = dao.observarTodas()
     fun observarActivas(): Flow<List<FormaPago>> = dao.observarActivas()
 
-    suspend fun crear(nombre: String, activa: Boolean = true): Resultado<FormaPago> = db.transaccion {
+    override suspend fun crear(nombre: String, activa: Boolean): Resultado<FormaPago> = db.transaccion {
         val ahora = reloj.ahora()
         val forma = FormaPago(
             id = nuevoId(), nombre = nombre.trim(), nombreNormalizado = normalizarNombre(nombre),
@@ -171,7 +172,7 @@ class FormaPagoRepo(private val db: MisVentasDb, private val reloj: Reloj) {
         forma
     }
 
-    suspend fun actualizar(id: String, nombre: String, activa: Boolean): Resultado<FormaPago> = db.transaccion {
+    override suspend fun actualizar(id: String, nombre: String, activa: Boolean): Resultado<FormaPago> = db.transaccion {
         val actual = dao.porId(id) ?: fallar(FallaDatos.NoEncontrado)
         if (actual.esEfectivo && (!activa || normalizarNombre(nombre) != actual.nombreNormalizado)) {
             fallar(FallaDatos.EfectivoNoModificable)

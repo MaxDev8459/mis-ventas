@@ -56,6 +56,7 @@ import mx.ambulantpoint.misventas.data.local.entity.FormaPago
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.MensajeVacio
 import mx.ambulantpoint.misventas.ui.components.vm
+import mx.ambulantpoint.misventas.ui.reportes.SelectorRangoFechas
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -194,7 +195,7 @@ fun PantallaHistorial(alRegresar: () -> Unit, alAbrir: (String) -> Unit) {
             },
             dismissButton = { TextButton(onClick = { elegirFechas = false }) { Text("Cancelar") } },
         ) {
-            DateRangePicker(state = estado, modifier = Modifier.weight(1f))
+            SelectorRangoFechas(estado, Modifier.weight(1f))
         }
     }
 }
