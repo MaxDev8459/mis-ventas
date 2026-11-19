@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -38,6 +40,10 @@ import mx.ambulantpoint.misventas.ui.catalogo.PantallaCatalogo
 import mx.ambulantpoint.misventas.ui.catalogo.PantallaProductoForm
 import mx.ambulantpoint.misventas.ui.categorias.PantallaCategorias
 import mx.ambulantpoint.misventas.ui.formaspago.PantallaFormasPago
+import mx.ambulantpoint.misventas.ui.auth.PantallaVerificacion
+import mx.ambulantpoint.misventas.ui.reportes.PantallaReporteInventario
+import mx.ambulantpoint.misventas.ui.reportes.PantallaReporteMasVendidos
+import mx.ambulantpoint.misventas.ui.reportes.PantallaReportePorcentajes
 import mx.ambulantpoint.misventas.ui.reportes.PantallaReporteVentas
 import mx.ambulantpoint.misventas.ui.reportes.PantallaReportes
 import mx.ambulantpoint.misventas.ui.reportes.Reporte
@@ -69,6 +75,11 @@ private object Ruta {
 fun NavegacionApp() {
     val c = contenedor()
     val sesion by c.auth.estado.collectAsStateWithLifecycle()
+    val verificada by c.identidadVerificada.collectAsStateWithLifecycle()
+    // RF 7.1: el servicio arranca con la app y sincroniza mientras esté abierta.
+    val sync = c.sincronizacion
+    val aviso by sync.avisoDatosMoviles.collectAsStateWithLifecycle()
+    val mensajeSync by sync.mensaje.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -78,10 +89,24 @@ fun NavegacionApp() {
         }
     }
 
+    LaunchedEffect(mensajeSync) {
+        mensajeSync?.let { c.notificador.mostrar(it); sync.mensajeMostrado() }
+    }
+
     Box(Modifier.fillMaxSize()) {
         when (sesion) {
-            EstadoSesion.ACTIVA -> GrafoPrincipal(alVenderSinCaja = { c.notificador.mostrar(Mensajes.ABRA_CAJA) })
+            // RF 1.2: con sesión activa al abrir la app, primero se verifica la identidad.
+            EstadoSesion.ACTIVA -> if (!verificada) PantallaVerificacion { c.identidadVerificada.value = true } else GrafoPrincipal(alVenderSinCaja = { c.notificador.mostrar(Mensajes.ABRA_CAJA) })
             EstadoSesion.SIN_CUENTA, EstadoSesion.SIN_SESION -> GrafoAcceso(inicioEnRegistro = sesion == EstadoSesion.SIN_CUENTA)
+        }
+        // RF 7.1 / 7.3: aviso de datos móviles, sobre cualquier pantalla de la app.
+        if (aviso != null && sesion == EstadoSesion.ACTIVA && verificada) {
+            AlertDialog(
+                onDismissRequest = { sync.responderDatosMoviles(false) },
+                text = { Text(Mensajes.AVISO_DATOS_MOVILES) },
+                confirmButton = { TextButton({ sync.responderDatosMoviles(true) }) { Text(Mensajes.BOTON_SINCRONIZAR) } },
+                dismissButton = { TextButton({ sync.responderDatosMoviles(false) }) { Text(Mensajes.BOTON_CANCELAR) } },
+            )
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(8.dp))
     }
@@ -117,6 +142,10 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
         composable("${Ruta.REPORTE}/{reporte}") { entrada ->
             when (entrada.arguments?.getString("reporte")?.let { n -> Reporte.entries.firstOrNull { it.name == n } }) {
                 Reporte.VENTAS_PERIODO -> PantallaReporteVentas(regresar)
+                Reporte.POR_FORMA_PAGO -> PantallaReportePorcentajes(Reporte.POR_FORMA_PAGO, regresar)
+                Reporte.POR_CATEGORIA -> PantallaReportePorcentajes(Reporte.POR_CATEGORIA, regresar)
+                Reporte.MAS_VENDIDOS -> PantallaReporteMasVendidos(regresar)
+                Reporte.INVENTARIO -> PantallaReporteInventario(regresar)
                 null -> LaunchedEffect(Unit) { regresar() }
             }
         }

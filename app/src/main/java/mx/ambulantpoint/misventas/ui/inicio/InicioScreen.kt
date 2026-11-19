@@ -32,6 +32,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -57,23 +58,31 @@ import mx.ambulantpoint.misventas.AppContainer
 import mx.ambulantpoint.misventas.core.Formato
 import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.data.local.entity.Caja
+import mx.ambulantpoint.misventas.domain.regla.EstadoIndicador
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.vm
 
 data class EstadoInicio(
     val nombreNegocio: String = "",
     val caja: Caja? = null,
-    val pendientes: Int = 0,
+    val indicador: EstadoIndicador = EstadoIndicador.Sincronizado,
+    val ultimaSincronizacion: Long? = null,
 )
 
 class InicioViewModel(c: AppContainer) : ViewModel() {
+    private val sync = c.sincronizacion
+
     val estado: StateFlow<EstadoInicio> = combine(
         c.perfilRepo.observar(),
         c.cajaRepo.observarAbierta(),
-        c.db.syncDao().observarPendientes(),
-    ) { perfil, caja, pendientes ->
-        EstadoInicio(perfil?.nombreNegocio.orEmpty(), caja, pendientes)
+        sync.indicador,
+        sync.ultimaSincronizacion,
+    ) { perfil, caja, indicador, ultima ->
+        EstadoInicio(perfil?.nombreNegocio.orEmpty(), caja, indicador, ultima)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EstadoInicio())
+
+    /** RF 7.3. */
+    fun sincronizarAhora() = sync.sincronizarAhora()
 }
 
 /** Destinos del menú principal. */
@@ -98,7 +107,16 @@ fun PantallaInicio(alElegir: (Destino) -> Unit, alVenderSinCaja: () -> Unit) {
     val modelo = vm { InicioViewModel(it) }
     val estado by modelo.estado.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { BarraSuperior(estado.nombreNegocio.ifBlank { "Mis Ventas" }) }) { relleno ->
+    Scaffold(
+        topBar = {
+            BarraSuperior(estado.nombreNegocio.ifBlank { "Mis Ventas" }) {
+                // Perfil va como ícono en la barra para dejar 8 botones en la cuadrícula.
+                IconButton(onClick = { alElegir(Destino.PERFIL) }) {
+                    Icon(Destino.PERFIL.icono, contentDescription = Destino.PERFIL.titulo, modifier = Modifier.size(32.dp))
+                }
+            }
+        },
+    ) { relleno ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.padding(relleno).fillMaxSize(),
@@ -106,8 +124,8 @@ fun PantallaInicio(alElegir: (Destino) -> Unit, alVenderSinCaja: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item(span = { GridItemSpan(2) }) { TarjetaEstado(estado) }
-            items(Destino.entries) { destino ->
+            item(span = { GridItemSpan(2) }) { TarjetaEstado(estado, modelo::sincronizarAhora) }
+            items(Destino.entries.filter { it != Destino.PERFIL }) { destino ->
                 BotonMenu(destino) {
                     if (destino == Destino.VENDER && estado.caja == null) alVenderSinCaja() else alElegir(destino)
                 }
@@ -117,7 +135,7 @@ fun PantallaInicio(alElegir: (Destino) -> Unit, alVenderSinCaja: () -> Unit) {
 }
 
 @Composable
-private fun TarjetaEstado(estado: EstadoInicio) {
+private fun TarjetaEstado(estado: EstadoInicio, alSincronizarAhora: () -> Unit) {
     var verSync by remember { mutableStateOf(false) }
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -145,7 +163,7 @@ private fun TarjetaEstado(estado: EstadoInicio) {
                 Icon(Icons.Filled.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (estado.pendientes == 0) Mensajes.SINCRONIZADO else Mensajes.registrosPendientes(estado.pendientes),
+                    estado.indicador.texto,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -155,8 +173,13 @@ private fun TarjetaEstado(estado: EstadoInicio) {
     if (verSync) {
         AlertDialog(
             onDismissRequest = { verSync = false },
-            text = { Text("Última sincronización exitosa: ninguna") },
-            confirmButton = { TextButton({ verSync = false }) { Text("Cerrar") } },
+            // RF 7.2: al tocar el indicador, fecha y hora de la última sincronización exitosa.
+            text = { Text("Última sincronización exitosa: " + (estado.ultimaSincronizacion?.let(Formato::fechaHora) ?: "ninguna")) },
+            // RF 7.3: "Sincronizar ahora".
+            confirmButton = {
+                TextButton({ verSync = false; alSincronizarAhora() }) { Text(Mensajes.BOTON_SINCRONIZAR_AHORA) }
+            },
+            dismissButton = { TextButton({ verSync = false }) { Text("Cerrar") } },
         )
     }
 }

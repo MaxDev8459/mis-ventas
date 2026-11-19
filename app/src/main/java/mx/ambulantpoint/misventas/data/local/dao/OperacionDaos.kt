@@ -7,6 +7,12 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import mx.ambulantpoint.misventas.data.local.entity.Caja
+import mx.ambulantpoint.misventas.data.local.entity.Categoria
+import mx.ambulantpoint.misventas.data.local.entity.Configuracion
+import mx.ambulantpoint.misventas.data.local.entity.EliminacionPendiente
+import mx.ambulantpoint.misventas.data.local.entity.FormaPago
+import mx.ambulantpoint.misventas.data.local.entity.Perfil
+import mx.ambulantpoint.misventas.data.local.entity.Producto
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
 import mx.ambulantpoint.misventas.data.local.entity.EstadoVenta
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
@@ -249,6 +255,7 @@ interface ReporteDao {
 /** RF 7.2 (Sprint 2): registros pendientes de sincronizar en todas las tablas. */
 @Dao
 interface SyncDao {
+    /** RF 7.2: registros pendientes de sincronizar (incluye eliminaciones por enviar). */
     @Query(
         """
         SELECT
@@ -261,8 +268,32 @@ interface SyncDao {
           (SELECT COUNT(*) FROM corte_forma_pago WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta_detalle WHERE pendienteSync = 1) +
-          (SELECT COUNT(*) FROM movimiento_inventario WHERE pendienteSync = 1)
+          (SELECT COUNT(*) FROM movimiento_inventario WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM eliminacion_pendiente)
         """,
     )
     fun observarPendientes(): Flow<Int>
+
+    // ── RF 7.1: lectura de pendientes por tabla, en lotes ──
+    @Query("SELECT * FROM perfil WHERE pendienteSync = 1 LIMIT :n") suspend fun perfiles(n: Int): List<Perfil>
+    @Query("SELECT * FROM configuracion WHERE pendienteSync = 1 LIMIT :n") suspend fun configuraciones(n: Int): List<Configuracion>
+    @Query("SELECT * FROM categoria WHERE pendienteSync = 1 LIMIT :n") suspend fun categorias(n: Int): List<Categoria>
+    @Query("SELECT * FROM producto WHERE pendienteSync = 1 LIMIT :n") suspend fun productos(n: Int): List<Producto>
+    @Query("SELECT * FROM forma_pago WHERE pendienteSync = 1 LIMIT :n") suspend fun formasPago(n: Int): List<FormaPago>
+    @Query("SELECT * FROM caja WHERE pendienteSync = 1 LIMIT :n") suspend fun cajas(n: Int): List<Caja>
+    @Query("SELECT * FROM corte_forma_pago WHERE pendienteSync = 1 LIMIT :n") suspend fun cortesFormaPago(n: Int): List<CorteFormaPago>
+    @Query("SELECT * FROM venta WHERE pendienteSync = 1 LIMIT :n") suspend fun ventas(n: Int): List<Venta>
+    @Query("SELECT * FROM venta_detalle WHERE pendienteSync = 1 LIMIT :n") suspend fun ventaDetalles(n: Int): List<VentaDetalle>
+    @Query("SELECT * FROM movimiento_inventario WHERE pendienteSync = 1 LIMIT :n") suspend fun movimientos(n: Int): List<MovimientoInventario>
+
+    // ── RF 7.1 + 2.9: eliminaciones ──
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun registrarEliminacion(e: EliminacionPendiente)
+
+    @Query("SELECT * FROM eliminacion_pendiente LIMIT :n")
+    suspend fun eliminaciones(n: Int): List<EliminacionPendiente>
+
+    @Query("DELETE FROM eliminacion_pendiente WHERE coleccion = :coleccion AND docId = :docId")
+    suspend fun quitarEliminacion(coleccion: String, docId: String)
 }
+

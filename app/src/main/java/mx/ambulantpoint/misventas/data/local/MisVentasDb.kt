@@ -22,6 +22,9 @@ import mx.ambulantpoint.misventas.data.local.entity.Categoria
 import mx.ambulantpoint.misventas.data.local.entity.Configuracion
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
 import mx.ambulantpoint.misventas.data.local.entity.FormaPago
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import mx.ambulantpoint.misventas.data.local.entity.EliminacionPendiente
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
 import mx.ambulantpoint.misventas.data.local.entity.Perfil
 import mx.ambulantpoint.misventas.data.local.entity.Producto
@@ -32,8 +35,9 @@ import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
     entities = [
         Perfil::class, Configuracion::class, Categoria::class, Producto::class, FormaPago::class,
         Caja::class, CorteFormaPago::class, Venta::class, VentaDetalle::class, MovimientoInventario::class,
+        EliminacionPendiente::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class MisVentasDb : RoomDatabase() {
@@ -52,7 +56,19 @@ abstract class MisVentasDb : RoomDatabase() {
         const val NOMBRE = "mis_ventas.db"
 
         fun crear(contexto: Context): MisVentasDb =
-            Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE).build()
+            Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE)
+                .addMigrations(MIGRACION_1_2)
+                .build()
+
+        /** Sprint 2 (RF 7.1): tabla de eliminaciones pendientes de enviar. No toca los datos existentes. */
+        val MIGRACION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `eliminacion_pendiente` (`coleccion` TEXT NOT NULL, " +
+                        "`docId` TEXT NOT NULL, `creadoEn` INTEGER NOT NULL, PRIMARY KEY(`coleccion`, `docId`))",
+                )
+            }
+        }
     }
 }
 

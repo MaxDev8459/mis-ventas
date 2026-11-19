@@ -1,5 +1,7 @@
 package mx.ambulantpoint.misventas.data.repository
 
+import mx.ambulantpoint.misventas.data.local.entity.EliminacionPendiente
+import mx.ambulantpoint.misventas.data.sync.Colecciones
 import kotlinx.coroutines.flow.Flow
 import mx.ambulantpoint.misventas.core.Dinero
 import mx.ambulantpoint.misventas.core.Reloj
@@ -49,9 +51,13 @@ class CategoriaRepo(private val db: MisVentasDb, private val reloj: Reloj) : Pue
 
     /** RF 2.9: solo si no tiene productos (activos o inactivos). */
     override suspend fun eliminar(id: String): Resultado<Unit> = db.transaccion {
-        if (dao.porId(id) == null) fallar(FallaDatos.NoEncontrado)
+        val categoria = dao.porId(id) ?: fallar(FallaDatos.NoEncontrado)
         if (dao.contarProductos(id) > 0) fallar(FallaDatos.CategoriaConProductos)
         dao.eliminar(id)
+        // RF 7.1: si ya se había sincronizado, también hay que borrarla en la nube.
+        if (!categoria.pendienteSync) {
+            db.syncDao().registrarEliminacion(EliminacionPendiente(Colecciones.CATEGORIA, id, reloj.ahora()))
+        }
         Unit
     }
 

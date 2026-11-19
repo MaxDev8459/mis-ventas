@@ -88,9 +88,9 @@ class ReporteRepo(db: MisVentasDb) : PuertoVentasRecientes, PuertoReportes {
 
     override suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo = dao.resumenPeriodo(desde, hasta)
     override suspend fun totalesPorDia(desde: Long, hasta: Long): List<TotalPorDia> = dao.totalesPorDia(desde, hasta)
-    suspend fun totalesPorFormaPago(desde: Long, hasta: Long): List<TotalFormaPago> = dao.totalesPorFormaPago(desde, hasta)
-    suspend fun productosVendidos(desde: Long, hasta: Long): List<ProductoVendido> = dao.productosVendidos(desde, hasta)
-    suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria> = dao.totalesPorCategoria(desde, hasta)
+    override suspend fun totalesPorFormaPago(desde: Long, hasta: Long): List<TotalFormaPago> = dao.totalesPorFormaPago(desde, hasta)
+    override suspend fun productosVendidos(desde: Long, hasta: Long): List<ProductoVendido> = dao.productosVendidos(desde, hasta)
+    override suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria> = dao.totalesPorCategoria(desde, hasta)
     override suspend fun ventasRecientes(productoId: String): VentasRecientes = dao.ventasRecientes(productoId)
 
     /** productoId → ventas de sus últimos (hasta 7) días con ventas. */

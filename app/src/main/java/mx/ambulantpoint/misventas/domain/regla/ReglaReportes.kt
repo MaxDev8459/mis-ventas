@@ -1,5 +1,6 @@
 package mx.ambulantpoint.misventas.domain.regla
 
+import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -57,5 +58,52 @@ object ReglaTicketPromedio {
         if (numeroVentas <= 0) return 0
         require(totalVendidoCentavos >= 0) { "El total vendido no puede ser negativo" }
         return (totalVendidoCentavos + numeroVentas / 2) / numeroVentas
+    }
+}
+
+/**
+ * RF 6.2 / 6.4: porcentaje de [parteCentavos] respecto a [totalCentavos], en décimas de punto
+ * (453 = 45.3 %), mitad hacia arriba. El DFR no fija decimales; se muestra uno (decisión del equipo).
+ */
+object ReglaPorcentaje {
+    fun decimas(parteCentavos: Long, totalCentavos: Long): Long {
+        if (totalCentavos <= 0) return 0
+        require(parteCentavos >= 0) { "La parte no puede ser negativa" }
+        return (parteCentavos * 1000 + totalCentavos / 2) / totalCentavos
+    }
+}
+
+/** RF 6.3: "Ordenar por". */
+enum class OrdenMasVendidos(val etiqueta: String) {
+    CANTIDAD("Cantidad vendida"),
+    IMPORTE("Importe vendido"),
+}
+
+/**
+ * RF 6.3 — orden de los productos más vendidos.
+ * - Por importe: una sola lista de mayor a menor.
+ * - Por cantidad: "el orden por cantidad se realiza por separado para cada tipo de venta"; se
+ *   muestran primero los de unidad y después los de peso, cada bloque de mayor a menor (el orden de
+ *   los bloques es decisión del equipo).
+ * Empates: por importe y luego por nombre, para que el orden sea estable.
+ */
+object ReglaMasVendidos {
+    fun <T> ordenar(
+        filas: List<T>,
+        orden: OrdenMasVendidos,
+        tipo: (T) -> TipoVenta,
+        cantidad: (T) -> Long,
+        importe: (T) -> Long,
+        nombre: (T) -> String,
+    ): List<T> = when (orden) {
+        OrdenMasVendidos.IMPORTE -> filas.sortedWith(
+            compareByDescending(importe).thenBy(String.CASE_INSENSITIVE_ORDER, nombre),
+        )
+        OrdenMasVendidos.CANTIDAD -> filas.sortedWith(
+            compareBy<T> { tipo(it).ordinal }
+                .thenByDescending(cantidad)
+                .thenByDescending(importe)
+                .thenBy(String.CASE_INSENSITIVE_ORDER, nombre),
+        )
     }
 }

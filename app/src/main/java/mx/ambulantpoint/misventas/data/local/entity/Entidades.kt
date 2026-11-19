@@ -221,3 +221,14 @@ data class MovimientoInventario(
     val creadoEn: Long,
     val pendienteSync: Boolean = true,
 )
+
+/**
+ * RF 7.1 + RF 2.9: una categoría eliminada que ya estaba en la nube se borra también allá en la
+ * siguiente sincronización. Cuenta como registro pendiente hasta entonces.
+ */
+@Entity(tableName = "eliminacion_pendiente", primaryKeys = ["coleccion", "docId"])
+data class EliminacionPendiente(
+    val coleccion: String,
+    val docId: String,
+    val creadoEn: Long,
+)

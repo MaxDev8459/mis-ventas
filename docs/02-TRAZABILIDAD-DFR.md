@@ -4,10 +4,10 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 
 | RF | Nombre | Prioridad | Sprint | Pantalla / Caso de uso | Pruebas | Estado |
 |----|--------|:---:|:---:|---|---|:---:|
-| 1.1 | Registrar vendedor | Alta | MVP (local) / S2 Firebase | `ui/auth/Registro` · `AuthRepoLocal.registrar` | Validadores registro | ✅ |
-| 1.2 | Iniciar sesión | Alta | MVP (local, sin biometría) | `ui/auth/Login` · `AuthRepoLocal` | Validadores login | 🔍 |
-| 1.3 | Cerrar sesión | Media | MVP | `ui/perfil` · `CerrarSesion` | Bloqueo con pendientes | ✅ |
-| 1.4 | Recuperar contraseña | Media | S2 | | | ⏳ |
+| 1.1 | Registrar vendedor | Alta | MVP (local) / S2 Firebase | `ui/auth/Registro` · `AuthRepoFirebase.registrar` | Validadores registro, sin internet | ✅ |
+| 1.2 | Iniciar sesión | Alta | MVP (local) + S2 Firebase y verificación | `ui/auth/Login` · `AuthRepoFirebase` · `ui/auth/VerificacionScreen` | Validadores login, sin internet | ✅ |
+| 1.3 | Cerrar sesión | Media | MVP / S2 Firebase | `ui/perfil` · `CerrarSesion` · `AuthRepoFirebase.cerrarSesion` | Bloqueo con pendientes | ✅ |
+| 1.4 | Recuperar contraseña | Media | S2 | `ui/auth/Login` (diálogo) · `RecuperarContrasena` · `AuthRepoFirebase` | Validación de correo, mensaje del DFR, sin internet | ✅ |
 | 1.5 | Consultar perfil | Baja | MVP | `ui/perfil` | | ✅ |
 | 1.6 | Editar perfil | Baja | S2 | | | ⏳ |
 | 2.1 | Registrar producto | Alta | MVP | `ui/catalogo/FormProducto` · `RegistrarProducto` | Nombre único, precio, existencia por tipo, compresión | ✅ |
@@ -36,14 +36,14 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 5.4 | Notificar caja abierta | Baja | S2 | | | ⏳ |
 | 5.5 | Consultar cortes | Media | MVP | `ui/caja/Cortes` | | ✅ |
 | 6.1 | Reporte ventas por periodo | Alta | S2 | `ui/reportes` · `GenerarReporteVentas` · `ReglaPeriodos` | Ticket promedio, periodos (semana desde el lunes), solo no canceladas | ✅ |
-| 6.2 | Ventas por forma de pago | Media | S2 | | | ⏳ |
-| 6.3 | Productos más vendidos | Media | S2 | | | ⏳ |
-| 6.4 | Ventas por categoría | Baja | S2 | | | ⏳ |
-| 6.5 | Reporte de inventario | Media | S2 | | | ⏳ |
+| 6.2 | Ventas por forma de pago | Media | S2 | `ui/reportes/ReportesDetalle` · `GenerarReporteFormasPago` · `ReglaPorcentaje` | Porcentaje (décimas, mitad hacia arriba), orden | ✅ |
+| 6.3 | Productos más vendidos | Media | S2 | `ui/reportes/ReportesDetalle` · `GenerarReporteMasVendidos` · `ReglaMasVendidos` | Orden por importe; por cantidad separado por tipo de venta | ✅ |
+| 6.4 | Ventas por categoría | Baja | S2 (adelantado) | `ui/reportes/ReportesDetalle` · `GenerarReporteCategorias` | Porcentaje y orden | ✅ |
+| 6.5 | Reporte de inventario | Media | S2 | `ui/reportes/ReportesDetalle` · `ReporteInventario` · `ReglaExistenciaBaja.nivel` | Conteos de activos, baja y agotados; umbral fijo y promedio de 7 días | ✅ |
 | 6.6 | Exportar reportes | Media | S2 | | | ⏳ |
-| 7.1 | Sincronizar automáticamente | Alta | S2 | | Idempotencia | ⏳ |
-| 7.2 | Estado de sincronización | Alta | MVP | `ui/components/IndicadorSync` | | 🔨 |
-| 7.3 | Sincronizar manualmente | Media | Stretch / S2 | | | ⏳ |
+| 7.1 | Sincronizar automáticamente | Alta | S2 | `data/sync/ServicioSincronizacion` · `SincronizadorFirestore` · `ReglaSincronizacion` | Wi-Fi / datos móviles / cancelación; idempotencia por id | ✅ |
+| 7.2 | Estado de sincronización | Alta | MVP / S2 | `ui/inicio` (tarjeta de estado) · `ReglaSincronizacion.indicador` | Prioridad de estados y textos del DFR | ✅ |
+| 7.3 | Sincronizar manualmente | Media | S2 | `ui/inicio` (diálogo del indicador) · `ServicioSincronizacion.sincronizarAhora` | Sin red, ya sincronizada, datos móviles, Wi-Fi | ✅ |
 | 7.4 | Recuperar en dispositivo nuevo | Alta | S2 | | | ⏳ |
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | | | ⏳ |
 | 7.6 | Notificar falta de sync | Media | S2 | | | ⏳ |
@@ -65,3 +65,13 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 **RF 3.5 (18-nov-2026):** pantalla "Formas de pago" en el menú principal: agregar, renombrar, activar y desactivar; Efectivo aparece como predeterminada y bloqueada. 7 pruebas JVM nuevas (63 en total). Probado en el teléfono: alerta de campo vacío, "transferencia" rechazada como nombre ya registrado, alta de "Tarjeta" con el mensaje del DFR, desactivar desde la lista, Efectivo sin diálogo ni cambio de estado, renombrar a "Tarjeta de crédito" conservando Inactiva. No se probó en el teléfono que una forma inactiva desaparezca del cobro (habría que abrir caja); lo cubre la consulta `observarActivas` usada por la pantalla de venta.
 
 **Sprint 2 · RF 6.1 (18-nov-2026):** menú "Reportes" y reporte de ventas por periodo con selector compartido (Hoy, Esta semana, Este mes, Rango). Decisión del equipo (el DFR no lo dice): la semana empieza en lunes. 13 pruebas JVM nuevas (76 en total). La carga de demo ahora genera 10 días hábiles de ventas (4 al 17-nov): 51 ventas, 3 canceladas, efectivo y transferencia, cortes con sobrante y faltante. Probado en el teléfono: Esta semana $429.50 / 8 ventas / ticket $53.69; Este mes $2,325.00 / 51 / 3 canceladas por $116.00; rango 16–17; Hoy sin ventas muestra el mensaje del DFR. Todo coincide con la base de datos. Se arregló el encabezado del selector de fechas (también en el historial).
+
+**Sprint 2 · RF 6.2–6.5 (18-nov-2026):** cuatro reportes más en el menú "Reportes", con el mismo selector de periodo (6.5 no usa periodo; filtra por categoría). 6.4 se adelantó del 24-nov porque reusa lo de 6.2. Decisiones del equipo (el DFR no lo dice): porcentajes con un decimal; en "más vendidos" por cantidad van primero los productos por unidad y luego los de peso; en 6.4 el porcentaje es sobre la suma de las líneas vendidas (antes del descuento por venta) para que sume 100 %; en 6.5 "existencia baja" no incluye a los agotados (se cuentan aparte, igual que en 4.3). El nivel de existencia (agotado / baja / normal) pasó al dominio y lo comparten 4.3 y 6.5. 14 pruebas JVM nuevas. Revisados por el usuario en el teléfono con la demo: correctos. Además, Perfil pasó de botón de la cuadrícula a ícono en la barra superior (quedan 8 botones).
+
+**Sprint 2 · RF 1.2 verificación de seguridad (18-nov-2026):** al abrir la app con sesión activa se pide huella, rostro, PIN, patrón o contraseña del teléfono (`BiometricPrompt`, BIOMETRIC_WEAK | DEVICE_CREDENTIAL, sin internet). Si falla o se cancela, queda bloqueada con el botón "Verificar identidad"; si el teléfono no tiene método, pide configurarlo y lleva a Ajustes. Decisión del equipo: "volver a abrir" = arranque nuevo de la app (proceso nuevo); regresar desde segundo plano sin que Android la haya cerrado no la pide, para no interrumpir al elegir una foto. Tras iniciar sesión con correo y contraseña no se pide. Los textos de esta pantalla no vienen del DFR (no los define). Falta: prueba en el teléfono; el inicio de sesión con internet llega con Firebase.
+
+**Sprint 2 · Firebase Authentication, RF 1.1–1.4 (18-nov-2026):** proyecto Firebase `mis-ventas-eb170` (creado por el usuario; `google-services.json` fuera de git). `AuthRepoFirebase` reemplaza a `AuthRepoLocal` detrás de `PuertoAuth`, sin cambiar pantallas. La contraseña ya no se guarda en el teléfono: al primer arranque se borra el hash que dejó el MVP local. Registro, inicio de sesión y recuperar contraseña revisan la conexión antes de llamar a Firebase y muestran el mensaje del DFR de cada caso. Un teléfono que ya tenía cuenta local abre en "Iniciar sesión"; al registrarse en Firebase se conserva el perfil y los datos (una cuenta por dispositivo). El perfil se sube a Firestore con la sincronización (7.1). 5 pruebas JVM nuevas. Falta probar en el teléfono.
+
+**Sprint 2 · Sincronización, RF 7.1–7.3 (18-nov-2026):** Firestore `(default)` en el proyecto `mis-ventas-eb170`, reglas en `firestore.rules` (cada vendedor solo lee y escribe `usuarios/{uid}/…`). Cada registro va a `usuarios/{uid}/{tabla}/{id local}` con `set` (idempotente: reintentar no duplica). Un registro se marca sincronizado solo si su versión (`actualizadoEn`, o `creadoEn` en los inmutables) no cambió mientras se subía. Room pasa a la versión 2 con la tabla `eliminacion_pendiente` (migración sin pérdida de datos) para borrar en la nube las categorías eliminadas (RF 2.9). Con Wi-Fi sincroniza solo; con datos móviles muestra el aviso del DFR; si se cancela no vuelve a preguntar hasta reabrir la app, conectar Wi-Fi o usar "Sincronizar ahora" (en el diálogo del indicador, junto a la última sincronización). Si falla, reintenta al minuto. Decisión del equipo: sin pendientes el indicador dice "Sincronizado" aunque no haya red. Pendiente: imágenes de productos (Storage) y sincronizar con la app cerrada (hoy solo con la app abierta). 15 pruebas JVM nuevas.
+
+**Verificación en teléfono (18-nov-2026):** el usuario probó registro e inicio de sesión con Firebase, cerrar sesión, recuperar contraseña, verificación con huella/PIN, sincronización con Wi-Fi y datos móviles, "Sincronizar ahora" y sin conexión: todo correcto. Se agregó el botón para mostrar u ocultar la contraseña en todos los campos de contraseña.

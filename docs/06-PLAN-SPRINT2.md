@@ -59,6 +59,8 @@ Verificación contra el DFR, demo y documentación: 3–4 h. **Total: 45–58 h.
 | Fecha | Hecho | Siguiente |
 |---|---|---|
 | Mié 18-nov | ✅ RF 6.1 (menú Reportes, selector de periodo compartido, reporte de ventas por periodo) probado en teléfono. La demo ahora genera ventas del 4 al 17-nov. También se cerraron RF 3.5 (formas de pago) y la validación de alertas con el cliente. | Jue 19: RF 6.2, 6.3, 6.5 reusando `SelectorPeriodo` y las consultas de `ReporteRepo` (ya existen en `ReporteDao`). Agregar cada reporte al enum `Reporte` de `ui/reportes/ReportesScreen.kt` y a su ruta en `NavegacionApp`. Pedir al usuario que cree el proyecto Firebase. |
+| Mié 18-nov (2) | ✅ RF 6.2, 6.3, 6.4 (adelantado) y 6.5, probados en el teléfono. Perfil pasó a ícono en la barra superior. | Jue 19: crear el proyecto Firebase (usuario) y empezar 1.1–1.4 con Firebase + 1.2 verificación de seguridad. |
+| Mié 18-nov (3) | ✅ Adelantado del 19 al 22-nov: proyecto Firebase creado; RF 1.1–1.4 con Firebase Auth; RF 1.2 verificación con huella/PIN; RF 7.1–7.3 sincronización con Firestore (migración Room v2). Probado en teléfono. | 7.4 recuperar en dispositivo nuevo (imágenes: decidir Storage/Blaze), 7.5, notificaciones (5.4, 7.6), 6.6 exportar, 3.6, 1.6. |
 
 ## 3. Qué se recorta si hay retraso (en este orden)
 

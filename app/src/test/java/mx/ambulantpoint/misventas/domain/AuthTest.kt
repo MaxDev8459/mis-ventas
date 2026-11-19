@@ -16,6 +16,7 @@ import mx.ambulantpoint.misventas.domain.usecase.Campos
 import mx.ambulantpoint.misventas.domain.usecase.CerrarSesion
 import mx.ambulantpoint.misventas.domain.usecase.FormularioRegistro
 import mx.ambulantpoint.misventas.domain.usecase.IniciarSesion
+import mx.ambulantpoint.misventas.domain.usecase.RecuperarContrasena
 import mx.ambulantpoint.misventas.domain.usecase.RegistrarVendedor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -48,6 +49,7 @@ private class AuthFalso(private val falla: FallaDatos? = null) : PuertoAuth {
     override suspend fun iniciarSesion(correo: String, contrasena: String): Resultado<Unit> =
         falla?.let { Resultado.Fallo(it) } ?: Resultado.Exito(Unit)
     override suspend fun cerrarSesion(): Resultado<Unit> = falla?.let { Resultado.Fallo(it) } ?: Resultado.Exito(Unit)
+    override suspend fun recuperarContrasena(correo: String): Resultado<Unit> = falla?.let { Resultado.Fallo(it) } ?: Resultado.Exito(Unit)
 }
 
 class AuthCasosTest {
@@ -75,5 +77,32 @@ class AuthCasosTest {
     @Test fun `no cierra sesion con pendientes`() = runTest {
         val r = CerrarSesion(AuthFalso(FallaDatos.PendientesDeSincronizar))() as Resultado.Fallo
         assertEquals(Mensajes.PENDIENTES_AL_CERRAR_SESION, (r.falla as FallaMensaje).mensaje)
+    }
+
+    @Test fun `registro sin internet usa el mensaje del DFR`() = runTest {
+        val r = RegistrarVendedor(AuthFalso(FallaDatos.SinInternet))(valido) as Resultado.Fallo
+        assertEquals(Mensajes.REGISTRO_SIN_INTERNET, (r.falla as FallaMensaje).mensaje)
+    }
+
+    @Test fun `inicio de sesion sin internet usa el mensaje del DFR`() = runTest {
+        val r = IniciarSesion(AuthFalso(FallaDatos.SinInternet))("max@gmail.com", "ventas2026") as Resultado.Fallo
+        assertEquals(Mensajes.LOGIN_SIN_INTERNET, (r.falla as FallaMensaje).mensaje)
+    }
+
+    @Test fun `recuperar contrasena muestra el mensaje del DFR`() = runTest {
+        val r = RecuperarContrasena(AuthFalso())("max@gmail.com") as Resultado.Exito
+        assertEquals(Mensajes.RECUPERAR_CONTRASENA_ENVIADO, r.valor.mensaje)
+    }
+
+    @Test fun `recuperar contrasena valida el correo`() = runTest {
+        val vacio = RecuperarContrasena(AuthFalso())(" ") as Resultado.Fallo
+        assertEquals(Mensajes.Campo.OBLIGATORIO, (vacio.falla as FallaCampos).errores[Campos.CORREO])
+        val malo = RecuperarContrasena(AuthFalso())("max@") as Resultado.Fallo
+        assertEquals(Mensajes.Campo.CORREO_NO_VALIDO, (malo.falla as FallaCampos).errores[Campos.CORREO])
+    }
+
+    @Test fun `recuperar contrasena sin internet`() = runTest {
+        val r = RecuperarContrasena(AuthFalso(FallaDatos.SinInternet))("max@gmail.com") as Resultado.Fallo
+        assertEquals(Mensajes.RECUPERAR_SIN_INTERNET, (r.falla as FallaMensaje).mensaje)
     }
 }

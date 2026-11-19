@@ -48,6 +48,10 @@ import java.util.Locale
 /** Reportes del Módulo 6 disponibles en el menú (se agregan conforme se terminan). */
 enum class Reporte(val titulo: String, val descripcion: String) {
     VENTAS_PERIODO("Ventas por periodo", "Total vendido, número de ventas, ticket promedio y desglose por día"),
+    POR_FORMA_PAGO("Ventas por forma de pago", "Número de ventas, importe y porcentaje de cada forma de pago"),
+    MAS_VENDIDOS("Productos más vendidos", "Cantidad e importe vendido de cada producto"),
+    POR_CATEGORIA("Ventas por categoría", "Importe y porcentaje de cada categoría"),
+    INVENTARIO("Inventario", "Existencia actual, productos con existencia baja y agotados"),
 }
 
 /** Módulo 6 — Reportes. */

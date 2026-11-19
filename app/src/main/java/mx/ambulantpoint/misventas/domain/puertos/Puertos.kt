@@ -1,7 +1,10 @@
 package mx.ambulantpoint.misventas.domain.puertos
 
 import mx.ambulantpoint.misventas.core.Resultado
+import mx.ambulantpoint.misventas.data.local.dao.ProductoVendido
 import mx.ambulantpoint.misventas.data.local.dao.ResumenPeriodo
+import mx.ambulantpoint.misventas.data.local.dao.TotalCategoria
+import mx.ambulantpoint.misventas.data.local.dao.TotalFormaPago
 import mx.ambulantpoint.misventas.data.local.dao.TotalPorDia
 import mx.ambulantpoint.misventas.data.local.dao.VentasRecientes
 import mx.ambulantpoint.misventas.data.local.entity.Caja
@@ -82,12 +85,17 @@ interface PuertoAuth {
     suspend fun registrar(datos: DatosRegistro): Resultado<mx.ambulantpoint.misventas.data.local.entity.Perfil>
     suspend fun iniciarSesion(correo: String, contrasena: String): Resultado<Unit>
     suspend fun cerrarSesion(): Resultado<Unit>
+    /** RF 1.4: el servicio de autenticación envía el enlace al correo registrado. */
+    suspend fun recuperarContrasena(correo: String): Resultado<Unit>
 }
 
 /** Módulo 6: agregados de solo lectura sobre las ventas del dispositivo (funcionan sin conexión). */
 interface PuertoReportes {
     suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo
     suspend fun totalesPorDia(desde: Long, hasta: Long): List<TotalPorDia>
+    suspend fun totalesPorFormaPago(desde: Long, hasta: Long): List<TotalFormaPago>
+    suspend fun productosVendidos(desde: Long, hasta: Long): List<ProductoVendido>
+    suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria>
 }
 
 interface PuertoVentasRecientes {

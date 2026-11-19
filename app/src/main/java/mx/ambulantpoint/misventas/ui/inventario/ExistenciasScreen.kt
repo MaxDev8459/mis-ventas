@@ -57,13 +57,12 @@ import mx.ambulantpoint.misventas.core.Formato
 import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.data.local.dao.ProductoConCategoria
 import mx.ambulantpoint.misventas.data.local.entity.Categoria
+import mx.ambulantpoint.misventas.domain.regla.NivelExistencia
 import mx.ambulantpoint.misventas.domain.regla.ReglaExistenciaBaja
 import mx.ambulantpoint.misventas.ui.catalogo.ImagenProducto
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.MensajeVacio
 import mx.ambulantpoint.misventas.ui.components.vm
-
-enum class NivelExistencia { NORMAL, BAJA, AGOTADO }
 
 data class FilaExistencia(val p: ProductoConCategoria, val nivel: NivelExistencia)
 
@@ -78,13 +77,7 @@ class ExistenciasViewModel(c: AppContainer) : ViewModel() {
         combine(c.productoRepo.observar(f.texto, f.categoriaId, activo = true), c.reporteRepo.observarVentasRecientesDeTodos()) { lista, recientes ->
             lista.map { p ->
                 val r = recientes[p.producto.id]
-                val nivel = when {
-                    p.producto.existenciaMilesimas == 0L -> NivelExistencia.AGOTADO
-                    ReglaExistenciaBaja.esBaja(p.producto.existenciaMilesimas, p.producto.tipoVenta, r?.dias ?: 0, r?.cantidadMilesimas ?: 0) ->
-                        NivelExistencia.BAJA
-                    else -> NivelExistencia.NORMAL
-                }
-                FilaExistencia(p, nivel)
+                FilaExistencia(p, ReglaExistenciaBaja.nivel(p.producto.existenciaMilesimas, p.producto.tipoVenta, r?.dias ?: 0, r?.cantidadMilesimas ?: 0))
             }.filter { !f.soloBaja || it.nivel != NivelExistencia.NORMAL }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -98,10 +91,10 @@ class ExistenciasViewModel(c: AppContainer) : ViewModel() {
 }
 
 /** Colores de resaltado (RF 4.3: "se distinguirán visualmente del resto"). */
-private val FondoBaja = Color(0xFFFFF1D6)
-private val TextoBaja = Color(0xFF7A4F00)
-private val FondoAgotado = Color(0xFFFFE1DE)
-private val TextoAgotado = Color(0xFF93000A)
+internal val FondoBaja = Color(0xFFFFF1D6)
+internal val TextoBaja = Color(0xFF7A4F00)
+internal val FondoAgotado = Color(0xFFFFE1DE)
+internal val TextoAgotado = Color(0xFF93000A)
 
 /** RF 4.3 — Consultar existencias. */
 @Composable

@@ -73,6 +73,9 @@ sealed interface FallaDatos : Falla {
 
     /** Cantidad o monto fuera de rango (ej. cero o negativo). */
     data object CantidadInvalida : FallaDatos
+
+    /** RF 1.1, 1.2, 1.4: la operación requiere internet. Cada caso de uso muestra su mensaje del DFR. */
+    data object SinInternet : FallaDatos
 }
 
 /** Se lanza dentro de una transacción para revertirla completa y se convierte en Resultado.Fallo. */

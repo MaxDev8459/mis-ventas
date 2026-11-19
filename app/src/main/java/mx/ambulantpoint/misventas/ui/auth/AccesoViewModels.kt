@@ -1,5 +1,9 @@
 package mx.ambulantpoint.misventas.ui.auth
 
+import mx.ambulantpoint.misventas.domain.regla.FallaMensaje
+import mx.ambulantpoint.misventas.domain.regla.FallaCampos
+import mx.ambulantpoint.misventas.core.Resultado
+import mx.ambulantpoint.misventas.domain.usecase.RecuperarContrasena
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -72,6 +76,43 @@ class LoginViewModel(c: AppContainer) : ViewModel() {
         viewModelScope.launch {
             cargando = true
             iniciarSesion(correo, contrasena).atender(notificador) { errores = it }
+            cargando = false
+        }
+    }
+
+    // ── RF 1.4: recuperar contraseña (diálogo dentro del login) ──
+    private val recuperarContrasena = RecuperarContrasena(c.auth)
+
+    var recuperando by mutableStateOf(false)
+        private set
+    var correoRecuperar by mutableStateOf("")
+    /** Alerta del campo o mensaje de falla, mostrados dentro del diálogo. */
+    var errorRecuperar by mutableStateOf<String?>(null)
+        private set
+
+    fun abrirRecuperar() {
+        correoRecuperar = correo
+        errorRecuperar = null
+        recuperando = true
+    }
+
+    fun cerrarRecuperar() { if (!cargando) recuperando = false }
+
+    fun enviarRecuperar() {
+        if (cargando) return
+        viewModelScope.launch {
+            cargando = true
+            when (val r = recuperarContrasena(correoRecuperar)) {
+                is Resultado.Exito -> {
+                    recuperando = false
+                    r.valor.mensaje?.let(notificador::mostrar)
+                }
+                is Resultado.Fallo -> errorRecuperar = when (val f = r.falla) {
+                    is FallaCampos -> f.errores.values.firstOrNull()
+                    is FallaMensaje -> f.mensaje
+                    else -> f.toString()
+                }
+            }
             cargando = false
         }
     }

@@ -123,11 +123,38 @@ fun PantallaLogin(irARegistro: () -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
             BotonPrincipal("Iniciar sesión", modelo::entrar, cargando = modelo.cargando)
+            TextButton(onClick = modelo::abrirRecuperar, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("¿Olvidó su contraseña?")
+            }
             TextButton(onClick = irARegistro, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text("Crear cuenta")
             }
         }
     }
+
+    if (modelo.recuperando) DialogoRecuperar(modelo)
+}
+
+/** RF 1.4 — Recuperar contraseña: Firebase envía el enlace al correo. */
+@Composable
+private fun DialogoRecuperar(modelo: LoginViewModel) {
+    AlertDialog(
+        onDismissRequest = modelo::cerrarRecuperar,
+        title = { Text("Recuperar contraseña") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Le enviaremos un enlace a su correo para restablecer su contraseña.", style = MaterialTheme.typography.bodyMedium)
+                CampoTexto(
+                    modelo.correoRecuperar, { modelo.correoRecuperar = it.trim() }, "Correo electrónico *",
+                    error = modelo.errorRecuperar, teclado = KeyboardType.Email, imeAction = ImeAction.Done,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = modelo::enviarRecuperar, enabled = !modelo.cargando) { Text("Enviar enlace") }
+        },
+        dismissButton = { TextButton(onClick = modelo::cerrarRecuperar) { Text("Cancelar") } },
+    )
 }
 
 /**

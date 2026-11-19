@@ -22,7 +22,7 @@ import java.util.Locale
 /**
  * Autenticación del MVP 100 % local (decisión 26-oct-2026). La cuenta vive en el teléfono:
  * perfil en Room y credencial (hash PBKDF2) en preferencias privadas de la app.
- * En Sprint 2 se reemplaza por AuthRepoFirebase con la misma interfaz [PuertoAuth].
+ * Desde el Sprint 2 la app usa [AuthRepoFirebase]; esta clase queda solo como referencia del MVP.
  */
 class AuthRepoLocal(
     contexto: Context,
@@ -88,6 +88,9 @@ class AuthRepoLocal(
         _estado.value = EstadoSesion.SIN_SESION
         Resultado.Exito(Unit)
     }
+
+    /** RF 1.4 no aplica sin servicio de autenticación (solo existe en Firebase). */
+    override suspend fun recuperarContrasena(correo: String): Resultado<Unit> = Resultado.Fallo(FallaDatos.NoEncontrado)
 
     private fun leerEstado(): EstadoSesion = when {
         prefs.getString(CLAVE_CORREO, null) == null -> EstadoSesion.SIN_CUENTA

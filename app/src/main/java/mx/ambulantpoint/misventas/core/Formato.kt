@@ -44,6 +44,9 @@ object Formato {
         return signo + cantidad(abs(milesimas), tipoVenta)
     }
 
+    /** RF 6.2 / 6.4: décimas de punto → "45.3 %". */
+    fun porcentaje(decimas: Long): String = "${decimas / 10}.${abs(decimas % 10)} %"
+
     private val LOCALE_MX: Locale = Locale.forLanguageTag("es-MX")
 
     /** 1790000000000 → "26/09/2026 09:46" (hora local del teléfono). */

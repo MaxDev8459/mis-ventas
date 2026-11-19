@@ -4,6 +4,7 @@ import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.core.Resultado
 import mx.ambulantpoint.misventas.core.Validadores
 import mx.ambulantpoint.misventas.data.local.entity.Perfil
+import mx.ambulantpoint.misventas.data.repository.FallaDatos
 import mx.ambulantpoint.misventas.domain.puertos.DatosRegistro
 import mx.ambulantpoint.misventas.domain.puertos.PuertoAuth
 import mx.ambulantpoint.misventas.domain.regla.FallaCampos
@@ -28,21 +29,44 @@ class RegistrarVendedor(private val auth: PuertoAuth) {
         val datos = DatosRegistro(
             f.nombres, f.apellidoPaterno, f.apellidoMaterno, f.telefono, f.nombreNegocio, f.correo, f.contrasena,
         )
-        return ejecutar(Mensajes.CUENTA_NO_REGISTRADA, campoNombre = Campos.CORREO, operacion = { auth.registrar(datos) }) {
+        return ejecutar(Mensajes.CUENTA_NO_REGISTRADA, campoNombre = Campos.CORREO, operacion = {
+            auth.registrar(datos).sinInternetComo(Mensajes.REGISTRO_SIN_INTERNET)
+        }) {
             Hecho(it, Mensajes.CUENTA_REGISTRADA)
         }
     }
 }
 
-/** RF 1.2 (MVP local, sin verificación biométrica). */
+/** RF 1.2 — inicio de sesión con correo y contraseña (la verificación del teléfono es aparte). */
 class IniciarSesion(private val auth: PuertoAuth) {
     suspend operator fun invoke(correo: String, contrasena: String): Resultado<Hecho<Unit>> {
         ValidarUsuario.inicioSesion(correo, contrasena)?.let { return Resultado.Fallo(it) }
-        return ejecutar(Mensajes.CREDENCIALES_INCORRECTAS, operacion = { auth.iniciarSesion(correo, contrasena) }) {
+        return ejecutar(Mensajes.CREDENCIALES_INCORRECTAS, operacion = {
+            auth.iniciarSesion(correo, contrasena).sinInternetComo(Mensajes.LOGIN_SIN_INTERNET)
+        }) {
             Hecho(Unit)
         }
     }
 }
+
+/**
+ * RF 1.4 — Recuperar contraseña. El mensaje de éxito es el mismo exista o no el correo (el DFR lo
+ * redacta así para no revelar qué correos tienen cuenta).
+ */
+class RecuperarContrasena(private val auth: PuertoAuth) {
+    suspend operator fun invoke(correo: String): Resultado<Hecho<Unit>> {
+        Validadores.correo(correo)?.let { return campo(Campos.CORREO, it) }
+        return ejecutar(Mensajes.RECUPERAR_SIN_INTERNET, operacion = {
+            auth.recuperarContrasena(correo).sinInternetComo(Mensajes.RECUPERAR_SIN_INTERNET)
+        }) {
+            Hecho(Unit, Mensajes.RECUPERAR_CONTRASENA_ENVIADO)
+        }
+    }
+}
+
+/** Cambia la falla "sin internet" por el mensaje del DFR de cada operación. */
+private fun <T> Resultado<T>.sinInternetComo(mensaje: String): Resultado<T> =
+    if (this is Resultado.Fallo && falla == FallaDatos.SinInternet) mensaje(mensaje) else this
 
 /** RF 1.3. La confirmación es [Mensajes.CONFIRMAR_CERRAR_SESION]. */
 class CerrarSesion(private val auth: PuertoAuth) {

@@ -66,7 +66,16 @@ object ReglaExistenciaBaja {
         // existencia ≤ (vendido ÷ 7) × 2  ⇔  existencia × 7 ≤ vendido × 2 (sin perder decimales)
         return existenciaMilesimas * DIAS <= vendidoMilesimas * 2
     }
+
+    /** RF 4.3 / 6.5: agotado (existencia cero), baja o normal. */
+    fun nivel(existenciaMilesimas: Long, tipoVenta: TipoVenta, diasConVentas: Int, vendidoMilesimas: Long): NivelExistencia = when {
+        existenciaMilesimas <= 0L -> NivelExistencia.AGOTADO
+        esBaja(existenciaMilesimas, tipoVenta, diasConVentas, vendidoMilesimas) -> NivelExistencia.BAJA
+        else -> NivelExistencia.NORMAL
+    }
 }
+
+enum class NivelExistencia { NORMAL, BAJA, AGOTADO }
 
 /** Tipo de diferencia del corte (RF 5.2). */
 enum class TipoDiferencia(val etiqueta: String) {
