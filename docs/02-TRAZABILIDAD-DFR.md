@@ -9,7 +9,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 1.3 | Cerrar sesión | Media | MVP / S2 Firebase | `ui/perfil` · `CerrarSesion` · `AuthRepoFirebase.cerrarSesion` | Bloqueo con pendientes | ✅ |
 | 1.4 | Recuperar contraseña | Media | S2 | `ui/auth/Login` (diálogo) · `RecuperarContrasena` · `AuthRepoFirebase` | Validación de correo, mensaje del DFR, sin internet | ✅ |
 | 1.5 | Consultar perfil | Baja | MVP | `ui/perfil` | | ✅ |
-| 1.6 | Editar perfil | Baja | S2 | | | ⏳ |
+| 1.6 | Editar perfil | Baja | S2 | `ui/perfil` (PantallaEditarPerfil) · `EditarPerfil` | Validación, correo no editable, guardado | 🔍 |
 | 2.1 | Registrar producto | Alta | MVP | `ui/catalogo/FormProducto` · `RegistrarProducto` | Nombre único, precio, existencia por tipo, compresión | ✅ |
 | 2.2 | Editar producto | Alta | MVP | `ui/catalogo/FormProducto` · `EditarProducto` | Cambio de tipo solo con existencia 0 | ✅ |
 | 2.3 | Desactivar producto | Media | MVP | `ui/catalogo` | | ✅ |
@@ -24,7 +24,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 3.3 | Cancelar venta | Media | MVP | `ui/historial` · `CancelarVenta` | Regreso de existencia, solo caja abierta | ✅ |
 | 3.4 | Historial de ventas | Media | MVP | `ui/historial` | | ✅ |
 | 3.5 | Formas de pago | Media | MVP | `ui/formaspago` · `GuardarFormaPago` | Nombre obligatorio y único; Efectivo no se renombra ni desactiva; no se eliminan | ✅ |
-| 3.6 | Descuentos | Baja | S2 | | | ⏳ |
+| 3.6 | Descuentos | Baja | S2 | `ui/perfil` (interruptor) · `ui/venta` (cobro) · `ReglaDescuento` · `PrepararCobro` | Porcentaje, monto fijo, límites, total mínimo $1.00, registro en la venta | ✅ |
 | 4.1 | Entrada de mercancía | Alta | MVP | `ui/inventario/Entrada` · `RegistrarEntrada` | Suma y movimiento | ✅ |
 | 4.2 | Ajustar existencia | Media | MVP (adelantado) | | | ✅ |
 | 4.3 | Consultar existencias | Alta | MVP | `ui/inventario/Existencias` | | ✅ |
@@ -33,20 +33,20 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 5.1 | Abrir caja | Alta | MVP | `ui/caja/Abrir` | Una sola caja abierta | ✅ |
 | 5.2 | Calcular corte | Alta | MVP | `ui/caja/Corte` · `CalcularCorte` | Esperado, diferencia, excluye canceladas | ✅ |
 | 5.3 | Cerrar caja | Alta | MVP | `ui/caja/Corte` · `CerrarCaja` | Requiere corte actualizado | ✅ |
-| 5.4 | Notificar caja abierta | Baja | S2 | | | ⏳ |
+| 5.4 | Notificar caja abierta | Baja | S2 | `data/notificaciones/Recordatorios` (CajaAbiertaWorker) · `ReglaNotificaciones` | Espera hasta las 12 h | ✅ |
 | 5.5 | Consultar cortes | Media | MVP | `ui/caja/Cortes` | | ✅ |
 | 6.1 | Reporte ventas por periodo | Alta | S2 | `ui/reportes` · `GenerarReporteVentas` · `ReglaPeriodos` | Ticket promedio, periodos (semana desde el lunes), solo no canceladas | ✅ |
 | 6.2 | Ventas por forma de pago | Media | S2 | `ui/reportes/ReportesDetalle` · `GenerarReporteFormasPago` · `ReglaPorcentaje` | Porcentaje (décimas, mitad hacia arriba), orden | ✅ |
 | 6.3 | Productos más vendidos | Media | S2 | `ui/reportes/ReportesDetalle` · `GenerarReporteMasVendidos` · `ReglaMasVendidos` | Orden por importe; por cantidad separado por tipo de venta | ✅ |
 | 6.4 | Ventas por categoría | Baja | S2 (adelantado) | `ui/reportes/ReportesDetalle` · `GenerarReporteCategorias` | Porcentaje y orden | ✅ |
 | 6.5 | Reporte de inventario | Media | S2 | `ui/reportes/ReportesDetalle` · `ReporteInventario` · `ReglaExistenciaBaja.nivel` | Conteos de activos, baja y agotados; umbral fijo y promedio de 7 días | ✅ |
-| 6.6 | Exportar reportes | Media | S2 | | | ⏳ |
+| 6.6 | Exportar reportes | Media | S2 | `ui/reportes/Exportar` · `ExportarReportes` · `GeneradorCsv` · `data/export/ExportadorReportes` (PDF) | Valores, CSV (RFC 4180, UTF-8), documento vacío | ✅ |
 | 7.1 | Sincronizar automáticamente | Alta | S2 | `data/sync/ServicioSincronizacion` · `SincronizadorFirestore` · `ReglaSincronizacion` | Wi-Fi / datos móviles / cancelación; idempotencia por id | ✅ |
 | 7.2 | Estado de sincronización | Alta | MVP / S2 | `ui/inicio` (tarjeta de estado) · `ReglaSincronizacion.indicador` | Prioridad de estados y textos del DFR | ✅ |
 | 7.3 | Sincronizar manualmente | Media | S2 | `ui/inicio` (diálogo del indicador) · `ServicioSincronizacion.sincronizarAhora` | Sin red, ya sincronizada, datos móviles, Wi-Fi | ✅ |
 | 7.4 | Recuperar en dispositivo nuevo | Alta | S2 | | | ⏳ |
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | | | ⏳ |
-| 7.6 | Notificar falta de sync | Media | S2 | | | ⏳ |
+| 7.6 | Notificar falta de sync | Media | S2 | `data/notificaciones/Recordatorios` (SinRespaldoWorker) · `ReglaNotificaciones` | 3 días, repetición cada 24 h, ciclo nuevo tras sincronizar, nunca sincronizado | 🔍 |
 
 **Avance (26-oct-2026):** 24 de 44 RF terminados (✅), de los cuales 3 se adelantaron del Sprint 2 (2.9, 4.2 y la pantalla de 4.4). Del alcance MVP faltan: 1.2 en verificación, 3.5 parcial (solo semilla, sin pantalla) y 7.2 en desarrollo (indicador sin sincronización real). 2.8 en verificación (adelantado).
 
@@ -75,3 +75,11 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 **Sprint 2 · Sincronización, RF 7.1–7.3 (18-nov-2026):** Firestore `(default)` en el proyecto `mis-ventas-eb170`, reglas en `firestore.rules` (cada vendedor solo lee y escribe `usuarios/{uid}/…`). Cada registro va a `usuarios/{uid}/{tabla}/{id local}` con `set` (idempotente: reintentar no duplica). Un registro se marca sincronizado solo si su versión (`actualizadoEn`, o `creadoEn` en los inmutables) no cambió mientras se subía. Room pasa a la versión 2 con la tabla `eliminacion_pendiente` (migración sin pérdida de datos) para borrar en la nube las categorías eliminadas (RF 2.9). Con Wi-Fi sincroniza solo; con datos móviles muestra el aviso del DFR; si se cancela no vuelve a preguntar hasta reabrir la app, conectar Wi-Fi o usar "Sincronizar ahora" (en el diálogo del indicador, junto a la última sincronización). Si falla, reintenta al minuto. Decisión del equipo: sin pendientes el indicador dice "Sincronizado" aunque no haya red. Pendiente: imágenes de productos (Storage) y sincronizar con la app cerrada (hoy solo con la app abierta). 15 pruebas JVM nuevas.
 
 **Verificación en teléfono (18-nov-2026):** el usuario probó registro e inicio de sesión con Firebase, cerrar sesión, recuperar contraseña, verificación con huella/PIN, sincronización con Wi-Fi y datos móviles, "Sincronizar ahora" y sin conexión: todo correcto. Se agregó el botón para mostrar u ocultar la contraseña en todos los campos de contraseña.
+
+**Sprint 2 · RF 6.6 Exportar (18-nov-2026):** botón de compartir en la barra de los 5 reportes → PDF o CSV → "El reporte se exportó exitosamente" con Guardar (selector de archivos del sistema) y Compartir (WhatsApp, correo, etc.). Sin información: "No hay información para exportar". Se exporta con el periodo, orden y categoría seleccionados. PDF (A4, `PdfDocument`, sin dependencias): nombre del negocio, nombre del reporte, periodo, filtros, fecha y hora de generación, resumen y tablas, con varias páginas si hace falta. CSV: UTF-8 con BOM para Excel, números sin símbolo de pesos ni separador de miles, unidad en su propia columna. Decisión del equipo: en reportes con resumen y tabla (6.1, 6.5) el CSV lleva dos secciones, cada una con su fila de encabezados. 9 pruebas JVM nuevas.
+
+**Sprint 2 · RF 5.4 y 7.6 Notificaciones (18-nov-2026):** WorkManager (llegan con la app cerrada, sin internet y tras reiniciar el teléfono). 5.4: al abrir caja se programa el aviso para las 12 h (observando la caja abierta en Room, sin importar la pantalla); al cerrarla se cancela el trabajo y la notificación. Al tocarla abre el corte de caja (después de la verificación de identidad si la app estaba cerrada). 7.6: revisión cada 6 h; avisa si hay pendientes y pasaron 3 días desde la última sincronización exitosa (o desde la instalación si nunca se sincronizó), sin repetir antes de 24 h; al tocarla abre la pantalla principal. El permiso de notificaciones (Android 13+) se pide al entrar a la app. Probado en el teléfono forzando el trabajo de 5.4: aparece "¿Aún estás vendiendo? No has hecho tu cierre de caja". Limitación: Android puede retrasar unos minutos el aviso en ahorro de batería (no se usan alarmas exactas, que requieren un permiso especial). 9 pruebas JVM nuevas.
+
+**Sprint 2 · RF 3.6 Descuentos (18-nov-2026):** interruptor "Descuentos" en Perfil → Configuración (deshabilitados por defecto; al cambiar: "La configuración se guardó exitosamente"; se sincroniza). Con descuentos habilitados, la pantalla de cobro muestra tipo (Porcentaje / Monto fijo) y valor; al aplicar uno válido muestra subtotal, descuento en pesos y total a cobrar, y los montos rápidos y el cambio usan el total con descuento. Un descuento no válido muestra el mensaje del DFR en el campo y no se aplica; confirmar con un descuento no válido se bloquea. La regla y el registro en la venta ya existían desde el MVP; se agregó la interfaz. Decisión del equipo: el interruptor vive en Perfil (el DFR no dice dónde). 6 pruebas JVM nuevas (porcentaje con decimales, menor a 1 %, monto fijo, límites, total mínimo, guardado en la venta).
+
+**Sprint 2 · RF 1.6 Editar perfil (18-nov-2026):** botón "Editar perfil" en Perfil (la consulta de RF 1.5 sigue siendo de solo lectura) → formulario con nombre(s), apellidos, teléfono y nombre del negocio; el correo se muestra sin poder editarse. Alertas de campo vacío y teléfono no válido; al guardar: "Los datos se actualizaron exitosamente" y el nombre del negocio cambia en la pantalla principal. Funciona sin conexión y queda pendiente de sincronizar. 2 pruebas JVM nuevas.

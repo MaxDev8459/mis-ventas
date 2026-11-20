@@ -1,5 +1,6 @@
 package mx.ambulantpoint.misventas.domain.usecase
 
+import mx.ambulantpoint.misventas.domain.puertos.PuertoPerfil
 import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.core.Resultado
 import mx.ambulantpoint.misventas.core.Validadores
@@ -61,6 +62,29 @@ class RecuperarContrasena(private val auth: PuertoAuth) {
         }) {
             Hecho(Unit, Mensajes.RECUPERAR_CONTRASENA_ENVIADO)
         }
+    }
+}
+
+/**
+ * RF 1.6 — Editar perfil. Todos los campos son opcionales para editar, pero nombre(s), apellidos y
+ * nombre del negocio no pueden quedar vacíos y el teléfono debe tener 10 dígitos. El correo no se
+ * edita. Funciona sin conexión; el cambio se sincroniza después (queda pendiente).
+ */
+class EditarPerfil(private val perfiles: PuertoPerfil) {
+    suspend operator fun invoke(f: FormularioRegistro): Resultado<Hecho<Perfil>> {
+        ValidarUsuario.edicionPerfil(f)?.let { return Resultado.Fallo(it) }
+        return ejecutar(Mensajes.Campo.NO_ENCONTRADO, operacion = {
+            val actual = perfiles.obtener() ?: return@ejecutar Resultado.Fallo(FallaDatos.NoEncontrado)
+            perfiles.guardar(
+                actual.copy(
+                    nombres = f.nombres.trim(),
+                    apellidoPaterno = f.apellidoPaterno.trim(),
+                    apellidoMaterno = f.apellidoMaterno.trim(),
+                    telefono = f.telefono.trim(),
+                    nombreNegocio = f.nombreNegocio.trim(),
+                ),
+            )
+        }) { Hecho(it, Mensajes.PERFIL_ACTUALIZADO) }
     }
 }
 

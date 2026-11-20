@@ -1,5 +1,14 @@
 package mx.ambulantpoint.misventas.ui.navigation
 
+import mx.ambulantpoint.misventas.ui.perfil.PantallaEditarPerfil
+import mx.ambulantpoint.misventas.data.notificaciones.DestinoNotificacion
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.os.Build
+import android.content.pm.PackageManager
+import android.Manifest
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -64,6 +73,7 @@ private object Ruta {
     const val CORTES = "cortes"
     const val INVENTARIO = "inventario"
     const val REPORTE = "reporte"
+    const val PERFIL_EDITAR = "perfil_editar"
     fun de(destino: Destino) = destino.name.lowercase()
 }
 
@@ -129,11 +139,32 @@ private fun GrafoAcceso(inicioEnRegistro: Boolean) {
 private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
     val nav = rememberNavController()
     val regresar: () -> Unit = { nav.popBackStack() }
+    val c = contenedor()
+
+    // RF 5.4: "La aplicación solicitará al vendedor el permiso de notificaciones del teléfono" (Android 13+).
+    val pedirPermiso = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val contexto = LocalContext.current
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !c.permisoNotificacionesPedido &&
+            ContextCompat.checkSelfPermission(contexto, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            c.permisoNotificacionesPedido = true
+            pedirPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // RF 5.4: tocar la notificación abre el corte de caja (7.6 abre la pantalla principal, que ya es el inicio).
+    val destino by c.destinoNotificacion.collectAsStateWithLifecycle()
+    LaunchedEffect(destino) {
+        if (destino == DestinoNotificacion.CORTE_CAJA) nav.navigate(Ruta.CORTE)
+        if (destino != null) c.destinoNotificacion.value = null
+    }
     NavHost(nav, startDestination = Ruta.INICIO) {
         composable(Ruta.INICIO) {
             PantallaInicio(alElegir = { nav.navigate(Ruta.de(it)) }, alVenderSinCaja = alVenderSinCaja)
         }
-        composable(Ruta.de(Destino.PERFIL)) { PantallaPerfil(regresar) }
+        composable(Ruta.de(Destino.PERFIL)) { PantallaPerfil(regresar) { nav.navigate(Ruta.PERFIL_EDITAR) } }
+        composable(Ruta.PERFIL_EDITAR) { PantallaEditarPerfil(regresar) }
         composable(Ruta.de(Destino.CATEGORIAS)) { PantallaCategorias(regresar) }
         composable(Ruta.de(Destino.FORMAS_PAGO)) { PantallaFormasPago(regresar) }
         composable(Ruta.de(Destino.REPORTES)) {

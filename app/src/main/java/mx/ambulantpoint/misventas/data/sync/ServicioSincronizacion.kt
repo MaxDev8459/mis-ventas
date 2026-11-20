@@ -134,9 +134,10 @@ class ServicioSincronizacion(
         if (accion == AccionAutomatica.SINCRONIZAR) sincronizar(manual = false)
     }
 
-    private companion object {
+    companion object {
+        /** Preferencias compartidas con el aviso de falta de respaldo (RF 7.6). */
         const val ARCHIVO = "mis_ventas_sync"
         const val CLAVE_ULTIMA = "ultima_sincronizacion"
-        const val REINTENTO_MS = 60_000L
+        private const val REINTENTO_MS = 60_000L
     }
 }

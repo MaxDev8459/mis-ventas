@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.biometric)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)

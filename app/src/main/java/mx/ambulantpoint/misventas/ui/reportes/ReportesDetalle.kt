@@ -56,6 +56,7 @@ import mx.ambulantpoint.misventas.core.Formato
 import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.data.local.dao.ProductoVendido
 import mx.ambulantpoint.misventas.data.local.entity.Categoria
+import mx.ambulantpoint.misventas.domain.export.ExportarReportes
 import mx.ambulantpoint.misventas.domain.regla.NivelExistencia
 import mx.ambulantpoint.misventas.domain.regla.OrdenMasVendidos
 import mx.ambulantpoint.misventas.domain.regla.Periodo
@@ -97,7 +98,11 @@ fun PantallaReportePorcentajes(reporte: Reporte, alRegresar: () -> Unit) {
     val periodo by modelo.periodo.collectAsStateWithLifecycle()
     val r by modelo.reporte.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { BarraSuperior(reporte.titulo, alRegresar) }) { relleno ->
+    Scaffold(topBar = {
+        BarraSuperior(reporte.titulo, alRegresar) {
+            AccionExportar(r?.takeIf { it.periodo == periodo }?.let { ExportarReportes.porcentajes(it, reporte.titulo, porCategoria) })
+        }
+    }) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize()) {
             SelectorPeriodo(periodo, modelo::cambiar)
             val actual = r
@@ -151,7 +156,13 @@ fun PantallaReporteMasVendidos(alRegresar: () -> Unit) {
     val orden by modelo.orden.collectAsStateWithLifecycle()
     val r by modelo.reporte.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { BarraSuperior(Reporte.MAS_VENDIDOS.titulo, alRegresar) }) { relleno ->
+    Scaffold(topBar = {
+        BarraSuperior(Reporte.MAS_VENDIDOS.titulo, alRegresar) {
+            AccionExportar(
+                r?.takeIf { it.periodo == periodo && it.orden == orden }?.let { ExportarReportes.masVendidos(it, Reporte.MAS_VENDIDOS.titulo) },
+            )
+        }
+    }) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize()) {
             SelectorPeriodo(periodo, modelo::cambiar)
             Row(
@@ -225,7 +236,12 @@ fun PantallaReporteInventario(alRegresar: () -> Unit) {
     val r by modelo.reporte.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf(false) }
 
-    Scaffold(topBar = { BarraSuperior(Reporte.INVENTARIO.titulo, alRegresar) }) { relleno ->
+    Scaffold(topBar = {
+        BarraSuperior(Reporte.INVENTARIO.titulo, alRegresar) {
+            val categoria = categorias.firstOrNull { it.id == categoriaId }?.nombre
+            AccionExportar(r?.let { ExportarReportes.inventario(it, Reporte.INVENTARIO.titulo, categoria) })
+        }
+    }) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize()) {
             Box(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
                 FilterChip(

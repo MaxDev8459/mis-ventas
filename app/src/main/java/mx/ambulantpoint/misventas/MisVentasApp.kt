@@ -1,5 +1,6 @@
 package mx.ambulantpoint.misventas
 
+import mx.ambulantpoint.misventas.data.notificaciones.Recordatorios
 import android.app.Application
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,5 +20,7 @@ class MisVentasApp : Application() {
         super.onCreate()
         contenedor = AppContainer(this)
         alcanceApp.launch { contenedor.db.sembrarSiHaceFalta(contenedor.reloj) }
+        // RF 5.4 / 7.6.
+        Recordatorios.iniciar(this, alcanceApp)
     }
 }

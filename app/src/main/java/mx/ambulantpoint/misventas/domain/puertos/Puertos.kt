@@ -89,6 +89,12 @@ interface PuertoAuth {
     suspend fun recuperarContrasena(correo: String): Resultado<Unit>
 }
 
+/** RF 1.5 / 1.6. */
+interface PuertoPerfil {
+    suspend fun obtener(): mx.ambulantpoint.misventas.data.local.entity.Perfil?
+    suspend fun guardar(perfil: mx.ambulantpoint.misventas.data.local.entity.Perfil): Resultado<mx.ambulantpoint.misventas.data.local.entity.Perfil>
+}
+
 /** Módulo 6: agregados de solo lectura sobre las ventas del dispositivo (funcionan sin conexión). */
 interface PuertoReportes {
     suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo

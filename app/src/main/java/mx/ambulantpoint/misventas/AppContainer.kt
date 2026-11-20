@@ -1,5 +1,6 @@
 package mx.ambulantpoint.misventas
 
+import mx.ambulantpoint.misventas.data.notificaciones.DestinoNotificacion
 import android.content.Context
 import mx.ambulantpoint.misventas.core.Reloj
 import mx.ambulantpoint.misventas.core.RelojSistema
@@ -17,6 +18,7 @@ import mx.ambulantpoint.misventas.data.auth.AuthRepoFirebase
 import mx.ambulantpoint.misventas.data.red.Conectividad
 import mx.ambulantpoint.misventas.data.sync.ServicioSincronizacion
 import mx.ambulantpoint.misventas.data.sync.SincronizadorFirestore
+import mx.ambulantpoint.misventas.data.export.ExportadorReportes
 import mx.ambulantpoint.misventas.data.imagen.ProcesadorImagen
 import kotlinx.coroutines.flow.MutableStateFlow
 import mx.ambulantpoint.misventas.domain.puertos.EstadoSesion
@@ -58,4 +60,13 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
     val identidadVerificada by lazy { MutableStateFlow(auth.estado.value != EstadoSesion.ACTIVA) }
 
     val procesadorImagen by lazy { ProcesadorImagen(contexto) }
+
+    /** RF 5.4 / 7.6: pantalla a la que lleva la notificación que se tocó (se consume al navegar). */
+    val destinoNotificacion = MutableStateFlow<DestinoNotificacion?>(null)
+
+    /** El permiso de notificaciones se pide una vez por apertura de la app. */
+    var permisoNotificacionesPedido = false
+
+    /** RF 6.6. */
+    val exportador by lazy { ExportadorReportes(contexto, reloj) }
 }

@@ -1,5 +1,6 @@
 package mx.ambulantpoint.misventas.data.repository
 
+import mx.ambulantpoint.misventas.domain.puertos.PuertoPerfil
 import mx.ambulantpoint.misventas.data.local.entity.EliminacionPendiente
 import mx.ambulantpoint.misventas.data.sync.Colecciones
 import kotlinx.coroutines.flow.Flow
@@ -193,13 +194,13 @@ class FormaPagoRepo(private val db: MisVentasDb, private val reloj: Reloj) : Pue
 }
 
 /** RF 1.5 / 1.6. */
-class PerfilRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class PerfilRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoPerfil {
     private val dao = db.perfilDao()
 
     fun observar(): Flow<Perfil?> = dao.observar()
-    suspend fun obtener(): Perfil? = dao.obtener()
+    override suspend fun obtener(): Perfil? = dao.obtener()
 
-    suspend fun guardar(perfil: Perfil): Resultado<Perfil> = db.transaccion {
+    override suspend fun guardar(perfil: Perfil): Resultado<Perfil> = db.transaccion {
         val guardado = perfil.copy(actualizadoEn = reloj.ahora(), pendienteSync = true)
         dao.guardar(guardado)
         guardado

@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.stateIn
 import mx.ambulantpoint.misventas.AppContainer
 import mx.ambulantpoint.misventas.core.Formato
 import mx.ambulantpoint.misventas.core.Mensajes
+import mx.ambulantpoint.misventas.domain.export.ExportarReportes
 import mx.ambulantpoint.misventas.domain.regla.Periodo
 import mx.ambulantpoint.misventas.domain.usecase.GenerarReporteVentas
 import mx.ambulantpoint.misventas.domain.usecase.ReporteVentasPeriodo
@@ -95,7 +96,12 @@ fun PantallaReporteVentas(alRegresar: () -> Unit) {
     val periodo by modelo.periodo.collectAsStateWithLifecycle()
     val reporte by modelo.reporte.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { BarraSuperior(Reporte.VENTAS_PERIODO.titulo, alRegresar) }) { relleno ->
+    val titulo = Reporte.VENTAS_PERIODO.titulo
+    Scaffold(topBar = {
+        BarraSuperior(titulo, alRegresar) {
+            AccionExportar(reporte?.takeIf { it.periodo == periodo }?.let { ExportarReportes.ventas(it, titulo) })
+        }
+    }) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize()) {
             SelectorPeriodo(periodo, modelo::cambiar)
             val r = reporte

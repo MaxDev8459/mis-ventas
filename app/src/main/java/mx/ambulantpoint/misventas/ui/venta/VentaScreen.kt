@@ -1,5 +1,6 @@
 package mx.ambulantpoint.misventas.ui.venta
 
+import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -212,23 +213,50 @@ private fun FilaCarrito(r: RenglonCarrito, modelo: VentaViewModel) {
     }
 }
 
-/** RF 3.2 — Cobro: forma de pago, monto recibido y cambio antes de confirmar. */
+/** RF 3.2 — Cobro: forma de pago, monto recibido y cambio antes de confirmar. RF 3.6: descuento. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PantallaCobro(modelo: VentaViewModel) {
     val formas by modelo.formas.collectAsStateWithLifecycle()
-    val carrito = modelo.carrito
-    val total = carrito.subtotalCentavos
     val forma = modelo.forma
     val errores = modelo.erroresCobro
+    val conDescuentos by modelo.descuentosHabilitados.collectAsStateWithLifecycle()
+    val cobro = modelo.cobro
+    val total = modelo.totalACobrar
 
     Scaffold(topBar = { BarraSuperior("Cobrar", modelo::cerrarCobro) }) { relleno ->
         Column(
             Modifier.padding(relleno).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // RF 3.6: con descuento aplicado se muestran subtotal, descuento en pesos y total a cobrar.
+            if (cobro != null && cobro.descuentoCentavos > 0) {
+                FilaImporte("Subtotal", Formato.moneda(cobro.subtotalCentavos))
+                FilaImporte("Descuento", "−" + Formato.moneda(cobro.descuentoCentavos))
+            }
             Text("Total a cobrar", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(Formato.moneda(total), style = MaterialTheme.typography.displaySmall)
+
+            if (conDescuentos) {
+                Text("Descuento", style = MaterialTheme.typography.bodyLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(TipoDescuento.PORCENTAJE to "Porcentaje", TipoDescuento.MONTO_FIJO to "Monto fijo").forEach { (t, etiqueta) ->
+                        FilterChip(
+                            selected = modelo.tipoDescuento == t,
+                            onClick = { modelo.elegirTipoDescuento(t) },
+                            label = { Text(etiqueta, style = MaterialTheme.typography.labelLarge) },
+                            modifier = Modifier.heightIn(min = ALTO_BOTON),
+                        )
+                    }
+                }
+                CampoTexto(
+                    modelo.descuentoTexto, modelo::cambiarDescuento,
+                    if (modelo.tipoDescuento == TipoDescuento.PORCENTAJE) "Porcentaje de descuento" else "Monto a descontar",
+                    error = modelo.errorDescuento, teclado = KeyboardType.Decimal,
+                    prefijo = "$".takeIf { modelo.tipoDescuento == TipoDescuento.MONTO_FIJO },
+                    sufijo = "%".takeIf { modelo.tipoDescuento == TipoDescuento.PORCENTAJE },
+                )
+            }
 
             Text("Forma de pago *", style = MaterialTheme.typography.bodyLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -273,6 +301,14 @@ private fun PantallaCobro(modelo: VentaViewModel) {
             Spacer(Modifier.size(4.dp))
             BotonPrincipal("Confirmar cobro", modelo::confirmar, cargando = modelo.confirmando)
         }
+    }
+}
+
+@Composable
+private fun FilaImporte(etiqueta: String, valor: String) {
+    Row(Modifier.fillMaxWidth()) {
+        Text(etiqueta, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(valor, style = MaterialTheme.typography.bodyLarge)
     }
 }
 

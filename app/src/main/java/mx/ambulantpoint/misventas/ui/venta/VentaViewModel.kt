@@ -1,5 +1,10 @@
 package mx.ambulantpoint.misventas.ui.venta
 
+import mx.ambulantpoint.misventas.domain.regla.FallaCampos
+import mx.ambulantpoint.misventas.domain.usecase.Campos
+import mx.ambulantpoint.misventas.domain.usecase.DescuentoCapturado
+import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
+import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +57,11 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     val caja: StateFlow<Caja?> = c.cajaRepo.observarAbierta()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** RF 3.6: solo con descuentos habilitados se muestra la opción al cobrar. */
+    val descuentosHabilitados: StateFlow<Boolean> = c.configuracionRepo.observar()
+        .map { it?.descuentosHabilitados == true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     var carrito by mutableStateOf(Carrito())
         private set
 
@@ -71,10 +81,42 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     var confirmando by mutableStateOf(false)
         private set
 
+    // RF 3.6: descuento capturado al cobrar.
+    var tipoDescuento by mutableStateOf(TipoDescuento.PORCENTAJE)
+        private set
+    var descuentoTexto by mutableStateOf("")
+        private set
+
+    /** Lo capturado, si los descuentos están habilitados y hay un valor. */
+    private val descuento: DescuentoCapturado?
+        get() = if (descuentosHabilitados.value && descuentoTexto.isNotBlank()) DescuentoCapturado(tipoDescuento, descuentoTexto) else null
+
+    /**
+     * RF 3.6: subtotal, descuento en pesos y total a cobrar (sin depender del monto recibido). Si el
+     * descuento no es válido, no se aplica y su mensaje del DFR se muestra en el campo.
+     */
+    private val conDescuento: Pair<ResumenCobro?, String?> by derivedStateOf {
+        when (val r = PrepararCobro.calcular(carrito, forma, null, descuento)) {
+            is Resultado.Exito -> r.valor to null
+            is Resultado.Fallo -> {
+                val sin = (PrepararCobro.calcular(carrito, forma, null, null) as? Resultado.Exito)?.valor
+                sin to ((r.falla as? FallaCampos)?.errores?.get(Campos.DESCUENTO))
+            }
+        }
+    }
+    val cobro: ResumenCobro? get() = conDescuento.first
+    val errorDescuento: String? get() = erroresCobro[Campos.DESCUENTO] ?: conDescuento.second
+
+    /** Total a cobrar con el descuento válido aplicado. */
+    val totalACobrar: Long get() = cobro?.totalCentavos ?: carrito.subtotalCentavos
+
     /** Lo que se muestra antes de confirmar: total y, en efectivo, el cambio a entregar. */
     val resumen: ResumenCobro? by derivedStateOf {
-        (PrepararCobro.calcular(carrito, forma, recibido.ifBlank { null }, null) as? Resultado.Exito)?.valor
+        (PrepararCobro.calcular(carrito, forma, recibido.ifBlank { null }, descuento.takeIf { conDescuento.second == null }) as? Resultado.Exito)?.valor
     }
+
+    fun elegirTipoDescuento(t: TipoDescuento) { tipoDescuento = t; erroresCobro = emptyMap() }
+    fun cambiarDescuento(texto: String) { descuentoTexto = texto; erroresCobro = emptyMap() }
 
     /** RF 3.1: un toque agrega 1 pieza; por peso pide el peso de la etiqueta. */
     fun tocar(p: ProductoEnVenta) {
@@ -116,6 +158,8 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         if (caja.value == null) { notificador.mostrar(Mensajes.ABRA_CAJA); return }
         forma = formas.value.firstOrNull { it.esEfectivo } ?: formas.value.firstOrNull()
         recibido = ""
+        descuentoTexto = ""
+        tipoDescuento = TipoDescuento.PORCENTAJE
         erroresCobro = emptyMap()
         cobrando = true
     }
@@ -130,11 +174,12 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         if (confirmando) return
         viewModelScope.launch {
             confirmando = true
-            cobrarVenta(carrito, forma, recibido.ifBlank { null }).atender(notificador) { erroresCobro = it }?.let { hecho ->
+            cobrarVenta(carrito, forma, recibido.ifBlank { null }, descuento).atender(notificador) { erroresCobro = it }?.let { hecho ->
                 notificador.mostrar((listOfNotNull(hecho.mensaje) + hecho.avisos).joinToString("\n"))
                 carrito = Carrito()
                 cobrando = false
                 recibido = ""
+                descuentoTexto = ""
             }
             confirmando = false
         }

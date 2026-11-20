@@ -2,4 +2,6 @@
 <!-- Carpeta temporal donde la cámara deja la foto del producto. -->
 <paths>
     <cache-path name="camara" path="camara/" />
+    <!-- RF 6.6: reportes exportados (PDF/CSV) para compartir. -->
+    <cache-path name="reportes" path="reportes/" />
 </paths>

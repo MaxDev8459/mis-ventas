@@ -61,6 +61,29 @@ Verificación contra el DFR, demo y documentación: 3–4 h. **Total: 45–58 h.
 | Mié 18-nov | ✅ RF 6.1 (menú Reportes, selector de periodo compartido, reporte de ventas por periodo) probado en teléfono. La demo ahora genera ventas del 4 al 17-nov. También se cerraron RF 3.5 (formas de pago) y la validación de alertas con el cliente. | Jue 19: RF 6.2, 6.3, 6.5 reusando `SelectorPeriodo` y las consultas de `ReporteRepo` (ya existen en `ReporteDao`). Agregar cada reporte al enum `Reporte` de `ui/reportes/ReportesScreen.kt` y a su ruta en `NavegacionApp`. Pedir al usuario que cree el proyecto Firebase. |
 | Mié 18-nov (2) | ✅ RF 6.2, 6.3, 6.4 (adelantado) y 6.5, probados en el teléfono. Perfil pasó a ícono en la barra superior. | Jue 19: crear el proyecto Firebase (usuario) y empezar 1.1–1.4 con Firebase + 1.2 verificación de seguridad. |
 | Mié 18-nov (3) | ✅ Adelantado del 19 al 22-nov: proyecto Firebase creado; RF 1.1–1.4 con Firebase Auth; RF 1.2 verificación con huella/PIN; RF 7.1–7.3 sincronización con Firestore (migración Room v2). Probado en teléfono. | 7.4 recuperar en dispositivo nuevo (imágenes: decidir Storage/Blaze), 7.5, notificaciones (5.4, 7.6), 6.6 exportar, 3.6, 1.6. |
+| Mié 18-nov (4) | ✅ RF 6.6 exportar PDF/CSV, ✅ 5.4 notificación de caja abierta, ✅ 3.6 descuentos (interruptor en Perfil + cobro). 🔍 1.6 editar perfil y 🔍 7.6 aviso de 3 días sin respaldo (implementados, falta verlos en el teléfono). | Ver §2.2. |
+
+## 2.2 Pendientes al cierre del 18-nov (para retomar)
+
+**Código**
+1. RF 7.4 Recuperar en dispositivo nuevo (Alta). Decisión pendiente del usuario: activar Storage (plan Blaze) para las fotos; si no, recuperar todo menos las fotos y documentarlo como limitación. Simular el segundo teléfono borrando los datos de la app **solo después** de confirmar que todo está en Firestore.
+2. RF 7.5 Sesión en un solo dispositivo (Alta). Mensajes del DFR ya en `Mensajes.kt` (`CUENTA_SE_CERRARA_EN_OTRO`, `SESION_EN_OTRO_DISPOSITIVO`).
+3. Confirmar en teléfono: 1.6 editar perfil, 2.8 modificar categoría, 7.6 (dejar una forma de forzarlo para la demo).
+4. Sincronización con la app cerrada (WorkManager con Wi-Fi). Hoy solo sincroniza con la app abierta.
+5. APK de liberación firmado (para el Acta de liberación).
+
+**Entregables de la materia (Actividad III, semana 15, entrega vie 27-nov, en `../../Plantillas`)**
+1. Solicitud de cambio a requerimiento (candidato: retraso de 5 días del Sprint 2).
+2. Minuta de reunión 3 (reunión real con el cliente para validar el Sprint 2).
+3. Lecciones aprendidas.
+4. Acta de liberación/entrega (firma del cliente).
+5. Presentación final con recorrido de la app + rúbrica impresa; reentregar documentos de Actividades I y II.
+
+**Documentos internos:** actualizar `05-VERIFICACION-DFR.md` y `03-GUION-DEMO.md` con el Sprint 2; recargar datos de demo con descuentos y ventas del día.
+
+**Calendario propuesto:** jue 19 – vie 20: 7.4 + 7.5 · sáb 21: sync en segundo plano + APK firmado · dom 22 – lun 23: los 4 documentos · mar 24: punto de control, verificación DFR, guion · mié 25 – jue 26: presentación y ensayo · vie 27: entrega.
+
+**Datos técnicos:** Firebase `mis-ventas-eb170` (Auth correo/contraseña, Firestore `(default)` con reglas de `firestore.rules`). `app/google-services.json` no está en git: en CachyOS hay que copiarlo a mano o descargarlo de la consola. Room va en la versión 2. Para forzar un trabajo de WorkManager en el teléfono: `adb shell cmd jobscheduler run -f -n androidx.work.systemjobscheduler mx.ambulantpoint.misventas <id>` (ids con `adb shell dumpsys jobscheduler mx.ambulantpoint.misventas`).
 
 ## 3. Qué se recorta si hay retraso (en este orden)
 

@@ -175,6 +175,46 @@ class CobrarVentaTest {
         assertEquals(Mensajes.DESCUENTO_NO_VALIDO, invalido.campos()[Campos.DESCUENTO])
     }
 
+    // ── RF 3.6: casos del DFR ──
+    private fun desc(tipo: TipoDescuento, valor: String) = PrepararCobro.calcular(carrito, TRANSFERENCIA, null, DescuentoCapturado(tipo, valor))
+
+    @Test fun `porcentaje con decimales se redondea a centavos`() {
+        // $60.00 × 12.5 % = $7.50
+        assertEquals(750L, desc(TipoDescuento.PORCENTAJE, "12.5").ok().descuentoCentavos)
+        // $60.00 × 33.33 % = $19.998 → $20.00
+        assertEquals(2000L, desc(TipoDescuento.PORCENTAJE, "33.33").ok().descuentoCentavos)
+    }
+
+    @Test fun `porcentaje menor a 1 no es valido`() =
+        assertEquals(Mensajes.DESCUENTO_NO_VALIDO, desc(TipoDescuento.PORCENTAJE, "0.5").campos()[Campos.DESCUENTO])
+
+    @Test fun `monto fijo descuenta lo capturado`() {
+        val r = desc(TipoDescuento.MONTO_FIJO, "15").ok()
+        assertEquals(1500L, r.descuentoCentavos)
+        assertEquals(4500L, r.totalCentavos)
+    }
+
+    @Test fun `monto fijo cero o mayor o igual al subtotal no es valido`() {
+        assertEquals(Mensajes.DESCUENTO_NO_VALIDO, desc(TipoDescuento.MONTO_FIJO, "0").campos()[Campos.DESCUENTO])
+        assertEquals(Mensajes.DESCUENTO_NO_VALIDO, desc(TipoDescuento.MONTO_FIJO, "60").campos()[Campos.DESCUENTO])
+    }
+
+    @Test fun `el descuento debe dejar al menos un peso`() {
+        // $60.00 − $59.50 = $0.50
+        assertEquals(Mensajes.DESCUENTO_TOTAL_MINIMO, desc(TipoDescuento.MONTO_FIJO, "59.50").campos()[Campos.DESCUENTO])
+        // 99 % de $60.00 = $59.40 → total $0.60
+        assertEquals(Mensajes.DESCUENTO_TOTAL_MINIMO, desc(TipoDescuento.PORCENTAJE, "99").campos()[Campos.DESCUENTO])
+        // Exactamente $1.00 sí se permite.
+        assertEquals(100L, desc(TipoDescuento.MONTO_FIJO, "59").ok().totalCentavos)
+    }
+
+    @Test fun `el descuento se guarda en la venta`() = runTest {
+        val ventas = VentasFalsas()
+        CobrarVenta(ventas, existenciaBaja)(carrito, TRANSFERENCIA, null, DescuentoCapturado(TipoDescuento.PORCENTAJE, "10")).ok()
+        assertEquals(600L, ventas.solicitud!!.descuento!!.centavos)
+        assertEquals(TipoDescuento.PORCENTAJE, ventas.solicitud!!.descuento!!.tipo)
+    }
+
     @Test fun `venta registrada con aviso de existencia baja`() = runTest {
         val ventas = VentasFalsas()
         val r = CobrarVenta(ventas, existenciaBaja)(carrito, EFECTIVO, "100").ok()
