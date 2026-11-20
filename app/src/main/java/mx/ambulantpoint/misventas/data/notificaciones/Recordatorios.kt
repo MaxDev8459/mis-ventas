@@ -29,6 +29,7 @@ import mx.ambulantpoint.misventas.MisVentasApp
 import mx.ambulantpoint.misventas.R
 import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.data.sync.ServicioSincronizacion
+import mx.ambulantpoint.misventas.domain.puertos.EstadoSesion
 import mx.ambulantpoint.misventas.domain.regla.ReglaNotificaciones
 import java.util.concurrent.TimeUnit
 
@@ -54,6 +55,12 @@ object Recordatorios {
     fun iniciar(app: MisVentasApp, alcance: CoroutineScope) {
         crearCanales(app)
         val wm = WorkManager.getInstance(app)
+
+        // RF 7.6: referencia de "nunca sincronizado" (si se borran los datos de la app, vuelve a empezar).
+        val prefsSync = app.getSharedPreferences(ServicioSincronizacion.ARCHIVO, Context.MODE_PRIVATE)
+        if (!prefsSync.contains(CLAVE_PRIMER_ARRANQUE)) {
+            prefsSync.edit().putLong(CLAVE_PRIMER_ARRANQUE, app.contenedor.reloj.ahora()).apply()
+        }
 
         // RF 7.6: se revisa cada 6 h; la regla decide si toca avisar (y no repite antes de 24 h).
         wm.enqueueUniquePeriodicWork(
@@ -140,11 +147,16 @@ object Recordatorios {
             val c = app.contenedor
             val prefs = app.getSharedPreferences(ServicioSincronizacion.ARCHIVO, Context.MODE_PRIVATE)
             val ahora = c.reloj.ahora()
-            val instalacion = app.packageManager.getPackageInfo(app.packageName, 0).firstInstallTime
+            // Sin sesión o con la recuperación (RF 7.4) pendiente no hay cómo sincronizar: no se avisa.
+            if (c.auth.estado.value != EstadoSesion.ACTIVA || c.recuperacion.requerida.value) return Result.success()
+            // "Nunca se ha sincronizado" cuenta desde el primer arranque con los datos actuales, no desde
+            // la instalación: al borrar los datos de la app Android conserva la fecha de instalación.
+            val primerArranque = prefs.getLong(CLAVE_PRIMER_ARRANQUE, 0L).takeIf { it > 0 }
+                ?: ahora.also { prefs.edit().putLong(CLAVE_PRIMER_ARRANQUE, it).apply() }
             val avisar = ReglaNotificaciones.avisarSinRespaldo(
                 pendientes = c.db.syncDao().observarPendientes().first(),
                 ultimaSincronizacion = prefs.getLong(ServicioSincronizacion.CLAVE_ULTIMA, 0L).takeIf { it > 0 },
-                referenciaSinSincronizar = instalacion,
+                referenciaSinSincronizar = primerArranque,
                 ultimoAviso = prefs.getLong(CLAVE_ULTIMO_AVISO, 0L).takeIf { it > 0 },
                 ahora = ahora,
             )
@@ -157,4 +169,7 @@ object Recordatorios {
     }
 
     private const val CLAVE_ULTIMO_AVISO = "ultimo_aviso_sin_respaldo"
+
+    /** Se guarda al arrancar la app la primera vez con datos nuevos (ver [iniciar]). */
+    private const val CLAVE_PRIMER_ARRANQUE = "primer_arranque"
 }
