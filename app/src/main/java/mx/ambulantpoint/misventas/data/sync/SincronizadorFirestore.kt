@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 import mx.ambulantpoint.misventas.data.local.MisVentasDb
@@ -26,6 +27,9 @@ class SincronizadorFirestore(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) {
     private val dao: SyncDao = db.syncDao()
+
+    /** Primera imagen que no se pudo subir en la vuelta actual (ej. reglas de Storage sin publicar). */
+    @Volatile private var fallaImagen: Exception? = null
 
     /** Un registro listo para enviar y la condición para marcarlo después. */
     private class Envio(val idDocumento: String, val datos: Map<String, Any?>, val donde: String, val argumentos: Array<Any>)
@@ -51,9 +55,17 @@ class SincronizadorFirestore(
         },
         Tabla("producto", Colecciones.PRODUCTO) { n ->
             val uid = auth.currentUser?.uid ?: error("Sin sesión de Firebase")
-            dao.productos(n).map {
-                // La imagen se sube antes que el documento; si falla, el producto sigue pendiente.
-                val imagen = imagenes.asegurarSubida(uid, it.imagenRuta)
+            dao.productos(n).mapNotNull {
+                // La imagen se sube antes que el documento. Si falla, ese producto sigue pendiente,
+                // pero no detiene al resto (ventas, cajas, movimientos se envían igual).
+                val imagen = try {
+                    imagenes.asegurarSubida(uid, it.imagenRuta)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    if (fallaImagen == null) fallaImagen = e
+                    return@mapNotNull null
+                }
                 Envio(it.id, it.aDocumento() + (CAMPO_IMAGEN to imagen), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn))
             }
         },
@@ -86,15 +98,19 @@ class SincronizadorFirestore(
             imagenes.reenvioInicialHecho()
         }
 
+        fallaImagen = null
         for (t in tablas) {
             val coleccion = raiz.collection(t.coleccion)
             // Tope de vueltas por si un registro cambia sin parar mientras se sube.
             var vueltas = 0
             while (vueltas++ < MAX_LOTES) {
                 val lote = t.leer(LOTE)
-                if (lote.isEmpty()) break
-                enviar(coleccion, lote)
-                enviados += marcarSincronizados(t.tabla, lote)
+                if (lote.isNotEmpty()) {
+                    enviar(coleccion, lote)
+                    enviados += marcarSincronizados(t.tabla, lote)
+                }
+                // Si alguna imagen falló, sus productos siguen pendientes: no se reintentan en esta vuelta.
+                if (lote.isEmpty() || fallaImagen != null) break
             }
         }
 
@@ -109,6 +125,8 @@ class SincronizadorFirestore(
             lote.forEach { dao.quitarEliminacion(it.coleccion, it.docId) }
             enviados += lote.size
         }
+        // Lo demás ya se envió; la sincronización cuenta como fallida para que se reintente.
+        fallaImagen?.let { throw it }
         return enviados
     }
 
