@@ -295,5 +295,50 @@ interface SyncDao {
 
     @Query("DELETE FROM eliminacion_pendiente WHERE coleccion = :coleccion AND docId = :docId")
     suspend fun quitarEliminacion(coleccion: String, docId: String)
+
+    // ── RF 7.1: reenviar los productos una vez para respaldar sus imágenes ──
+    @Query("UPDATE producto SET pendienteSync = 1")
+    suspend fun marcarProductosPendientes()
+
+    // ── RF 7.4: recuperar en un dispositivo nuevo ──
+
+    /** Registros del negocio sin enviar (sin perfil, configuración ni formas de pago iniciales). */
+    @Query(
+        """
+        SELECT
+          (SELECT COUNT(*) FROM categoria WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM producto WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM caja WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM corte_forma_pago WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM venta WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM venta_detalle WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM movimiento_inventario WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM eliminacion_pendiente)
+        """,
+    )
+    suspend fun contarPendientesNegocio(): Int
+
+    @Query("DELETE FROM movimiento_inventario") suspend fun borrarMovimientos()
+    @Query("DELETE FROM venta_detalle") suspend fun borrarVentaDetalles()
+    @Query("DELETE FROM venta") suspend fun borrarVentas()
+    @Query("DELETE FROM corte_forma_pago") suspend fun borrarCortesFormaPago()
+    @Query("DELETE FROM caja") suspend fun borrarCajas()
+    @Query("DELETE FROM producto") suspend fun borrarProductos()
+    @Query("DELETE FROM forma_pago") suspend fun borrarFormasPago()
+    @Query("DELETE FROM categoria") suspend fun borrarCategorias()
+    @Query("DELETE FROM configuracion") suspend fun borrarConfiguracion()
+    @Query("DELETE FROM perfil") suspend fun borrarPerfil()
+    @Query("DELETE FROM eliminacion_pendiente") suspend fun borrarEliminaciones()
+
+    @Insert suspend fun insertarPerfiles(l: List<Perfil>)
+    @Insert suspend fun insertarConfiguraciones(l: List<Configuracion>)
+    @Insert suspend fun insertarCategorias(l: List<Categoria>)
+    @Insert suspend fun insertarFormasPago(l: List<FormaPago>)
+    @Insert suspend fun insertarProductos(l: List<Producto>)
+    @Insert suspend fun insertarCajas(l: List<Caja>)
+    @Insert suspend fun insertarCortesFormaPago(l: List<CorteFormaPago>)
+    @Insert suspend fun insertarVentas(l: List<Venta>)
+    @Insert suspend fun insertarVentaDetalles(l: List<VentaDetalle>)
+    @Insert suspend fun insertarMovimientos(l: List<MovimientoInventario>)
 }
 

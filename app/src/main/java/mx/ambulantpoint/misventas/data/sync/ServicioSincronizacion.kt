@@ -40,6 +40,8 @@ class ServicioSincronizacion(
     private val red: Conectividad,
     private val reloj: Reloj,
     private val sincronizador: SincronizadorFirestore,
+    /** RF 7.4: mientras haya una recuperación pendiente no se envía nada (se reemplazará lo local). */
+    private val bloqueada: StateFlow<Boolean>,
 ) {
     private val alcance = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val candado = Mutex()
@@ -73,12 +75,12 @@ class ServicioSincronizacion(
 
     init {
         alcance.launch {
-            combine(tipoRed, pendientes, auth.estado) { r, p, s -> Triple(r, p, s) }
+            combine(tipoRed, pendientes, auth.estado, bloqueada) { r, p, s, b -> Triple(r, p, s == EstadoSesion.ACTIVA && !b) }
                 // Espera a que termine una ráfaga de cambios (ej. una venta escribe varias tablas).
                 .debounce(1_500)
-                .collect { (r, p, s) ->
+                .collect { (r, p, activa) ->
                     if (r == TipoRed.WIFI) rechazoDatosMoviles = false
-                    when (ReglaSincronizacion.accionAutomatica(r, p, s == EstadoSesion.ACTIVA, rechazoDatosMoviles)) {
+                    when (ReglaSincronizacion.accionAutomatica(r, p, activa, rechazoDatosMoviles)) {
                         AccionAutomatica.SINCRONIZAR -> sincronizar(manual = false)
                         AccionAutomatica.PREGUNTAR_DATOS_MOVILES -> if (_aviso.value == null) _aviso.value = AvisoDatosMoviles(manual = false)
                         AccionAutomatica.NADA -> if (r != TipoRed.MOVIL) _aviso.value = null
@@ -105,8 +107,28 @@ class ServicioSincronizacion(
         if (sincronizar) alcance.launch { sincronizar(aviso.manual) } else rechazoDatosMoviles = true
     }
 
+    /**
+     * RF 7.5: la sesión se inició en otro teléfono; antes de cerrarla aquí se envían los pendientes,
+     * con Wi-Fi o con datos móviles, para que no se pierdan ventas. Espera a la sincronización en
+     * curso, si la hay. Devuelve true si el envío terminó bien.
+     */
+    suspend fun enviarAntesDeCerrarSesion(): Boolean {
+        if (!red.hayInternet()) return false
+        return candado.withLock { ejecutar(manual = false) }
+    }
+
     private suspend fun sincronizar(manual: Boolean) {
         if (!candado.tryLock()) return // ya hay una en curso
+        try {
+            ejecutar(manual)
+        } finally {
+            candado.unlock()
+        }
+    }
+
+    /** Llamar con el candado tomado. */
+    private suspend fun ejecutar(manual: Boolean): Boolean {
+        if (bloqueada.value) return false
         try {
             sincronizando.value = true
             val resultado = runCatching { sincronizador.enviarPendientes() }
@@ -116,20 +138,21 @@ class ServicioSincronizacion(
                 prefs.edit().putLong(CLAVE_ULTIMA, ahora).apply()
                 _ultima.value = ahora
                 if (manual) _mensajes.value = Mensajes.SINCRONIZACION_EXITOSA
+                return true
             } else {
                 // Lo no confirmado sigue pendiente. Si fue por la red, se avisa; si no, se reintenta más tarde.
                 if (manual && !red.hayInternet()) _mensajes.value = Mensajes.SYNC_SIN_INTERNET
                 alcance.launch { delay(REINTENTO_MS); reintentar() }
+                return false
             }
         } finally {
             sincronizando.value = false
-            candado.unlock()
         }
     }
 
     private suspend fun reintentar() {
         val accion = ReglaSincronizacion.accionAutomatica(
-            red.tipoActual(), pendientes.value, auth.estado.value == EstadoSesion.ACTIVA, rechazoDatosMoviles,
+            red.tipoActual(), pendientes.value, auth.estado.value == EstadoSesion.ACTIVA && !bloqueada.value, rechazoDatosMoviles,
         )
         if (accion == AccionAutomatica.SINCRONIZAR) sincronizar(manual = false)
     }

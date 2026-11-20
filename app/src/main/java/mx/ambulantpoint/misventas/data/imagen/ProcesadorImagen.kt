@@ -96,6 +96,7 @@ class ProcesadorImagen(private val contexto: Context) {
     companion object {
         const val LADO_MAXIMO = 1024
         const val BYTES_MAXIMOS = 300 * 1024
-        private const val CARPETA = "productos"
+        /** Carpeta en filesDir (también la usa la recuperación, RF 7.4). */
+        const val CARPETA = "productos"
     }
 }

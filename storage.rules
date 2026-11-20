@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Mis Ventas — RF 7.1 / 7.4 / RNF de seguridad.
+// Imágenes de productos en usuarios/{uid}/productos/{archivo}.jpg.
+// Cada vendedor solo lee y escribe sus propias imágenes; solo imágenes de menos de 1 MB
+// (la app las comprime a 300 KB como máximo, RF 2.1). Todo lo demás queda cerrado.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /usuarios/{uid}/{ruta=**} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.size < 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

@@ -21,6 +21,7 @@ import mx.ambulantpoint.misventas.data.local.dao.SyncDao
  */
 class SincronizadorFirestore(
     private val db: MisVentasDb,
+    private val imagenes: ImagenesNube,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) {
@@ -49,7 +50,12 @@ class SincronizadorFirestore(
             dao.formasPago(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
         },
         Tabla("producto", Colecciones.PRODUCTO) { n ->
-            dao.productos(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
+            val uid = auth.currentUser?.uid ?: error("Sin sesión de Firebase")
+            dao.productos(n).map {
+                // La imagen se sube antes que el documento; si falla, el producto sigue pendiente.
+                val imagen = imagenes.asegurarSubida(uid, it.imagenRuta)
+                Envio(it.id, it.aDocumento() + (CAMPO_IMAGEN to imagen), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn))
+            }
         },
         Tabla("caja", Colecciones.CAJA) { n ->
             dao.cajas(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
@@ -75,6 +81,10 @@ class SincronizadorFirestore(
         val uid = auth.currentUser?.uid ?: error("Sin sesión de Firebase")
         val raiz = firestore.collection("usuarios").document(uid)
         var enviados = 0
+        if (imagenes.requiereReenvioInicial()) {
+            dao.marcarProductosPendientes()
+            imagenes.reenvioInicialHecho()
+        }
 
         for (t in tablas) {
             val coleccion = raiz.collection(t.coleccion)

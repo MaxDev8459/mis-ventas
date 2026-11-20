@@ -18,6 +18,9 @@ import mx.ambulantpoint.misventas.data.auth.AuthRepoFirebase
 import mx.ambulantpoint.misventas.data.red.Conectividad
 import mx.ambulantpoint.misventas.data.sync.ServicioSincronizacion
 import mx.ambulantpoint.misventas.data.sync.SincronizadorFirestore
+import mx.ambulantpoint.misventas.data.sync.ImagenesNube
+import mx.ambulantpoint.misventas.data.sync.ServicioRecuperacion
+import mx.ambulantpoint.misventas.data.sync.ControlSesionUnica
 import mx.ambulantpoint.misventas.data.export.ExportadorReportes
 import mx.ambulantpoint.misventas.data.imagen.ProcesadorImagen
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,13 +44,28 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
 
     val conectividad by lazy { Conectividad(contexto) }
 
+    /** RF 7.1 / 7.4: imágenes de productos en Firebase Storage. */
+    private val imagenesNube by lazy { ImagenesNube(contexto) }
+
+    /** RF 7.4 (y registro del dispositivo de la sesión, RF 7.5). */
+    val recuperacion by lazy { ServicioRecuperacion(contexto, db, conectividad, reloj, imagenesNube) }
+
+    private val authFirebase by lazy {
+        AuthRepoFirebase(contexto, db, reloj, conectividad, alIniciarSesion = { recuperacion.marcarRequerida() })
+    }
+
     /** Sprint 2: Firebase Authentication detrás de la misma interfaz que usaba el MVP local. */
-    val auth: PuertoAuth by lazy { AuthRepoFirebase(contexto, db, reloj, conectividad) }
+    val auth: PuertoAuth get() = authFirebase
 
     /** RF 7.1 – 7.3. Se crea al mostrar la app (ver NavegacionApp) y vive lo que vive el proceso. */
     val sincronizacion by lazy {
-        ServicioSincronizacion(contexto, db, auth, conectividad, reloj, SincronizadorFirestore(db))
+        ServicioSincronizacion(
+            contexto, db, auth, conectividad, reloj, SincronizadorFirestore(db, imagenesNube), recuperacion.requerida,
+        )
     }
+
+    /** RF 7.5. Se crea junto con la sincronización (ver NavegacionApp). */
+    val controlSesion by lazy { ControlSesionUnica(db, authFirebase, sincronizacion, recuperacion) }
 
     /** Mensajes de una sola vez (snackbar) que sobreviven al cambiar de pantalla. */
     val notificador = Notificador()

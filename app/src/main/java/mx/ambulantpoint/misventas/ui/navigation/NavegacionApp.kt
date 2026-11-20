@@ -50,6 +50,7 @@ import mx.ambulantpoint.misventas.ui.catalogo.PantallaProductoForm
 import mx.ambulantpoint.misventas.ui.categorias.PantallaCategorias
 import mx.ambulantpoint.misventas.ui.formaspago.PantallaFormasPago
 import mx.ambulantpoint.misventas.ui.auth.PantallaVerificacion
+import mx.ambulantpoint.misventas.ui.auth.PantallaRecuperacion
 import mx.ambulantpoint.misventas.ui.reportes.PantallaReporteInventario
 import mx.ambulantpoint.misventas.ui.reportes.PantallaReporteMasVendidos
 import mx.ambulantpoint.misventas.ui.reportes.PantallaReportePorcentajes
@@ -90,6 +91,10 @@ fun NavegacionApp() {
     val sync = c.sincronizacion
     val aviso by sync.avisoDatosMoviles.collectAsStateWithLifecycle()
     val mensajeSync by sync.mensaje.collectAsStateWithLifecycle()
+    // RF 7.4 / 7.5.
+    val recuperacionRequerida by c.recuperacion.requerida.collectAsStateWithLifecycle()
+    val avisoOtroDispositivo by c.recuperacion.avisoOtroDispositivo.collectAsStateWithLifecycle()
+    val mensajeSesion by c.controlSesion.mensaje.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -106,11 +111,32 @@ fun NavegacionApp() {
     Box(Modifier.fillMaxSize()) {
         when (sesion) {
             // RF 1.2: con sesión activa al abrir la app, primero se verifica la identidad.
-            EstadoSesion.ACTIVA -> if (!verificada) PantallaVerificacion { c.identidadVerificada.value = true } else GrafoPrincipal(alVenderSinCaja = { c.notificador.mostrar(Mensajes.ABRA_CAJA) })
+            // RF 7.4: después, si falta recuperar la información, no se deja operar hasta terminar.
+            EstadoSesion.ACTIVA -> when {
+                !verificada -> PantallaVerificacion { c.identidadVerificada.value = true }
+                recuperacionRequerida -> PantallaRecuperacion()
+                else -> GrafoPrincipal(alVenderSinCaja = { c.notificador.mostrar(Mensajes.ABRA_CAJA) })
+            }
             EstadoSesion.SIN_CUENTA, EstadoSesion.SIN_SESION -> GrafoAcceso(inicioEnRegistro = sesion == EstadoSesion.SIN_CUENTA)
         }
         // RF 7.1 / 7.3: aviso de datos móviles, sobre cualquier pantalla de la app.
-        if (aviso != null && sesion == EstadoSesion.ACTIVA && verificada) {
+        // RF 7.5: en el teléfono nuevo, al iniciar sesión.
+        if (avisoOtroDispositivo && sesion == EstadoSesion.ACTIVA) {
+            AlertDialog(
+                onDismissRequest = c.recuperacion::avisoMostrado,
+                text = { Text(Mensajes.CUENTA_SE_CERRARA_EN_OTRO) },
+                confirmButton = { TextButton(c.recuperacion::avisoMostrado) { Text("Aceptar") } },
+            )
+        }
+        // RF 7.5: en el teléfono anterior, tras enviar sus pendientes (ya en la pantalla de inicio de sesión).
+        if (mensajeSesion != null && sesion != EstadoSesion.ACTIVA) {
+            AlertDialog(
+                onDismissRequest = c.controlSesion::mensajeMostrado,
+                text = { Text(mensajeSesion.orEmpty()) },
+                confirmButton = { TextButton(c.controlSesion::mensajeMostrado) { Text("Aceptar") } },
+            )
+        }
+        if (aviso != null && sesion == EstadoSesion.ACTIVA && verificada && !recuperacionRequerida) {
             AlertDialog(
                 onDismissRequest = { sync.responderDatosMoviles(false) },
                 text = { Text(Mensajes.AVISO_DATOS_MOVILES) },

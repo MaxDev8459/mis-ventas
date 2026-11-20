@@ -40,6 +40,8 @@ class AuthRepoFirebase(
     private val db: MisVentasDb,
     private val reloj: Reloj,
     private val red: Conectividad,
+    /** RF 7.4: se llama tras iniciar sesión, antes de marcarla activa (deja la recuperación requerida). */
+    private val alIniciarSesion: () -> Unit = {},
     private val firebase: FirebaseAuth = FirebaseAuth.getInstance(),
 ) : PuertoAuth {
 
@@ -101,8 +103,18 @@ class AuthRepoFirebase(
             return@withContext fallaDe(e, porDefecto = FallaDatos.CredencialesIncorrectas)
         }
         prefs.edit().putString(CLAVE_CORREO, normalizado).apply()
+        alIniciarSesion()
         _estado.value = EstadoSesion.ACTIVA
         Resultado.Exito(Unit)
+    }
+
+    /**
+     * RF 7.5: la sesión se inició en otro teléfono y aquí ya no quedan pendientes. Cierra sin las
+     * validaciones de RF 1.3 (las revisó quien llama).
+     */
+    fun cerrarSesionPorOtroDispositivo() {
+        firebase.signOut()
+        _estado.value = EstadoSesion.SIN_SESION
     }
 
     /** RF 1.3: no cierra si hay registros pendientes de sincronizar. */

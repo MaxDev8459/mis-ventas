@@ -10,6 +10,12 @@ import mx.ambulantpoint.misventas.data.local.entity.Perfil
 import mx.ambulantpoint.misventas.data.local.entity.Producto
 import mx.ambulantpoint.misventas.data.local.entity.Venta
 import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
+import mx.ambulantpoint.misventas.data.local.entity.EstadoCaja
+import mx.ambulantpoint.misventas.data.local.entity.EstadoVenta
+import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
+import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
+import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
+import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
 
 /**
  * Nombres de las colecciones en Firestore: `usuarios/{uid}/{coleccion}/{id}`. Son los mismos que
@@ -96,4 +102,94 @@ fun MovimientoInventario.aDocumento(): Map<String, Any?> = mapOf(
     "id" to id, "productoId" to productoId, "fechaHora" to fechaHora, "tipo" to tipo.name,
     "cantidadMilesimas" to cantidadMilesimas, "existenciaResultanteMilesimas" to existenciaResultanteMilesimas,
     "motivo" to motivo?.name, "especificacionMotivo" to especificacionMotivo, "ventaId" to ventaId, "creadoEn" to creadoEn,
+)
+
+/*
+ * RF 7.4 — documento de Firestore → entidad de Room. Lo recuperado ya está en línea, así que llega
+ * con `pendienteSync = false`. Firestore devuelve los enteros como Long; los campos que faltan
+ * toman el valor por defecto de la entidad.
+ */
+
+private fun Map<String, Any?>.texto(c: String): String = this[c] as? String ?: ""
+private fun Map<String, Any?>.textoONulo(c: String): String? = this[c] as? String
+private fun Map<String, Any?>.entero(c: String): Long = (this[c] as? Number)?.toLong() ?: 0L
+private fun Map<String, Any?>.enteroONulo(c: String): Long? = (this[c] as? Number)?.toLong()
+private fun Map<String, Any?>.logico(c: String, porDefecto: Boolean): Boolean = this[c] as? Boolean ?: porDefecto
+private inline fun <reified E : Enum<E>> Map<String, Any?>.enumONulo(c: String): E? =
+    textoONulo(c)?.let { n -> enumValues<E>().firstOrNull { it.name == n } }
+private inline fun <reified E : Enum<E>> Map<String, Any?>.enumO(c: String, porDefecto: E): E = enumONulo<E>(c) ?: porDefecto
+
+/** Campo del documento de producto con el nombre del archivo de su imagen en Storage. */
+const val CAMPO_IMAGEN = "imagen"
+
+fun aPerfil(d: Map<String, Any?>) = Perfil(
+    id = d.texto("id"), nombres = d.texto("nombres"), apellidoPaterno = d.texto("apellidoPaterno"),
+    apellidoMaterno = d.texto("apellidoMaterno"), telefono = d.texto("telefono"), nombreNegocio = d.texto("nombreNegocio"),
+    correo = d.texto("correo"), creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aConfiguracion(d: Map<String, Any?>) = Configuracion(
+    id = d.textoONulo("id") ?: Configuracion.ID_UNICA, descuentosHabilitados = d.logico("descuentosHabilitados", false),
+    actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aCategoria(d: Map<String, Any?>) = Categoria(
+    id = d.texto("id"), nombre = d.texto("nombre"), nombreNormalizado = d.texto("nombreNormalizado"),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+/** `imagenRuta` = ruta local donde quedó la imagen descargada ("" si no tiene). */
+fun aProducto(d: Map<String, Any?>, imagenRuta: String) = Producto(
+    id = d.texto("id"), nombre = d.texto("nombre"), nombreNormalizado = d.texto("nombreNormalizado"),
+    categoriaId = d.texto("categoriaId"), tipoVenta = d.enumO("tipoVenta", TipoVenta.UNIDAD),
+    precioCentavos = d.entero("precioCentavos"), existenciaMilesimas = d.entero("existenciaMilesimas"),
+    imagenRuta = imagenRuta, activo = d.logico("activo", true),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aFormaPago(d: Map<String, Any?>) = FormaPago(
+    id = d.texto("id"), nombre = d.texto("nombre"), nombreNormalizado = d.texto("nombreNormalizado"),
+    activa = d.logico("activa", true), esEfectivo = d.logico("esEfectivo", false),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aCaja(d: Map<String, Any?>) = Caja(
+    id = d.texto("id"), estado = d.enumO("estado", EstadoCaja.CERRADA), fondoCentavos = d.entero("fondoCentavos"),
+    abiertaEn = d.entero("abiertaEn"), cerradaEn = d.enteroONulo("cerradaEn"), corteCalculadoEn = d.enteroONulo("corteCalculadoEn"),
+    corteVigente = d.logico("corteVigente", false), totalVendidoCentavos = d.enteroONulo("totalVendidoCentavos"),
+    numeroVentas = d.enteroONulo("numeroVentas")?.toInt(), descuentosCentavos = d.enteroONulo("descuentosCentavos"),
+    efectivoEsperadoCentavos = d.enteroONulo("efectivoEsperadoCentavos"), efectivoContadoCentavos = d.enteroONulo("efectivoContadoCentavos"),
+    diferenciaCentavos = d.enteroONulo("diferenciaCentavos"),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aCorteFormaPago(d: Map<String, Any?>) = CorteFormaPago(
+    cajaId = d.texto("cajaId"), formaPagoId = d.texto("formaPagoId"), nombreFormaPago = d.texto("nombreFormaPago"),
+    numeroVentas = d.entero("numeroVentas").toInt(), totalCentavos = d.entero("totalCentavos"),
+    creadoEn = d.entero("creadoEn"), pendienteSync = false,
+)
+
+fun aVenta(d: Map<String, Any?>) = Venta(
+    id = d.texto("id"), cajaId = d.texto("cajaId"), fechaHora = d.entero("fechaHora"), subtotalCentavos = d.entero("subtotalCentavos"),
+    tipoDescuento = d.enumONulo<TipoDescuento>("tipoDescuento"), valorDescuento = d.enteroONulo("valorDescuento"),
+    descuentoCentavos = d.entero("descuentoCentavos"), totalCentavos = d.entero("totalCentavos"),
+    formaPagoId = d.texto("formaPagoId"), montoRecibidoCentavos = d.enteroONulo("montoRecibidoCentavos"),
+    cambioCentavos = d.enteroONulo("cambioCentavos"), estado = d.enumO("estado", EstadoVenta.REGISTRADA),
+    canceladaEn = d.enteroONulo("canceladaEn"),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aVentaDetalle(d: Map<String, Any?>) = VentaDetalle(
+    id = d.texto("id"), ventaId = d.texto("ventaId"), productoId = d.texto("productoId"), nombreProducto = d.texto("nombreProducto"),
+    tipoVenta = d.enumO("tipoVenta", TipoVenta.UNIDAD), cantidadMilesimas = d.entero("cantidadMilesimas"),
+    precioUnitarioCentavos = d.entero("precioUnitarioCentavos"), importeCentavos = d.entero("importeCentavos"),
+    creadoEn = d.entero("creadoEn"), pendienteSync = false,
+)
+
+fun aMovimiento(d: Map<String, Any?>) = MovimientoInventario(
+    id = d.texto("id"), productoId = d.texto("productoId"), fechaHora = d.entero("fechaHora"),
+    tipo = d.enumO("tipo", TipoMovimiento.AJUSTE), cantidadMilesimas = d.entero("cantidadMilesimas"),
+    existenciaResultanteMilesimas = d.entero("existenciaResultanteMilesimas"), motivo = d.enumONulo<MotivoAjuste>("motivo"),
+    especificacionMotivo = d.textoONulo("especificacionMotivo"), ventaId = d.textoONulo("ventaId"),
+    creadoEn = d.entero("creadoEn"), pendienteSync = false,
 )
