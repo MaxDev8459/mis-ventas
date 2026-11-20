@@ -62,7 +62,7 @@ Verificación contra el DFR, demo y documentación: 3–4 h. **Total: 45–58 h.
 | Mié 18-nov (2) | ✅ RF 6.2, 6.3, 6.4 (adelantado) y 6.5, probados en el teléfono. Perfil pasó a ícono en la barra superior. | Jue 19: crear el proyecto Firebase (usuario) y empezar 1.1–1.4 con Firebase + 1.2 verificación de seguridad. |
 | Mié 18-nov (3) | ✅ Adelantado del 19 al 22-nov: proyecto Firebase creado; RF 1.1–1.4 con Firebase Auth; RF 1.2 verificación con huella/PIN; RF 7.1–7.3 sincronización con Firestore (migración Room v2). Probado en teléfono. | 7.4 recuperar en dispositivo nuevo (imágenes: decidir Storage/Blaze), 7.5, notificaciones (5.4, 7.6), 6.6 exportar, 3.6, 1.6. |
 | Mié 18-nov (4) | ✅ RF 6.6 exportar PDF/CSV, ✅ 5.4 notificación de caja abierta, ✅ 3.6 descuentos (interruptor en Perfil + cobro). 🔍 1.6 editar perfil y 🔍 7.6 aviso de 3 días sin respaldo (implementados, falta verlos en el teléfono). | Ver §2.2. |
-| Jue 19-nov | 🔍 RF 7.4 recuperar en dispositivo nuevo con imágenes (Storage) y 🔍 7.5 sesión en un solo dispositivo: implementados, 152 pruebas JVM, APK instalado. | Publicar `storage.rules`, probar en el teléfono (ver §2.2), luego sync en segundo plano y APK firmado. |
+| Jue 19-nov | ✅ RF 7.4 recuperar en dispositivo nuevo con imágenes (Storage) y ✅ 7.5 sesión en un solo dispositivo, probados con dos teléfonos. Reglas de Storage publicadas. Corregidos 7.1 (imagen que falla no detiene la sync) y 7.6 (aviso falso tras borrar datos). | Confirmar 2.8 y 7.6 en teléfono, sync con la app cerrada, APK firmado. |
 
 ## 2.2 Pendientes al cierre del 18-nov (para retomar)
 
