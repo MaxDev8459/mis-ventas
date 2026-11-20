@@ -300,6 +300,16 @@ interface SyncDao {
     @Query("UPDATE producto SET pendienteSync = 1")
     suspend fun marcarProductosPendientes()
 
+    // ── RF 1.1 + 7.1: al registrar otra cuenta en un teléfono con datos, se respaldan en la cuenta nueva ──
+    @Query("UPDATE configuracion SET pendienteSync = 1") suspend fun pendienteConfiguracion()
+    @Query("UPDATE categoria SET pendienteSync = 1") suspend fun pendienteCategorias()
+    @Query("UPDATE forma_pago SET pendienteSync = 1") suspend fun pendienteFormasPago()
+    @Query("UPDATE caja SET pendienteSync = 1") suspend fun pendienteCajas()
+    @Query("UPDATE corte_forma_pago SET pendienteSync = 1") suspend fun pendienteCortesFormaPago()
+    @Query("UPDATE venta SET pendienteSync = 1") suspend fun pendienteVentas()
+    @Query("UPDATE venta_detalle SET pendienteSync = 1") suspend fun pendienteVentaDetalles()
+    @Query("UPDATE movimiento_inventario SET pendienteSync = 1") suspend fun pendienteMovimientos()
+
     // ── RF 7.4: recuperar en un dispositivo nuevo ──
 
     /** Registros del negocio sin enviar (sin perfil, configuración ni formas de pago iniciales). */

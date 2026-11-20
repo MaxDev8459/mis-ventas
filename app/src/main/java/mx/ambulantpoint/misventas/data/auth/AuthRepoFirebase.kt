@@ -2,6 +2,7 @@ package mx.ambulantpoint.misventas.data.auth
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.room.withTransaction
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -68,7 +69,7 @@ class AuthRepoFirebase(
             return@withContext fallaDe(e, porDefecto = FallaDatos.NoEncontrado)
         }
         val ahora = reloj.ahora()
-        // Una cuenta por dispositivo: si ya había perfil (MVP local) se conserva su id y sus datos se reemplazan.
+        // Una cuenta por dispositivo: si ya había perfil se conserva su id y sus datos se reemplazan.
         val anterior = db.perfilDao().obtener()
         val perfil = Perfil(
             id = anterior?.id ?: nuevoId(),
@@ -82,7 +83,17 @@ class AuthRepoFirebase(
             actualizadoEn = ahora,
         )
         try {
-            db.perfilDao().guardar(perfil)
+            db.withTransaction {
+                db.perfilDao().guardar(perfil)
+                // Los datos que ya había en el teléfono pasan a la cuenta nueva: se marcan pendientes para
+                // que se respalden en ella (si no, la cuenta nueva quedaría sin respaldo, RF 7.1 / 7.4).
+                if (anterior != null) {
+                    val s = db.syncDao()
+                    s.pendienteConfiguracion(); s.pendienteCategorias(); s.pendienteFormasPago()
+                    s.marcarProductosPendientes(); s.pendienteCajas(); s.pendienteCortesFormaPago()
+                    s.pendienteVentas(); s.pendienteVentaDetalles(); s.pendienteMovimientos()
+                }
+            }
         } catch (e: Exception) {
             // Sin perfil la cuenta queda a medias: se borra en Firebase para que pueda registrarse de nuevo.
             runCatching { firebase.currentUser?.delete()?.await() }
