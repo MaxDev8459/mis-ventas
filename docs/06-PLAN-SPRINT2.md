@@ -66,7 +66,7 @@ Verificación contra el DFR, demo y documentación: 3–4 h. **Total: 45–58 h.
 ## 2.2 Pendientes al cierre del 18-nov (para retomar)
 
 **Código**
-1. RF 7.4 Recuperar en dispositivo nuevo (Alta). Decisión pendiente del usuario: activar Storage (plan Blaze) para las fotos; si no, recuperar todo menos las fotos y documentarlo como limitación. Simular el segundo teléfono borrando los datos de la app **solo después** de confirmar que todo está en Firestore.
+1. RF 7.4 Recuperar en dispositivo nuevo (Alta), **con fotos**: el usuario activó el plan Blaze el 19-nov. Falta (si no lo hizo) crear Storage con el bucket en `us-central1`, `us-east1` o `us-west1` (únicas regiones con nivel gratuito) y una alerta de presupuesto de 1 USD. Hay que escribir las reglas de Storage (`usuarios/{uid}/…`), subir las imágenes de productos en la sincronización (7.1) y bajarlas en 7.4. Simular el segundo teléfono borrando los datos de la app **solo después** de confirmar que todo está en Firestore.
 2. RF 7.5 Sesión en un solo dispositivo (Alta). Mensajes del DFR ya en `Mensajes.kt` (`CUENTA_SE_CERRARA_EN_OTRO`, `SESION_EN_OTRO_DISPOSITIVO`).
 3. Confirmar en teléfono: 1.6 editar perfil, 2.8 modificar categoría, 7.6 (dejar una forma de forzarlo para la demo).
 4. Sincronización con la app cerrada (WorkManager con Wi-Fi). Hoy solo sincroniza con la app abierta.
