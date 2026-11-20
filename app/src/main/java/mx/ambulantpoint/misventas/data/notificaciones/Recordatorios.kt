@@ -49,6 +49,7 @@ object Recordatorios {
     private const val ID_RESPALDO = 2
     private const val TRABAJO_CAJA = "caja_abierta_12h"
     private const val TRABAJO_RESPALDO = "sin_respaldo_3d"
+    private const val TRABAJO_RESPALDO_AL_ABRIR = "sin_respaldo_al_abrir"
     private const val DATO_CAJA = "cajaId"
 
     /** Se llama al iniciar la app. */
@@ -66,6 +67,11 @@ object Recordatorios {
         wm.enqueueUniquePeriodicWork(
             TRABAJO_RESPALDO, ExistingPeriodicWorkPolicy.KEEP,
             PeriodicWorkRequestBuilder<SinRespaldoWorker>(6, TimeUnit.HOURS).build(),
+        )
+        // RF 7.6: también al abrir la app (la regla evita repetir el aviso antes de 24 h).
+        wm.enqueueUniqueWork(
+            TRABAJO_RESPALDO_AL_ABRIR, ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<SinRespaldoWorker>().build(),
         )
 
         // RF 5.4: se programa al abrir caja y se cancela al cerrarla, sin importar desde qué pantalla.

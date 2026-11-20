@@ -9,7 +9,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 1.3 | Cerrar sesión | Media | MVP / S2 Firebase | `ui/perfil` · `CerrarSesion` · `AuthRepoFirebase.cerrarSesion` | Bloqueo con pendientes | ✅ |
 | 1.4 | Recuperar contraseña | Media | S2 | `ui/auth/Login` (diálogo) · `RecuperarContrasena` · `AuthRepoFirebase` | Validación de correo, mensaje del DFR, sin internet | ✅ |
 | 1.5 | Consultar perfil | Baja | MVP | `ui/perfil` | | ✅ |
-| 1.6 | Editar perfil | Baja | S2 | `ui/perfil` (PantallaEditarPerfil) · `EditarPerfil` | Validación, correo no editable, guardado | 🔍 |
+| 1.6 | Editar perfil | Baja | S2 | `ui/perfil` (PantallaEditarPerfil) · `EditarPerfil` | Validación, correo no editable, guardado | ✅ |
 | 2.1 | Registrar producto | Alta | MVP | `ui/catalogo/FormProducto` · `RegistrarProducto` | Nombre único, precio, existencia por tipo, compresión | ✅ |
 | 2.2 | Editar producto | Alta | MVP | `ui/catalogo/FormProducto` · `EditarProducto` | Cambio de tipo solo con existencia 0 | ✅ |
 | 2.3 | Desactivar producto | Media | MVP | `ui/catalogo` | | ✅ |
@@ -46,7 +46,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 | 7.3 | Sincronizar manualmente | Media | S2 | `ui/inicio` (diálogo del indicador) · `ServicioSincronizacion.sincronizarAhora` | Sin red, ya sincronizada, datos móviles, Wi-Fi | ✅ |
 | 7.4 | Recuperar en dispositivo nuevo | Alta | S2 | `ui/auth/RecuperacionScreen` · `data/sync/ServicioRecuperacion` · `ImagenesNube` (Storage) · `ReglaRecuperacion` | Cuándo recuperar (teléfono nuevo, otra cuenta, pendientes, cuenta sin respaldo); mapeo ida y vuelta de venta, caja, corte, movimiento y producto con imagen | ✅ |
 | 7.5 | Sesión en un solo dispositivo | Alta | S2 | `data/sync/ControlSesionUnica` · `ServicioRecuperacion.reclamarSesion` · `ReglaSesionUnica` | Copia local, reclamar, enviar pendientes antes de cerrar, aviso al iniciar | ✅ |
-| 7.6 | Notificar falta de sync | Media | S2 | `data/notificaciones/Recordatorios` (SinRespaldoWorker) · `ReglaNotificaciones` | 3 días, repetición cada 24 h, ciclo nuevo tras sincronizar, nunca sincronizado | 🔍 |
+| 7.6 | Notificar falta de sync | Media | S2 | `data/notificaciones/Recordatorios` (SinRespaldoWorker) · `ReglaNotificaciones` | 3 días, repetición cada 24 h, ciclo nuevo tras sincronizar, nunca sincronizado | ✅ |
 
 **Avance (26-oct-2026):** 24 de 44 RF terminados (✅), de los cuales 3 se adelantaron del Sprint 2 (2.9, 4.2 y la pantalla de 4.4). Del alcance MVP faltan: 1.2 en verificación, 3.5 parcial (solo semilla, sin pantalla) y 7.2 en desarrollo (indicador sin sincronización real). 2.8 en verificación (adelantado).
 
@@ -89,3 +89,7 @@ Estados: ⬜ pendiente · 🔨 en desarrollo · 🔍 en verificación · ✅ ter
 **Verificación de 7.4 y 7.5 (19-nov-2026):** con las reglas de Storage publicadas se subieron las 8 imágenes. Se borraron los datos de la app en el teléfono 1 (simula un teléfono nuevo): al iniciar sesión mostró el aviso de 7.5 y recuperó todo, con las 8 imágenes. Después se instaló la app en un segundo teléfono (Xiaomi 2207117BPG) y se inició sesión con la misma cuenta: recuperó la información con imágenes y el teléfono 1 cerró su sesión solo. Correcciones encontradas en las pruebas: una imagen que no se puede subir ya no detiene la sincronización del resto (7.1); el aviso de 3 días sin respaldo (7.6) contaba desde la instalación de Android y salía falso tras borrar los datos: ahora cuenta desde el primer arranque y no avisa sin sesión o con la recuperación pendiente.
 
 **RF 2.8 (19-nov-2026):** probado en el teléfono: "Dulces" → "Chucherías"; conserva sus 3 productos y se sincronizó al momento.
+
+**RF 1.6 (19-nov-2026):** confirmado por el usuario en el teléfono: el nombre editado se ve en Perfil y en la pantalla principal, y se sincronizó.
+
+**RF 7.6 (19-nov-2026):** la revisión del aviso también se hace al abrir la app (además de cada 6 h; sigue sin repetir antes de 24 h). Para la demo: `scripts/demo-aviso-sin-respaldo.sh` (solo APK de depuración) activa el modo avión, espera a que se registre algo, retrocede 4 días la última sincronización y abre la app. Probado en el teléfono: venta en modo avión → aparece "Llevas 3 días sin respaldar tu información. Conéctate a internet para sincronizar"; al quitar el modo avión la venta se sincronizó. Con esto todos los RF del DFR están en ✅.
