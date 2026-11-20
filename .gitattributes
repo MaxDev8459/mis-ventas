@@ -4,3 +4,4 @@ gradlew text eol=lf
 *.jar binary
 *.jpeg binary
 *.png binary
+*.sh text eol=lf
