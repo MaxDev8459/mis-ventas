@@ -64,6 +64,7 @@ Verificación contra el DFR, demo y documentación: 3–4 h. **Total: 45–58 h.
 | Mié 18-nov (4) | ✅ RF 6.6 exportar PDF/CSV, ✅ 5.4 notificación de caja abierta, ✅ 3.6 descuentos (interruptor en Perfil + cobro). 🔍 1.6 editar perfil y 🔍 7.6 aviso de 3 días sin respaldo (implementados, falta verlos en el teléfono). | Ver §2.2. |
 | Jue 19-nov | ✅ RF 7.4 recuperar en dispositivo nuevo con imágenes (Storage) y ✅ 7.5 sesión en un solo dispositivo, probados con dos teléfonos. Reglas de Storage publicadas. Corregidos 7.1 (imagen que falla no detiene la sync) y 7.6 (aviso falso tras borrar datos). | Confirmar 2.8 y 7.6 en teléfono, sync con la app cerrada, APK firmado. |
 | Jue 19-nov (2) | ✅ 2.8, 1.6 y 7.6 confirmados en el teléfono (script de demo para 7.6). ✅ Sincronización con la app cerrada (WorkManager, solo Wi-Fi). Todos los RF del DFR en ✅. | APK de liberación firmado, recargar datos de demo, documentos de cierre. |
+| Jue 19-nov (3) | ✅ APK de liberación 1.0.0 firmado y minificado; probado en el segundo teléfono (inicio de sesión, recuperación con fotos, venta, sincronizar, reportes y exportar, corte, historial, verificación al reabrir): sin fallas. | Recargar datos de demo; documentos de cierre (dom 22 – lun 23). |
 
 ## 2.2 Pendientes al cierre del 18-nov (para retomar)
 
@@ -72,7 +73,7 @@ Verificación contra el DFR, demo y documentación: 3–4 h. **Total: 45–58 h.
 2. ~~RF 7.5~~ ✅ 19-nov. Sesión en un solo dispositivo (Alta). Mensajes del DFR ya en `Mensajes.kt` (`CUENTA_SE_CERRARA_EN_OTRO`, `SESION_EN_OTRO_DISPOSITIVO`).
 3. ~~Confirmar en teléfono 1.6, 2.8, 7.6~~ ✅ 19-nov (7.6: `scripts/demo-aviso-sin-respaldo.sh`).
 4. ~~Sincronización con la app cerrada~~ ✅ 19-nov.
-5. APK de liberación firmado (para el Acta de liberación).
+5. ~~APK de liberación firmado~~ ✅ 19-nov: versión 1.0.0 (versionCode 1), firmado (v2) y minificado con R8, 4.1 MB. Copia en `documentos del proyecto/Mis-Ventas-1.0.0.apk`, SHA-256 `b3f04b4b89eec3801efe0aa73431633d4bb09d286623a3922f5c898358527ee6`. Llave en `firma/mis-ventas.jks` + `keystore.properties` (fuera de git; respaldada por el usuario en disco externo). Compilar: `./gradlew assembleRelease`.
 
 **Entregables de la materia (Actividad III, semana 15, entrega vie 27-nov, en `../../Plantillas`)**
 1. Solicitud de cambio a requerimiento (candidato: retraso de 5 días del Sprint 2).
