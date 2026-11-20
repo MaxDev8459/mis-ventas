@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -35,7 +36,7 @@ import mx.ambulantpoint.misventas.domain.regla.TipoRed
 @OptIn(FlowPreview::class)
 class ServicioSincronizacion(
     contexto: Context,
-    db: MisVentasDb,
+    private val db: MisVentasDb,
     private val auth: PuertoAuth,
     private val red: Conectividad,
     private val reloj: Reloj,
@@ -112,6 +113,17 @@ class ServicioSincronizacion(
      * con Wi-Fi o con datos móviles, para que no se pierdan ventas. Espera a la sincronización en
      * curso, si la hay. Devuelve true si el envío terminó bien.
      */
+    /**
+     * RF 7.1 con la app cerrada (lo llama [SincronizacionWorker], que solo corre con Wi-Fi). Sin
+     * sesión, con la recuperación pendiente o sin pendientes no hace nada. Devuelve false si el
+     * envío falló (WorkManager lo reintenta).
+     */
+    suspend fun sincronizarEnSegundoPlano(): Boolean {
+        if (auth.estado.value != EstadoSesion.ACTIVA || bloqueada.value) return true
+        if (db.syncDao().observarPendientes().first() == 0) return true
+        return candado.withLock { ejecutar(manual = false) }
+    }
+
     suspend fun enviarAntesDeCerrarSesion(): Boolean {
         if (!red.hayInternet()) return false
         return candado.withLock { ejecutar(manual = false) }

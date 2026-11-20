@@ -63,14 +63,15 @@ Verificación contra el DFR, demo y documentación: 3–4 h. **Total: 45–58 h.
 | Mié 18-nov (3) | ✅ Adelantado del 19 al 22-nov: proyecto Firebase creado; RF 1.1–1.4 con Firebase Auth; RF 1.2 verificación con huella/PIN; RF 7.1–7.3 sincronización con Firestore (migración Room v2). Probado en teléfono. | 7.4 recuperar en dispositivo nuevo (imágenes: decidir Storage/Blaze), 7.5, notificaciones (5.4, 7.6), 6.6 exportar, 3.6, 1.6. |
 | Mié 18-nov (4) | ✅ RF 6.6 exportar PDF/CSV, ✅ 5.4 notificación de caja abierta, ✅ 3.6 descuentos (interruptor en Perfil + cobro). 🔍 1.6 editar perfil y 🔍 7.6 aviso de 3 días sin respaldo (implementados, falta verlos en el teléfono). | Ver §2.2. |
 | Jue 19-nov | ✅ RF 7.4 recuperar en dispositivo nuevo con imágenes (Storage) y ✅ 7.5 sesión en un solo dispositivo, probados con dos teléfonos. Reglas de Storage publicadas. Corregidos 7.1 (imagen que falla no detiene la sync) y 7.6 (aviso falso tras borrar datos). | Confirmar 2.8 y 7.6 en teléfono, sync con la app cerrada, APK firmado. |
+| Jue 19-nov (2) | ✅ 2.8, 1.6 y 7.6 confirmados en el teléfono (script de demo para 7.6). ✅ Sincronización con la app cerrada (WorkManager, solo Wi-Fi). Todos los RF del DFR en ✅. | APK de liberación firmado, recargar datos de demo, documentos de cierre. |
 
 ## 2.2 Pendientes al cierre del 18-nov (para retomar)
 
 **Código**
-1. RF 7.4 Recuperar en dispositivo nuevo (Alta), **con fotos**: el usuario activó el plan Blaze el 19-nov. Falta (si no lo hizo) crear Storage con el bucket en `us-central1`, `us-east1` o `us-west1` (únicas regiones con nivel gratuito) y una alerta de presupuesto de 1 USD. Hay que escribir las reglas de Storage (`usuarios/{uid}/…`), subir las imágenes de productos en la sincronización (7.1) y bajarlas en 7.4. Simular el segundo teléfono borrando los datos de la app **solo después** de confirmar que todo está en Firestore.
-2. RF 7.5 Sesión en un solo dispositivo (Alta). Mensajes del DFR ya en `Mensajes.kt` (`CUENTA_SE_CERRARA_EN_OTRO`, `SESION_EN_OTRO_DISPOSITIVO`).
-3. Confirmar en teléfono: 1.6 editar perfil, 2.8 modificar categoría, 7.6 (dejar una forma de forzarlo para la demo).
-4. Sincronización con la app cerrada (WorkManager con Wi-Fi). Hoy solo sincroniza con la app abierta.
+1. ~~RF 7.4~~ ✅ 19-nov. Recuperar en dispositivo nuevo (Alta), **con fotos**: el usuario activó el plan Blaze el 19-nov. Falta (si no lo hizo) crear Storage con el bucket en `us-central1`, `us-east1` o `us-west1` (únicas regiones con nivel gratuito) y una alerta de presupuesto de 1 USD. Hay que escribir las reglas de Storage (`usuarios/{uid}/…`), subir las imágenes de productos en la sincronización (7.1) y bajarlas en 7.4. Simular el segundo teléfono borrando los datos de la app **solo después** de confirmar que todo está en Firestore.
+2. ~~RF 7.5~~ ✅ 19-nov. Sesión en un solo dispositivo (Alta). Mensajes del DFR ya en `Mensajes.kt` (`CUENTA_SE_CERRARA_EN_OTRO`, `SESION_EN_OTRO_DISPOSITIVO`).
+3. ~~Confirmar en teléfono 1.6, 2.8, 7.6~~ ✅ 19-nov (7.6: `scripts/demo-aviso-sin-respaldo.sh`).
+4. ~~Sincronización con la app cerrada~~ ✅ 19-nov.
 5. APK de liberación firmado (para el Acta de liberación).
 
 **Entregables de la materia (Actividad III, semana 15, entrega vie 27-nov, en `../../Plantillas`)**

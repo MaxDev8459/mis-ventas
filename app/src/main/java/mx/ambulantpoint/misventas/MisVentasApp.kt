@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import mx.ambulantpoint.misventas.data.local.sembrarSiHaceFalta
+import mx.ambulantpoint.misventas.data.sync.SincronizacionWorker
 
 class MisVentasApp : Application() {
     /** Contenedor de dependencias manual. */
@@ -22,5 +23,7 @@ class MisVentasApp : Application() {
         alcanceApp.launch { contenedor.db.sembrarSiHaceFalta(contenedor.reloj) }
         // RF 5.4 / 7.6.
         Recordatorios.iniciar(this, alcanceApp)
+        // RF 7.1: sincronización con la app cerrada (solo Wi-Fi).
+        SincronizacionWorker.programar(this)
     }
 }
