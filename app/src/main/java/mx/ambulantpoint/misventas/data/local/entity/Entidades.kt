@@ -30,6 +30,10 @@ data class Perfil(
 data class Configuracion(
     @PrimaryKey val id: String = ID_UNICA,
     val descuentosHabilitados: Boolean = false,
+    /** SC-01: datos para recibir transferencias (null = no capturados). */
+    val clabe: String? = null,
+    val beneficiario: String? = null,
+    val banco: String? = null,
     val actualizadoEn: Long,
     val pendienteSync: Boolean = true,
 ) {

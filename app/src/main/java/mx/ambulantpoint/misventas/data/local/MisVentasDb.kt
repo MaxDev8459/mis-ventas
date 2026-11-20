@@ -37,7 +37,7 @@ import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
         Caja::class, CorteFormaPago::class, Venta::class, VentaDetalle::class, MovimientoInventario::class,
         EliminacionPendiente::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class MisVentasDb : RoomDatabase() {
@@ -57,8 +57,17 @@ abstract class MisVentasDb : RoomDatabase() {
 
         fun crear(contexto: Context): MisVentasDb =
             Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE)
-                .addMigrations(MIGRACION_1_2)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3)
                 .build()
+
+        /** SC-01: datos para transferencia en la configuración. No toca los datos existentes. */
+        val MIGRACION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `configuracion` ADD COLUMN `clabe` TEXT")
+                db.execSQL("ALTER TABLE `configuracion` ADD COLUMN `beneficiario` TEXT")
+                db.execSQL("ALTER TABLE `configuracion` ADD COLUMN `banco` TEXT")
+            }
+        }
 
         /** Sprint 2 (RF 7.1): tabla de eliminaciones pendientes de enviar. No toca los datos existentes. */
         val MIGRACION_1_2 = object : Migration(1, 2) {

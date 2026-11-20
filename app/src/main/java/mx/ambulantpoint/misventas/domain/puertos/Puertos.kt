@@ -90,6 +90,11 @@ interface PuertoAuth {
 }
 
 /** RF 1.5 / 1.6. */
+/** SC-01: datos para recibir transferencias (null = borrarlos). */
+interface PuertoDatosTransferencia {
+    suspend fun guardarDatosTransferencia(datos: mx.ambulantpoint.misventas.domain.regla.DatosTransferencia?): Resultado<Unit>
+}
+
 interface PuertoPerfil {
     suspend fun obtener(): mx.ambulantpoint.misventas.data.local.entity.Perfil?
     suspend fun guardar(perfil: mx.ambulantpoint.misventas.data.local.entity.Perfil): Resultado<mx.ambulantpoint.misventas.data.local.entity.Perfil>

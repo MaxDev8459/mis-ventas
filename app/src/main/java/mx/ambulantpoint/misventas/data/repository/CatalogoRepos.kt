@@ -22,6 +22,8 @@ import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
 import mx.ambulantpoint.misventas.domain.puertos.PuertoCategorias
 import mx.ambulantpoint.misventas.domain.puertos.PuertoFormasPago
 import mx.ambulantpoint.misventas.domain.puertos.PuertoProductos
+import mx.ambulantpoint.misventas.domain.puertos.PuertoDatosTransferencia
+import mx.ambulantpoint.misventas.domain.regla.DatosTransferencia
 
 /** RF 2.6 – 2.9. */
 class CategoriaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCategorias {
@@ -208,12 +210,29 @@ class PerfilRepo(private val db: MisVentasDb, private val reloj: Reloj) : Puerto
 }
 
 /** RF 3.6: descuentos deshabilitados por defecto. */
-class ConfiguracionRepo(private val db: MisVentasDb, private val reloj: Reloj) {
+class ConfiguracionRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoDatosTransferencia {
     private val dao = db.configuracionDao()
 
     fun observar(): Flow<Configuracion?> = dao.observar()
 
-    suspend fun guardarDescuentos(habilitados: Boolean): Resultado<Unit> = db.transaccion {
-        dao.guardar(Configuracion(descuentosHabilitados = habilitados, actualizadoEn = reloj.ahora()))
+    /** Cambia un ajuste conservando los demás (es una sola fila). */
+    private suspend fun actualizar(cambio: (Configuracion) -> Configuracion): Resultado<Unit> = db.transaccion {
+        val ahora = reloj.ahora()
+        val actual = dao.obtener() ?: Configuracion(actualizadoEn = ahora)
+        dao.guardar(cambio(actual).copy(actualizadoEn = ahora, pendienteSync = true))
     }
+
+    suspend fun guardarDescuentos(habilitados: Boolean): Resultado<Unit> =
+        actualizar { it.copy(descuentosHabilitados = habilitados) }
+
+    /** SC-01. */
+    override suspend fun guardarDatosTransferencia(datos: DatosTransferencia?): Resultado<Unit> =
+        actualizar { it.copy(clabe = datos?.clabe, beneficiario = datos?.beneficiario, banco = datos?.banco) }
+}
+
+/** SC-01: datos para transferencia ya capturados (null si falta alguno). */
+fun Configuracion?.datosTransferencia(): DatosTransferencia? {
+    val c = this ?: return null
+    return if (c.clabe.isNullOrBlank() || c.beneficiario.isNullOrBlank() || c.banco.isNullOrBlank()) null
+    else DatosTransferencia(c.clabe, c.beneficiario, c.banco)
 }

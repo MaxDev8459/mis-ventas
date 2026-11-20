@@ -41,6 +41,9 @@ object Campos {
     const val CONTRASENA = "contrasena"
     const val CONFIRMAR_CONTRASENA = "confirmarContrasena"
     const val AVISO_PRIVACIDAD = "avisoPrivacidad"
+    const val CLABE = "clabe"
+    const val BENEFICIARIO = "beneficiario"
+    const val BANCO = "banco"
 }
 
 /** Junta alertas de campo; si hay alguna, la operación no se intenta. */

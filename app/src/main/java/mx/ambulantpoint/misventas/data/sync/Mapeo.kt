@@ -47,7 +47,8 @@ fun Perfil.aDocumento(): Map<String, Any?> = mapOf(
 )
 
 fun Configuracion.aDocumento(): Map<String, Any?> = mapOf(
-    "id" to id, "descuentosHabilitados" to descuentosHabilitados, "actualizadoEn" to actualizadoEn,
+    "id" to id, "descuentosHabilitados" to descuentosHabilitados,
+    "clabe" to clabe, "beneficiario" to beneficiario, "banco" to banco, "actualizadoEn" to actualizadoEn,
 )
 
 fun Categoria.aDocumento(): Map<String, Any?> = mapOf(
@@ -130,6 +131,7 @@ fun aPerfil(d: Map<String, Any?>) = Perfil(
 
 fun aConfiguracion(d: Map<String, Any?>) = Configuracion(
     id = d.textoONulo("id") ?: Configuracion.ID_UNICA, descuentosHabilitados = d.logico("descuentosHabilitados", false),
+    clabe = d.textoONulo("clabe"), beneficiario = d.textoONulo("beneficiario"), banco = d.textoONulo("banco"),
     actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 

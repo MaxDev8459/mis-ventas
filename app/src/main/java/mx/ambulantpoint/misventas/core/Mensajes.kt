@@ -99,7 +99,14 @@ object Mensajes {
      * el equipo y el cliente las aprobó todas el 18-nov-2026 (Validacion_Textos_Cliente_Mis_Ventas.docx,
      * sin firma). EXISTENCIA_NO_VALIDA no se muestra en ninguna pantalla y no se sometió a validación.
      */
+    // Solicitud de cambio SC-01 (20-nov-2026): datos para transferencia. Textos del equipo, no del DFR.
+    const val DATOS_TRANSFERENCIA_GUARDADOS = "Los datos para transferencia se guardaron exitosamente"
+    const val DATOS_TRANSFERENCIA_BORRADOS = "Los datos para transferencia se borraron"
+
     object Campo {
+        // SC-01 (textos del equipo).
+        const val CLABE_INCOMPLETA = "La CLABE debe tener 18 dígitos"
+        const val CLABE_NO_VALIDA = "La CLABE no es válida. Revise los dígitos"
         const val OBLIGATORIO = "Este campo es obligatorio"
         const val CORREO_NO_VALIDO = "El correo electrónico no es válido"
         const val CORREO_YA_REGISTRADO = "El correo electrónico ya está registrado"

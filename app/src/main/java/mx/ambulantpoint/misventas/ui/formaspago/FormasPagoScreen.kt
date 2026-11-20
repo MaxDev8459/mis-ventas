@@ -1,6 +1,12 @@
 package mx.ambulantpoint.misventas.ui.formaspago
 
 import androidx.compose.foundation.clickable
+import mx.ambulantpoint.misventas.domain.usecase.GuardarDatosTransferencia
+import mx.ambulantpoint.misventas.domain.regla.ReglaTransferencia
+import mx.ambulantpoint.misventas.domain.regla.DatosTransferencia
+import mx.ambulantpoint.misventas.data.repository.datosTransferencia
+import androidx.compose.ui.text.input.KeyboardType
+import kotlinx.coroutines.flow.map
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -48,6 +54,15 @@ import mx.ambulantpoint.misventas.ui.components.CampoTexto
 import mx.ambulantpoint.misventas.ui.components.atender
 import mx.ambulantpoint.misventas.ui.components.vm
 
+/** SC-01: diálogo de datos para transferencia. */
+data class EdicionTransferencia(
+    val clabe: String,
+    val beneficiario: String,
+    val banco: String,
+    val existentes: Boolean,
+    val errores: Map<String, String> = emptyMap(),
+)
+
 /** Diálogo abierto: agregar (forma = null) o modificar una forma de pago adicional. */
 data class EdicionFormaPago(
     val forma: FormaPago?,
@@ -58,7 +73,44 @@ data class EdicionFormaPago(
 
 class FormasPagoViewModel(c: AppContainer) : ViewModel() {
     private val guardarForma = GuardarFormaPago(c.formaPagoRepo)
+    private val guardarTransferencia = GuardarDatosTransferencia(c.configuracionRepo)
     private val notificador = c.notificador
+
+    /** SC-01. */
+    val datosTransferencia: StateFlow<DatosTransferencia?> = c.configuracionRepo.observar()
+        .map { it.datosTransferencia() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    var edicionTransferencia by mutableStateOf<EdicionTransferencia?>(null)
+
+    fun abrirTransferencia() {
+        val d = datosTransferencia.value
+        edicionTransferencia = EdicionTransferencia(d?.clabe.orEmpty(), d?.beneficiario.orEmpty(), d?.banco.orEmpty(), existentes = d != null)
+    }
+
+    /** Al capturar la CLABE se propone el banco (si el vendedor no escribió otro). */
+    fun cambiarClabe(texto: String) {
+        val e = edicionTransferencia ?: return
+        val anterior = ReglaTransferencia.bancoSugerido(ReglaTransferencia.soloDigitos(e.clabe))
+        val sugerido = ReglaTransferencia.bancoSugerido(ReglaTransferencia.soloDigitos(texto))
+        val banco = if ((e.banco.isBlank() || e.banco == anterior) && sugerido != null) sugerido else e.banco
+        edicionTransferencia = e.copy(clabe = texto, banco = banco, errores = e.errores - Campos.CLABE - Campos.BANCO)
+    }
+
+    fun guardarDatosTransferencia() {
+        val e = edicionTransferencia ?: return
+        viewModelScope.launch {
+            guardarTransferencia(e.clabe, e.beneficiario, e.banco)
+                .atender(notificador) { errores -> edicionTransferencia = edicionTransferencia?.copy(errores = errores) }
+                ?.let { it.mensaje?.let(notificador::mostrar); edicionTransferencia = null }
+        }
+    }
+
+    fun borrarDatosTransferencia() {
+        viewModelScope.launch {
+            guardarTransferencia.borrar().atender(notificador) {}?.let { it.mensaje?.let(notificador::mostrar); edicionTransferencia = null }
+        }
+    }
 
     val formas: StateFlow<List<FormaPago>?> = c.formaPagoRepo.observarTodas()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -98,6 +150,7 @@ class FormasPagoViewModel(c: AppContainer) : ViewModel() {
 fun PantallaFormasPago(alRegresar: () -> Unit) {
     val modelo = vm { FormasPagoViewModel(it) }
     val formas by modelo.formas.collectAsStateWithLifecycle()
+    val datosTransferencia by modelo.datosTransferencia.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { BarraSuperior("Formas de pago", alRegresar) },
@@ -111,6 +164,10 @@ fun PantallaFormasPago(alRegresar: () -> Unit) {
     ) { relleno ->
         val lista = formas ?: return@Scaffold
         LazyColumn(Modifier.padding(relleno).fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+            item(key = "transferencia") {
+                FilaDatosTransferencia(datosTransferencia, modelo::abrirTransferencia)
+                HorizontalDivider(thickness = 4.dp)
+            }
             items(lista, key = { it.id }) { forma ->
                 FilaFormaPago(
                     forma = forma,
@@ -121,6 +178,8 @@ fun PantallaFormasPago(alRegresar: () -> Unit) {
             }
         }
     }
+
+    modelo.edicionTransferencia?.let { DialogoDatosTransferencia(modelo, it) }
 
     modelo.edicion?.let { e ->
         AlertDialog(
@@ -152,6 +211,59 @@ fun PantallaFormasPago(alRegresar: () -> Unit) {
             dismissButton = { TextButton(onClick = { modelo.edicion = null }) { Text("Cancelar") } },
         )
     }
+}
+
+/** SC-01: resumen de los datos para transferencia; al tocarla se capturan o modifican. */
+@Composable
+private fun FilaDatosTransferencia(datos: DatosTransferencia?, alPulsar: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clickable(onClick = alPulsar)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text("Datos para recibir transferencias", style = MaterialTheme.typography.bodyLarge)
+        Text(
+            if (datos == null) "Sin capturar. Toque para agregar su CLABE."
+            else "${datos.banco} · CLABE ${ReglaTransferencia.clabeEnGrupos(datos.clabe)}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun DialogoDatosTransferencia(modelo: FormasPagoViewModel, e: EdicionTransferencia) {
+    AlertDialog(
+        onDismissRequest = { modelo.edicionTransferencia = null },
+        title = { Text("Datos para recibir transferencias") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CampoTexto(
+                    e.clabe, modelo::cambiarClabe, "CLABE interbancaria (18 dígitos) *",
+                    error = e.errores[Campos.CLABE], teclado = KeyboardType.Number,
+                )
+                CampoTexto(
+                    e.beneficiario,
+                    { modelo.edicionTransferencia = e.copy(beneficiario = it, errores = e.errores - Campos.BENEFICIARIO) },
+                    "Nombre del beneficiario *", error = e.errores[Campos.BENEFICIARIO],
+                )
+                CampoTexto(
+                    e.banco,
+                    { modelo.edicionTransferencia = e.copy(banco = it, errores = e.errores - Campos.BANCO) },
+                    "Banco *", error = e.errores[Campos.BANCO], imeAction = ImeAction.Done,
+                )
+                if (e.existentes) {
+                    TextButton(onClick = modelo::borrarDatosTransferencia, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text("Borrar datos", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = modelo::guardarDatosTransferencia) { Text("Guardar") } },
+        dismissButton = { TextButton(onClick = { modelo.edicionTransferencia = null }) { Text("Cancelar") } },
+    )
 }
 
 /** Nombre, estado e interruptor. "Efectivo" es predeterminada: siempre activa y no se edita. */

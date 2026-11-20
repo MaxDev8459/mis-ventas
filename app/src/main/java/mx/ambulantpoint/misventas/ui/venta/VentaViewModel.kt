@@ -1,5 +1,7 @@
 package mx.ambulantpoint.misventas.ui.venta
 
+import mx.ambulantpoint.misventas.data.repository.datosTransferencia
+import mx.ambulantpoint.misventas.domain.regla.DatosTransferencia
 import mx.ambulantpoint.misventas.domain.regla.FallaCampos
 import mx.ambulantpoint.misventas.domain.usecase.Campos
 import mx.ambulantpoint.misventas.domain.usecase.DescuentoCapturado
@@ -61,6 +63,14 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     val descuentosHabilitados: StateFlow<Boolean> = c.configuracionRepo.observar()
         .map { it?.descuentosHabilitados == true }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** SC-01: datos para recibir transferencias (null si el vendedor no los ha capturado). */
+    val datosTransferencia: StateFlow<DatosTransferencia?> = c.configuracionRepo.observar()
+        .map { it.datosTransferencia() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** SC-01: ventana con los datos para transferencia, para mostrársela al cliente. */
+    var mostrandoDatosTransferencia by mutableStateOf(false)
 
     var carrito by mutableStateOf(Carrito())
         private set

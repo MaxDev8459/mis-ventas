@@ -1,5 +1,9 @@
 package mx.ambulantpoint.misventas.ui.venta
 
+import mx.ambulantpoint.misventas.domain.regla.ReglaTransferencia
+import mx.ambulantpoint.misventas.domain.regla.DatosTransferencia
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
 import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -223,6 +227,7 @@ private fun PantallaCobro(modelo: VentaViewModel) {
     val conDescuentos by modelo.descuentosHabilitados.collectAsStateWithLifecycle()
     val cobro = modelo.cobro
     val total = modelo.totalACobrar
+    val datosTransferencia by modelo.datosTransferencia.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { BarraSuperior("Cobrar", modelo::cerrarCobro) }) { relleno ->
         Column(
@@ -291,6 +296,21 @@ private fun PantallaCobro(modelo: VentaViewModel) {
                     style = MaterialTheme.typography.headlineMedium,
                 )
             } else if (forma != null) {
+                // SC-01: con transferencia, los datos del vendedor para mostrárselos al cliente.
+                if (ReglaTransferencia.esTransferencia(forma.nombre)) {
+                    if (datosTransferencia != null) {
+                        OutlinedButton(
+                            onClick = { modelo.mostrandoDatosTransferencia = true },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_BOTON),
+                        ) { Text("Mostrar datos para transferencia") }
+                    } else {
+                        Text(
+                            "Puede capturar sus datos para transferencia en Formas de pago.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 Text(
                     "Verifique que recibió el pago antes de confirmar.",
                     style = MaterialTheme.typography.bodyLarge,
@@ -301,6 +321,50 @@ private fun PantallaCobro(modelo: VentaViewModel) {
             Spacer(Modifier.size(4.dp))
             BotonPrincipal("Confirmar cobro", modelo::confirmar, cargando = modelo.confirmando)
         }
+    }
+
+    val datos = datosTransferencia
+    if (modelo.mostrandoDatosTransferencia && datos != null) {
+        DialogoDatosTransferencia(datos, total) { modelo.mostrandoDatosTransferencia = false }
+    }
+}
+
+/**
+ * SC-01 — Datos para transferencia en letra grande, para que el cliente los lea o les tome foto;
+ * "Compartir" se los manda (WhatsApp, SMS…) para que los copie en su app del banco.
+ */
+@Composable
+private fun DialogoDatosTransferencia(datos: DatosTransferencia, totalCentavos: Long, alCerrar: () -> Unit) {
+    val contexto = LocalContext.current
+    AlertDialog(
+        onDismissRequest = alCerrar,
+        title = { Text("Datos para transferencia") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                DatoGrande("Banco", datos.banco)
+                DatoGrande("Beneficiario", datos.beneficiario)
+                DatoGrande("CLABE", ReglaTransferencia.clabeEnGrupos(datos.clabe))
+                DatoGrande("Total", Formato.moneda(totalCentavos))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val envio = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, ReglaTransferencia.textoParaCompartir(datos, totalCentavos))
+                }
+                contexto.startActivity(Intent.createChooser(envio, "Compartir datos para transferencia"))
+            }) { Text("Compartir") }
+        },
+        dismissButton = { TextButton(onClick = alCerrar) { Text("Cerrar") } },
+    )
+}
+
+@Composable
+private fun DatoGrande(etiqueta: String, valor: String) {
+    Column {
+        Text(etiqueta, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(valor, style = MaterialTheme.typography.headlineSmall)
     }
 }
 

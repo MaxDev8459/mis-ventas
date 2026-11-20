@@ -30,6 +30,9 @@ interface ConfiguracionDao {
     @Query("SELECT * FROM configuracion WHERE id = '${Configuracion.ID_UNICA}'")
     fun observar(): Flow<Configuracion?>
 
+    @Query("SELECT * FROM configuracion WHERE id = '${Configuracion.ID_UNICA}'")
+    suspend fun obtener(): Configuracion?
+
     @Upsert
     suspend fun guardar(configuracion: Configuracion)
 }
