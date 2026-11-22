@@ -145,8 +145,9 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
             BotonSecundario("Contar billetes y monedas", { modelo.contandoBilletes = true })
             BotonPrincipal("Calcular corte", modelo::calcular)
 
-            // Antes de cerrar se ve cuánto sobró de la carga.
-            SeccionCarga(carga)
+            // Antes de calcular se ve cuánto sobró de la carga; al calcular, solo queda el resumen
+            // debajo del botón (pedido del cliente, 22-nov-2026). En "Cortes anteriores" sigue la carga.
+            if (modelo.corte == null) SeccionCarga(carga)
             modelo.corte?.let { c ->
                 ResumenCorte(c.corte.caja, c.corte.porFormaPago, c.corte.abonosPorForma)
                 BotonSecundario("Cerrar caja", { modelo.confirmarCierre = true })
