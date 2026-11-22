@@ -177,7 +177,7 @@ fun PantallaProductoForm(productoId: String?, alTerminar: () -> Unit) {
             if (original != null) {
                 BotonSecundario(
                     if (original.activo) "Desactivar producto" else "Reactivar producto",
-                    { if (original.activo) modelo.confirmarDesactivar = true else modelo.alternarEstado() },
+                    { if (original.activo) modelo.confirmarDesactivar = true else modelo.confirmarReactivar = true },
                 )
             }
         }
@@ -200,6 +200,14 @@ fun PantallaProductoForm(productoId: String?, alTerminar: () -> Unit) {
             texto = Mensajes.confirmarDesactivarProducto(modelo.original?.nombre.orEmpty()),
             alConfirmar = modelo::alternarEstado,
             alCancelar = { modelo.confirmarDesactivar = false },
+        )
+    }
+
+    if (modelo.confirmarReactivar) {
+        DialogoConfirmacion(
+            texto = Mensajes.confirmarReactivarProducto(modelo.original?.nombre.orEmpty()),
+            alConfirmar = modelo::alternarEstado,
+            alCancelar = { modelo.confirmarReactivar = false },
         )
     }
 }

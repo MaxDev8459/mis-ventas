@@ -13,7 +13,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -41,7 +47,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -69,6 +78,8 @@ import mx.ambulantpoint.misventas.ui.components.MensajeVacio
 import mx.ambulantpoint.misventas.ui.components.Notificador
 import mx.ambulantpoint.misventas.ui.components.atender
 import mx.ambulantpoint.misventas.ui.components.vm
+import mx.ambulantpoint.misventas.ui.historial.Periodo
+import mx.ambulantpoint.misventas.ui.reportes.SelectorRangoFechas
 
 /** Diálogo abierto en la pantalla. */
 sealed interface Captura {
@@ -82,6 +93,7 @@ sealed interface Captura {
     ) : Captura
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProductoInventarioViewModel(c: AppContainer, productoId: String) : ViewModel() {
     private val existenciaBaja = EvaluarExistenciaBaja(c.reporteRepo)
     private val registrarEntrada = RegistrarEntrada(c.inventarioRepo, existenciaBaja)
@@ -91,9 +103,20 @@ class ProductoInventarioViewModel(c: AppContainer, productoId: String) : ViewMod
     val producto: StateFlow<Producto?> = c.productoRepo.observarPorId(productoId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** RF 4.4: movimientos del producto, del más reciente al más antiguo. */
-    val movimientos: StateFlow<List<MovimientoInventario>?> = c.inventarioRepo.observarMovimientos(productoId)
+    /** RF 4.4: rango de fechas opcional (inicio y fin del día en hora local); null = todos. */
+    val rango = MutableStateFlow<Pair<Long, Long>?>(null)
+
+    /** RF 4.4: movimientos del producto en el rango, del más reciente al más antiguo. */
+    val movimientos: StateFlow<List<MovimientoInventario>?> = rango
+        .flatMapLatest { r -> c.inventarioRepo.observarMovimientos(productoId, r?.first ?: 0L, r?.second ?: Long.MAX_VALUE) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun todos() { rango.value = null }
+
+    /** El selector entrega medianoche UTC; se convierte al día local completo. */
+    fun elegirRango(desdeUtc: Long, hastaUtc: Long) {
+        rango.value = Periodo.utcADiaLocal(desdeUtc) to Periodo.finDelDia(Periodo.utcADiaLocal(hastaUtc))
+    }
 
     var captura by mutableStateOf<Captura?>(null)
 
@@ -139,11 +162,14 @@ fun etiquetaMotivo(m: MotivoAjuste) = when (m) {
 }
 
 /** RF 4.1 Entrada, RF 4.2 Ajuste y RF 4.4 Movimientos de un producto. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaProductoInventario(productoId: String, alRegresar: () -> Unit) {
     val modelo = vm(key = productoId) { ProductoInventarioViewModel(it, productoId) }
     val producto by modelo.producto.collectAsStateWithLifecycle()
     val movimientos by modelo.movimientos.collectAsStateWithLifecycle()
+    val rango by modelo.rango.collectAsStateWithLifecycle()
+    var elegirFechas by remember { mutableStateOf(false) }
     val p = producto
 
     Scaffold(topBar = { BarraSuperior(p?.nombre ?: "Existencias", alRegresar) }) { relleno ->
@@ -165,6 +191,18 @@ fun PantallaProductoInventario(productoId: String, alRegresar: () -> Unit) {
                     Spacer(Modifier.height(20.dp))
                     Text("Movimientos de inventario", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(4.dp))
+                    // RF 4.4: rango de fechas opcional.
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val r = rango
+                        FilterChip(r == null, modelo::todos, { Text("Todos") }, Modifier.heightIn(min = 48.dp))
+                        FilterChip(
+                            r != null,
+                            { elegirFechas = true },
+                            { Text(if (r != null) "${Formato.fecha(r.first)} – ${Formato.fecha(r.second)}" else "Elegir fechas") },
+                            Modifier.heightIn(min = 48.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
                 }
                 val lista = movimientos
                 if (lista != null && lista.isEmpty()) item { MensajeVacio(Mensajes.SIN_MOVIMIENTOS_PERIODO) }
@@ -173,6 +211,23 @@ fun PantallaProductoInventario(productoId: String, alRegresar: () -> Unit) {
                     HorizontalDivider()
                 }
             }
+        }
+    }
+
+    if (elegirFechas) {
+        val estado = rememberDateRangePickerState()
+        DatePickerDialog(
+            onDismissRequest = { elegirFechas = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val d = estado.selectedStartDateMillis
+                    if (d != null) modelo.elegirRango(d, estado.selectedEndDateMillis ?: d)
+                    elegirFechas = false
+                }) { Text("Aceptar") }
+            },
+            dismissButton = { TextButton(onClick = { elegirFechas = false }) { Text("Cancelar") } },
+        ) {
+            SelectorRangoFechas(estado, Modifier.weight(1f))
         }
     }
 

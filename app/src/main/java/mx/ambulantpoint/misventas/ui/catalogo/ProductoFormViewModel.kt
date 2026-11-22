@@ -52,6 +52,7 @@ class ProductoFormViewModel(c: AppContainer, private val productoId: String?) : 
         private set
     var nuevaCategoria by mutableStateOf<NuevaCategoria?>(null)
     var confirmarDesactivar by mutableStateOf(false)
+    var confirmarReactivar by mutableStateOf(false)
 
     /** La pantalla se cierra cuando pasa a true. */
     var terminado by mutableStateOf(false)
@@ -128,10 +129,11 @@ class ProductoFormViewModel(c: AppContainer, private val productoId: String?) : 
         }
     }
 
-    /** RF 2.3 (tras confirmar) / RF 2.4. */
+    /** RF 2.3 / RF 2.4, ambos tras la confirmación del vendedor. */
     fun alternarEstado() {
         val p = original ?: return
         confirmarDesactivar = false
+        confirmarReactivar = false
         viewModelScope.launch {
             cambiarEstado(p.id, activar = !p.activo).atender(notificador) {}?.let { hecho ->
                 hecho.mensaje?.let(notificador::mostrar)

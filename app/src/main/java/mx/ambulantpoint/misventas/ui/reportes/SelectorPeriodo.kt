@@ -74,7 +74,7 @@ fun SelectorPeriodo(periodo: Periodo, alCambiar: (Periodo) -> Unit) {
             FilterChip(
                 selected = periodo.tipo == TipoPeriodo.RANGO,
                 onClick = { elegirFechas = true },
-                label = { Text("Rango") },
+                label = { Text(TipoPeriodo.RANGO.etiqueta) },
                 modifier = Modifier.heightIn(min = 48.dp),
             )
         }
