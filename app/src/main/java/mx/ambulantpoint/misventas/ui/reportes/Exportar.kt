@@ -93,6 +93,7 @@ fun AccionExportar(documento: DocumentoReporte?) {
                                         generando = false
                                         elegir = false
                                         r.onSuccess { exportado = it }
+                                            .onFailure { c.notificador.mostrar(Mensajes.REPORTE_NO_EXPORTADO) }
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),

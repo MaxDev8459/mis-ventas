@@ -40,8 +40,8 @@ class GuardarDatosTransferencia(private val repo: PuertoDatosTransferencia) {
             Campos.CLABE,
             when {
                 clabe.isBlank() -> Mensajes.Campo.OBLIGATORIO
-                digitos.length != ReglaTransferencia.LARGO_CLABE || digitos.length != clabe.count { !it.isWhitespace() && it != '-' } ->
-                    Mensajes.Campo.CLABE_INCOMPLETA
+                digitos.length != clabe.count { !it.isWhitespace() && it != '-' } -> Mensajes.Campo.CLABE_SOLO_NUMEROS
+                digitos.length != ReglaTransferencia.LARGO_CLABE -> Mensajes.Campo.CLABE_INCOMPLETA
                 !ReglaTransferencia.clabeValida(digitos) -> Mensajes.Campo.CLABE_NO_VALIDA
                 else -> null
             },

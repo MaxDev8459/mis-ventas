@@ -28,6 +28,8 @@ object Mensajes {
         "¿Desea desactivar el producto $nombre? Ya no estará disponible para la venta"
     const val PRODUCTO_DESACTIVADO = "El producto se desactivó exitosamente"
     const val PRODUCTO_REACTIVADO = "El producto se reactivó exitosamente"
+    /** RF 2.4: el DFR pide la confirmación del vendedor pero no da texto (texto del equipo). */
+    fun confirmarReactivarProducto(nombre: String) = "¿Desea reactivar el producto $nombre?"
     const val SIN_PRODUCTOS = "No se encontraron productos"
     const val CATEGORIA_GUARDADA = "La categoría se guardó exitosamente"
     const val SIN_CATEGORIAS = "No hay categorías registradas"
@@ -73,6 +75,8 @@ object Mensajes {
     // ---------- Módulo 6. Reportes ----------
     const val REPORTE_EXPORTADO = "El reporte se exportó exitosamente"
     const val SIN_INFORMACION_EXPORTAR = "No hay información para exportar"
+    /** RF 6.6: si falla la generación del archivo. El DFR no da texto (texto del equipo, con el estilo del DFR). */
+    const val REPORTE_NO_EXPORTADO = "El reporte no se exportó exitosamente, intente de nuevo"
 
     // ---------- Módulo 7. Sincronización ----------
     const val SINCRONIZADO = "Sincronizado"
@@ -97,7 +101,7 @@ object Mensajes {
     /**
      * Alertas de campo. No son texto del DFR (pide "alertas en pantalla" sin dar la redacción): las propuso
      * el equipo y el cliente las aprobó todas el 18-nov-2026 (Validacion_Textos_Cliente_Mis_Ventas.docx,
-     * sin firma). EXISTENCIA_NO_VALIDA no se muestra en ninguna pantalla y no se sometió a validación.
+     * sin firma). CLABE_SOLO_NUMEROS (21-nov-2026) es del equipo, para la SC-01.
      */
     // Solicitud de cambio SC-01 (20-nov-2026): datos para transferencia. Textos del equipo, no del DFR.
     const val DATOS_TRANSFERENCIA_GUARDADOS = "Los datos para transferencia se guardaron exitosamente"
@@ -106,6 +110,7 @@ object Mensajes {
     object Campo {
         // SC-01 (textos del equipo).
         const val CLABE_INCOMPLETA = "La CLABE debe tener 18 dígitos"
+        const val CLABE_SOLO_NUMEROS = "La CLABE solo debe tener números"
         const val CLABE_NO_VALIDA = "La CLABE no es válida. Revise los dígitos"
         const val OBLIGATORIO = "Este campo es obligatorio"
         const val CORREO_NO_VALIDO = "El correo electrónico no es válido"
@@ -121,7 +126,6 @@ object Mensajes {
         const val CANTIDAD_ENTERA = "La cantidad debe ser un número entero"
         const val CANTIDAD_KG = "La cantidad debe tener hasta tres decimales"
         const val CANTIDAD_MAYOR_CERO = "La cantidad debe ser mayor a cero"
-        const val EXISTENCIA_NO_VALIDA = "La existencia no es válida para el tipo de venta"
         const val MONTO_NO_VALIDO = "El monto no es válido"
         const val ESPECIFIQUE_MOTIVO = "Especifique el motivo"
         const val TIPO_VENTA_CON_EXISTENCIA = "Solo puede cambiar el tipo de venta si la existencia es cero"

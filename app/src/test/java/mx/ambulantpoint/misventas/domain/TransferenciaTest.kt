@@ -94,7 +94,7 @@ class GuardarDatosTransferenciaTest {
 
     @Test fun `clabe incompleta o con letras`() = runBlocking {
         assertEquals(Mensajes.Campo.CLABE_INCOMPLETA, errores(GuardarDatosTransferencia(RepoFalso())("03218000011835971", "A", "B"))[Campos.CLABE])
-        assertEquals(Mensajes.Campo.CLABE_INCOMPLETA, errores(GuardarDatosTransferencia(RepoFalso())("03218000011835971A", "A", "B"))[Campos.CLABE])
+        assertEquals(Mensajes.Campo.CLABE_SOLO_NUMEROS, errores(GuardarDatosTransferencia(RepoFalso())("03218000011835971A", "A", "B"))[Campos.CLABE])
     }
 
     @Test fun `clabe con digito verificador incorrecto`() = runBlocking {
