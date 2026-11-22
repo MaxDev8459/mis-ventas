@@ -9,6 +9,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import android.os.Build
 import android.content.pm.PackageManager
 import android.Manifest
+import android.app.Activity
+import android.os.SystemClock
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import mx.ambulantpoint.misventas.domain.regla.ReglaVerificacion
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -87,6 +95,22 @@ fun NavegacionApp() {
     val c = contenedor()
     val sesion by c.auth.estado.collectAsStateWithLifecycle()
     val verificada by c.identidadVerificada.collectAsStateWithLifecycle()
+    val reverificar by c.reverificacionPendiente.collectAsStateWithLifecycle()
+    val actividad = LocalContext.current as? Activity
+    // Al regresar de segundo plano después del tiempo elegido en Perfil, se vuelve a verificar la identidad.
+    var ausenteDesde by remember { mutableLongStateOf(0L) }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { ausenteDesde = SystemClock.elapsedRealtime() }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        val pedir = ReglaVerificacion.debeVerificar(
+            tiempo = c.preferencias.reverificacion.value,
+            sesionActiva = c.auth.estado.value == EstadoSesion.ACTIVA,
+            yaBloqueada = !c.identidadVerificada.value || c.reverificacionPendiente.value,
+            ausenteDesde = ausenteDesde,
+            ahora = SystemClock.elapsedRealtime(),
+        )
+        ausenteDesde = 0L
+        if (pedir) c.reverificacionPendiente.value = true
+    }
     // RF 7.1: el servicio arranca con la app y sincroniza mientras esté abierta.
     val sync = c.sincronizacion
     val aviso by sync.avisoDatosMoviles.collectAsStateWithLifecycle()
@@ -115,7 +139,14 @@ fun NavegacionApp() {
             EstadoSesion.ACTIVA -> when {
                 !verificada -> PantallaVerificacion { c.identidadVerificada.value = true }
                 recuperacionRequerida -> PantallaRecuperacion()
-                else -> GrafoPrincipal(alVenderSinCaja = { c.notificador.mostrar(Mensajes.ABRA_CAJA) })
+                else -> {
+                    GrafoPrincipal(alVenderSinCaja = { c.notificador.mostrar(Mensajes.ABRA_CAJA) })
+                    // Encima de la app para no perder lo que estaba en pantalla; "Atrás" no la salta.
+                    if (reverificar) {
+                        BackHandler { actividad?.moveTaskToBack(true) }
+                        PantallaVerificacion { c.reverificacionPendiente.value = false }
+                    }
+                }
             }
             EstadoSesion.SIN_CUENTA, EstadoSesion.SIN_SESION -> GrafoAcceso(inicioEnRegistro = sesion == EstadoSesion.SIN_CUENTA)
         }
@@ -229,7 +260,14 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
         composable(Ruta.de(Destino.HISTORIAL)) {
             PantallaHistorial(regresar) { id -> nav.navigate("${Ruta.VENTA}/$id") }
         }
-        composable("${Ruta.VENTA}/{id}") { e -> PantallaDetalleVenta(e.arguments?.getString("id").orEmpty(), regresar) }
+        composable("${Ruta.VENTA}/{id}") { e ->
+            PantallaDetalleVenta(
+                ventaId = e.arguments?.getString("id").orEmpty(),
+                alRegresar = regresar,
+                // Corregir venta: la venta ya se canceló; se abre la venta con sus productos cargados.
+                alCorregir = { nav.navigate(Ruta.de(Destino.VENDER)) { popUpTo(Ruta.INICIO) } },
+            )
+        }
         composable(Ruta.de(Destino.EXISTENCIAS)) {
             PantallaExistencias(regresar) { id -> nav.navigate("${Ruta.INVENTARIO}/$id") }
         }

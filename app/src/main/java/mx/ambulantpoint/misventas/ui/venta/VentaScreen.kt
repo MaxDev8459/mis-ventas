@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -118,7 +119,11 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     items(lista, key = { it.producto.id }) { t ->
-                        TarjetaProducto(t, modelo.carrito.cantidadDe(t.producto.id)) { modelo.tocar(t.producto) }
+                        TarjetaProducto(
+                            t, modelo.carrito.cantidadDe(t.producto.id),
+                            alTocar = { modelo.tocar(t.producto) },
+                            alMantener = { modelo.pedirMerma(t.producto) },
+                        )
                     }
                 }
             }
@@ -142,13 +147,50 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
             dismissButton = { TextButton(onClick = modelo::cancelarPeso, modifier = Modifier.heightIn(min = 48.dp)) { Text("Cancelar") } },
         )
     }
+
+    // Merma desde la venta: mantener presionado el producto.
+    modelo.mermaDe?.let { p ->
+        AlertDialog(
+            onDismissRequest = modelo::cancelarMerma,
+            title = { Text("Registrar merma") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${p.nombre} · hay ${Formato.cantidad(p.existenciaMilesimas, p.tipoVenta)}")
+                    Text(
+                        "Se descuenta del inventario como ajuste por merma (producto roto o perdido).",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    CampoTexto(
+                        modelo.mermaTexto, modelo::cambiarMerma, "Cantidad *", error = modelo.mermaError,
+                        teclado = if (p.tipoVenta == TipoVenta.PESO) KeyboardType.Decimal else KeyboardType.Number,
+                        sufijo = Formato.unidad(p.tipoVenta), imeAction = ImeAction.Done,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = modelo::registrarMerma, enabled = !modelo.registrandoMerma, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text("Registrar")
+                }
+            },
+            dismissButton = { TextButton(onClick = modelo::cancelarMerma, modifier = Modifier.heightIn(min = 48.dp)) { Text("Cancelar") } },
+        )
+    }
 }
 
 @Composable
-private fun TarjetaProducto(t: Tarjeta, enCarritoMilesimas: Long, alTocar: () -> Unit) {
+private fun TarjetaProducto(t: Tarjeta, enCarritoMilesimas: Long, alTocar: () -> Unit, alMantener: () -> Unit) {
     val p = t.producto
-    ElevatedCard(onClick = alTocar, modifier = Modifier.fillMaxWidth()) {
-        Column {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        // Dentro de la tarjeta para que el efecto del toque respete sus esquinas.
+        Column(
+            Modifier.combinedClickable(
+                onClickLabel = "Agregar a la venta",
+                onLongClickLabel = "Registrar merma",
+                onLongClick = alMantener,
+                onClick = alTocar,
+            ),
+        ) {
             ImagenProducto(t.imagenRuta, Modifier.fillMaxWidth().aspectRatio(1.6f))
             Column(Modifier.padding(10.dp)) {
                 Text(p.nombre, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)

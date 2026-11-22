@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import mx.ambulantpoint.misventas.AppContainer
 import mx.ambulantpoint.misventas.MisVentasApp
+import mx.ambulantpoint.misventas.ui.theme.LocalTemaOscuro
 
 /** RNF Usabilidad: elementos táctiles de al menos 48 dp; los botones principales usan 56 dp. */
 val ALTO_BOTON = 56.dp
@@ -81,12 +82,22 @@ fun BarraSuperior(titulo: String, alRegresar: (() -> Unit)? = null, acciones: @C
             }
         },
         actions = { acciones() },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            titleContentColor = MaterialTheme.colorScheme.onPrimary,
-            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-            actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
-        ),
+        // En oscuro la barra es una superficie oscura: así los íconos claros de la barra de estado se leen igual.
+        colors = if (LocalTemaOscuro.current) {
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                titleContentColor = MaterialTheme.colorScheme.primary,
+                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+            )
+        } else {
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            )
+        },
     )
 }
 

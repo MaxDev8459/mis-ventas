@@ -34,6 +34,11 @@ import mx.ambulantpoint.misventas.data.local.entity.EstadoVenta
 import mx.ambulantpoint.misventas.data.local.entity.Venta
 import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
 import mx.ambulantpoint.misventas.domain.usecase.CancelarVenta
+import mx.ambulantpoint.misventas.core.Mensajes
+import mx.ambulantpoint.misventas.domain.venta.LineaACorregir
+import mx.ambulantpoint.misventas.domain.venta.ProductoEnVenta
+import mx.ambulantpoint.misventas.domain.venta.ReglaCorreccion
+import androidx.compose.runtime.LaunchedEffect
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.BotonSecundario
 import mx.ambulantpoint.misventas.ui.components.DialogoConfirmacion
@@ -45,6 +50,8 @@ class DetalleVentaViewModel(c: AppContainer, private val ventaId: String) : View
     private val formas = c.formaPagoRepo
     private val cancelarVenta = CancelarVenta(c.ventaRepo)
     private val notificador = c.notificador
+    private val productos = c.productoRepo
+    private val carritoPorCorregir = c.carritoPorCorregir
 
     val detalles: StateFlow<List<VentaDetalle>> = repo.observarDetalles(ventaId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -57,6 +64,10 @@ class DetalleVentaViewModel(c: AppContainer, private val ventaId: String) : View
     var cancelable by mutableStateOf(false)
         private set
     var confirmando by mutableStateOf(false)
+    var confirmandoCorreccion by mutableStateOf(false)
+    /** La venta se canceló para corregirla: la pantalla abre la venta con sus productos. */
+    var corregida by mutableStateOf(false)
+        private set
 
     init { cargar() }
 
@@ -71,6 +82,33 @@ class DetalleVentaViewModel(c: AppContainer, private val ventaId: String) : View
 
     fun textoConfirmacion(): String = venta?.let { cancelarVenta.confirmacion(it) }.orEmpty()
 
+    fun textoCorreccion(): String =
+        venta?.let { Mensajes.confirmarCorregirVenta(Formato.moneda(it.totalCentavos), it.descuentoCentavos > 0) }.orEmpty()
+
+    /** Corregir venta = cancelar (la existencia regresa) y cargar sus productos en una venta nueva. */
+    fun corregir() {
+        confirmandoCorreccion = false
+        viewModelScope.launch {
+            val lineas = repo.observarDetalles(ventaId).first()
+                .map { LineaACorregir(it.productoId, it.nombreProducto, it.cantidadMilesimas) }
+            cancelarVenta(ventaId).atender(notificador) {} ?: return@launch
+            val hoy = lineas.map { it.productoId }.distinct().associateWith { productos.porId(it) }
+            val correccion = ReglaCorreccion.armar(lineas) { id ->
+                hoy[id]?.takeIf { it.activo }?.let { p ->
+                    ProductoEnVenta(p.id, p.nombre, p.tipoVenta, p.precioCentavos, p.existenciaMilesimas)
+                }
+            }
+            carritoPorCorregir.value = correccion.carrito
+            notificador.mostrar(
+                listOfNotNull(
+                    Mensajes.VENTA_EN_CORRECCION,
+                    correccion.omitidos.takeIf { it.isNotEmpty() }?.let(Mensajes::productosNoRecargados),
+                ).joinToString("\n"),
+            )
+            corregida = true
+        }
+    }
+
     fun cancelar() {
         confirmando = false
         viewModelScope.launch {
@@ -82,10 +120,11 @@ class DetalleVentaViewModel(c: AppContainer, private val ventaId: String) : View
     }
 }
 
-/** RF 3.4 (detalle) y RF 3.3 Cancelar venta. */
+/** RF 3.4 (detalle), RF 3.3 Cancelar venta y Corregir venta (cancelar y recapturar). */
 @Composable
-fun PantallaDetalleVenta(ventaId: String, alRegresar: () -> Unit) {
+fun PantallaDetalleVenta(ventaId: String, alRegresar: () -> Unit, alCorregir: () -> Unit) {
     val modelo = vm(key = ventaId) { DetalleVentaViewModel(it, ventaId) }
+    LaunchedEffect(modelo.corregida) { if (modelo.corregida) alCorregir() }
     val detalles by modelo.detalles.collectAsStateWithLifecycle()
     val v = modelo.venta
 
@@ -124,9 +163,20 @@ fun PantallaDetalleVenta(ventaId: String, alRegresar: () -> Unit) {
 
             if (modelo.cancelable) {
                 Spacer(Modifier.height(12.dp))
+                BotonSecundario("Corregir venta", { modelo.confirmandoCorreccion = true })
                 BotonSecundario("Cancelar venta", { modelo.confirmando = true })
             }
         }
+    }
+
+    if (modelo.confirmandoCorreccion) {
+        DialogoConfirmacion(
+            texto = modelo.textoCorreccion(),
+            alConfirmar = modelo::corregir,
+            alCancelar = { modelo.confirmandoCorreccion = false },
+            textoConfirmar = "Corregir",
+            textoCancelar = "Regresar",
+        )
     }
 
     if (modelo.confirmando) {

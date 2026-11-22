@@ -47,6 +47,18 @@ object Mensajes {
     fun confirmarCancelarVenta(totalFormateado: String) =
         "¿Desea cancelar la venta de $totalFormateado? Las existencias se regresarán al inventario"
     const val VENTA_CANCELADA = "La venta se canceló exitosamente"
+
+    // Corregir venta (desarrollo independiente, no viene del DFR).
+    fun confirmarCorregirVenta(totalFormateado: String, conDescuento: Boolean) =
+        "Se cancelará la venta de $totalFormateado y sus productos se cargarán en una venta nueva para corregirla." +
+            (if (conDescuento) " El descuento se vuelve a capturar al cobrar." else "") +
+            " ¿Desea continuar?"
+    const val VENTA_EN_CORRECCION = "Venta cancelada. Corrija los productos y vuelva a cobrar"
+    fun productosNoRecargados(nombres: List<String>) =
+        "No se cargaron por estar inactivos o sin existencia: ${nombres.joinToString(", ")}"
+
+    // Merma desde la pantalla de venta.
+    const val MERMA_REGISTRADA = "La merma se registró exitosamente"
     const val SIN_VENTAS_PERIODO = "No hay ventas registradas en este periodo"
     const val FORMA_PAGO_GUARDADA = "La forma de pago se guardó exitosamente"
     const val CONFIGURACION_GUARDADA = "La configuración se guardó exitosamente"

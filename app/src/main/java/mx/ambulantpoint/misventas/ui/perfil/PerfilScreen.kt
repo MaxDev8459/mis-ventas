@@ -1,5 +1,12 @@
 package mx.ambulantpoint.misventas.ui.perfil
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
+import mx.ambulantpoint.misventas.data.preferencias.TemaApp
+import mx.ambulantpoint.misventas.domain.regla.TiempoReverificacion
+import mx.ambulantpoint.misventas.ui.components.ALTO_BOTON
+
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.imePadding
@@ -63,6 +70,13 @@ class PerfilViewModel(c: AppContainer) : ViewModel() {
 
     private val configuracion = c.configuracionRepo
 
+    /** Ajustes solo de este teléfono (no van a la nube). */
+    private val preferencias = c.preferencias
+    val tema: StateFlow<TemaApp> = preferencias.tema
+    val reverificacion: StateFlow<TiempoReverificacion> = preferencias.reverificacion
+    fun cambiarTema(t: TemaApp) = preferencias.cambiarTema(t)
+    fun cambiarReverificacion(t: TiempoReverificacion) = preferencias.cambiarReverificacion(t)
+
     /** RF 3.6: deshabilitados por defecto. */
     val descuentosHabilitados: StateFlow<Boolean> = configuracion.observar()
         .map { it?.descuentosHabilitados == true }
@@ -121,6 +135,8 @@ fun PantallaPerfil(alRegresar: () -> Unit, alEditar: () -> Unit) {
                 Switch(checked = descuentos, onCheckedChange = null)
             }
             HorizontalDivider()
+            AjustesTelefono(modelo)
+            HorizontalDivider()
             Spacer(Modifier.height(16.dp))
             BotonSecundario("Cerrar sesión", { modelo.confirmando = true })
         }
@@ -128,6 +144,39 @@ fun PantallaPerfil(alRegresar: () -> Unit, alEditar: () -> Unit) {
 
     if (modelo.confirmando) {
         DialogoConfirmacion(Mensajes.CONFIRMAR_CERRAR_SESION, modelo::cerrar, { modelo.confirmando = false })
+    }
+}
+
+/** Tema y tiempo para volver a pedir huella: se guardan solo en este teléfono. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AjustesTelefono(modelo: PerfilViewModel) {
+    val tema by modelo.tema.collectAsStateWithLifecycle()
+    val reverificacion by modelo.reverificacion.collectAsStateWithLifecycle()
+    Text("Este teléfono", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+    Text("Apariencia", style = MaterialTheme.typography.bodyLarge)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TemaApp.entries.forEach { t ->
+            FilterChip(
+                selected = tema == t, onClick = { modelo.cambiarTema(t) },
+                label = { Text(t.etiqueta, style = MaterialTheme.typography.labelLarge) },
+                modifier = Modifier.heightIn(min = ALTO_BOTON),
+            )
+        }
+    }
+    Text("Pedir huella o PIN al regresar a la app", style = MaterialTheme.typography.bodyLarge)
+    Text(
+        "Si la app estuvo en segundo plano este tiempo o más. Al abrirla desde cero siempre se pide.",
+        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TiempoReverificacion.entries.forEach { t ->
+            FilterChip(
+                selected = reverificacion == t, onClick = { modelo.cambiarReverificacion(t) },
+                label = { Text(if (t == TiempoReverificacion.NUNCA) "Nunca" else t.etiqueta, style = MaterialTheme.typography.labelLarge) },
+                modifier = Modifier.heightIn(min = ALTO_BOTON),
+            )
+        }
     }
 }
 

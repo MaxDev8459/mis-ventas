@@ -36,6 +36,9 @@ import mx.ambulantpoint.misventas.domain.usecase.ResumenCobro
 import mx.ambulantpoint.misventas.domain.venta.Carrito
 import mx.ambulantpoint.misventas.domain.venta.ProductoEnVenta
 import mx.ambulantpoint.misventas.ui.components.atender
+import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
+import mx.ambulantpoint.misventas.domain.usecase.AjustarExistencia
+import mx.ambulantpoint.misventas.domain.usecase.ProductoRef
 
 /** Producto mostrado en la pantalla de venta, con su imagen. */
 data class Tarjeta(val producto: ProductoEnVenta, val imagenRuta: String)
@@ -44,6 +47,7 @@ data class Tarjeta(val producto: ProductoEnVenta, val imagenRuta: String)
 class VentaViewModel(c: AppContainer) : ViewModel() {
     private val cobrarVenta = CobrarVenta(c.ventaRepo, EvaluarExistenciaBaja(c.reporteRepo))
     private val notificador = c.notificador
+    private val ajustarExistencia = AjustarExistencia(c.inventarioRepo, EvaluarExistenciaBaja(c.reporteRepo))
 
     val busqueda = MutableStateFlow("")
 
@@ -72,7 +76,19 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     /** SC-01: ventana con los datos para transferencia, para mostrársela al cliente. */
     var mostrandoDatosTransferencia by mutableStateOf(false)
 
-    var carrito by mutableStateOf(Carrito())
+    /** "Corregir venta": si viene de corregir una venta, el carrito llega ya cargado. */
+    var carrito by mutableStateOf(c.carritoPorCorregir.value ?: Carrito())
+        private set
+
+    init { c.carritoPorCorregir.value = null }
+
+    /** Merma desde la venta (producto roto): ajuste de inventario con motivo Merma. */
+    var mermaDe by mutableStateOf<ProductoEnVenta?>(null)
+        private set
+    var mermaTexto by mutableStateOf("")
+    var mermaError by mutableStateOf<String?>(null)
+        private set
+    var registrandoMerma by mutableStateOf(false)
         private set
 
     /** Producto por peso esperando que se capture el peso de la etiqueta. */
@@ -151,6 +167,33 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     }
 
     fun cancelarPeso() { pidiendoPeso = null }
+
+    fun pedirMerma(p: ProductoEnVenta) { mermaDe = p; mermaTexto = ""; mermaError = null }
+    fun cancelarMerma() { mermaDe = null }
+    fun cambiarMerma(t: String) { mermaTexto = t; mermaError = null }
+
+    fun registrarMerma() {
+        val p = mermaDe ?: return
+        if (registrandoMerma) return
+        viewModelScope.launch {
+            registrandoMerma = true
+            ajustarExistencia(ProductoRef(p.id, p.nombre, p.tipoVenta), false, mermaTexto, MotivoAjuste.MERMA, null)
+                .atender(notificador) { mermaError = it.values.firstOrNull() }
+                ?.let { hecho ->
+                    mermaDe = null
+                    // Si en la venta había más de lo que ahora queda, se ajusta el carrito a la existencia nueva.
+                    val nueva = hecho.valor.existenciaMilesimas
+                    val enCarrito = carrito.cantidadDe(p.id)
+                    if (enCarrito > 0) {
+                        val actualizado = p.copy(existenciaMilesimas = nueva)
+                        carrito = (carrito.fijar(actualizado, minOf(enCarrito, nueva)) as? Resultado.Exito)?.valor
+                            ?: carrito.quitar(p.id)
+                    }
+                    notificador.mostrar((listOf(Mensajes.MERMA_REGISTRADA) + hecho.avisos).joinToString("\n"))
+                }
+            registrandoMerma = false
+        }
+    }
 
     fun restar(p: ProductoEnVenta) = aplicar(carrito.fijar(p, carrito.cantidadDe(p.id) - 1000))
     fun quitar(id: String) { carrito = carrito.quitar(id) }

@@ -1,6 +1,14 @@
 package mx.ambulantpoint.misventas.ui.caja
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import mx.ambulantpoint.misventas.domain.regla.ReglaConteoEfectivo
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,6 +79,20 @@ class CorteViewModel(c: AppContainer) : ViewModel() {
 
     fun cambiarContado(t: String) { contado = t; error = null }
 
+    /** Calculadora de billetes y monedas: piezas capturadas por denominación (en centavos). */
+    var contandoBilletes by mutableStateOf(false)
+    var piezas by mutableStateOf<Map<Long, String>>(emptyMap())
+        private set
+
+    fun cambiarPiezas(denominacion: Long, texto: String) { piezas = piezas + (denominacion to texto) }
+
+    /** Lleva la suma al campo "Efectivo contado". Las piezas se conservan por si hay que recontar. */
+    fun usarConteo() {
+        val total = ReglaConteoEfectivo.total(piezas) ?: return
+        cambiarContado(ReglaConteoEfectivo.comoTexto(total))
+        contandoBilletes = false
+    }
+
     /** RF 5.2: calcula y muestra el resumen; la caja sigue abierta. */
     fun calcular() {
         viewModelScope.launch {
@@ -110,6 +132,7 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
                 modelo.contado, modelo::cambiarContado, "Efectivo contado *", error = modelo.error,
                 teclado = KeyboardType.Decimal, prefijo = "$", imeAction = ImeAction.Done,
             )
+            BotonSecundario("Contar billetes y monedas", { modelo.contandoBilletes = true })
             BotonPrincipal("Calcular corte", modelo::calcular)
 
             modelo.corte?.let { c ->
@@ -118,6 +141,8 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
             }
         }
     }
+
+    if (modelo.contandoBilletes) DialogoConteo(modelo)
 
     if (modelo.confirmarCierre) {
         DialogoConfirmacion(Mensajes.CONFIRMAR_CERRAR_CAJA, modelo::cerrar, { modelo.confirmarCierre = false })
@@ -164,5 +189,62 @@ private fun Linea(etiqueta: String, valor: String) {
     Row(Modifier.fillMaxWidth()) {
         Text(etiqueta, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(valor, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/** Calculadora: cuántas piezas hay de cada billete y moneda; la suma llena el efectivo contado. */
+@Composable
+private fun DialogoConteo(modelo: CorteViewModel) {
+    val total = ReglaConteoEfectivo.total(modelo.piezas)
+    AlertDialog(
+        onDismissRequest = { modelo.contandoBilletes = false },
+        title = { Text("Contar efectivo") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Billetes", style = MaterialTheme.typography.titleSmall)
+                ReglaConteoEfectivo.BILLETES.forEach { FilaDenominacion(it, modelo) }
+                Text("Monedas", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                ReglaConteoEfectivo.MONEDAS.forEach { FilaDenominacion(it, modelo) }
+                HorizontalDivider(Modifier.padding(vertical = 6.dp))
+                Row(Modifier.fillMaxWidth()) {
+                    Text("Total", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    Text(total?.let(Formato::moneda) ?: "—", style = MaterialTheme.typography.titleLarge)
+                }
+                if (total == null) {
+                    Text("Escriba solo piezas enteras", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = modelo::usarConteo, enabled = total != null, modifier = Modifier.heightIn(min = 48.dp)) { Text("Usar total") }
+        },
+        dismissButton = {
+            TextButton(onClick = { modelo.contandoBilletes = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Cancelar") }
+        },
+    )
+}
+
+@Composable
+private fun FilaDenominacion(denominacion: Long, modelo: CorteViewModel) {
+    val texto = modelo.piezas[denominacion].orEmpty()
+    val n = ReglaConteoEfectivo.piezas(texto)
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(Formato.moneda(denominacion), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.width(80.dp))
+        OutlinedTextField(
+            value = texto,
+            onValueChange = { modelo.cambiarPiezas(denominacion, it) },
+            placeholder = { Text("0") },
+            singleLine = true,
+            isError = n == null,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            modifier = Modifier.width(88.dp),
+        )
+        Text(
+            n?.let { Formato.moneda(it * denominacion) } ?: "—",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f).padding(start = 8.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+        )
     }
 }

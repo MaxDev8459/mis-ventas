@@ -8,6 +8,8 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.FragmentActivity
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.ambulantpoint.misventas.ui.navigation.NavegacionApp
 import mx.ambulantpoint.misventas.ui.theme.MisVentasTheme
 
@@ -21,8 +23,10 @@ class MainActivity : FragmentActivity() {
         intent?.getStringExtra(Recordatorios.EXTRA_DESTINO)
             ?.let { n -> DestinoNotificacion.entries.firstOrNull { it.name == n } }
             ?.let { (application as MisVentasApp).contenedor.destinoNotificacion.value = it }
+        val preferencias = (application as MisVentasApp).contenedor.preferencias
         setContent {
-            MisVentasTheme {
+            val tema by preferencias.tema.collectAsStateWithLifecycle()
+            MisVentasTheme(tema) {
                 NavegacionApp()
             }
         }

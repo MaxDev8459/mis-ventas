@@ -24,6 +24,8 @@ import mx.ambulantpoint.misventas.data.sync.ControlSesionUnica
 import mx.ambulantpoint.misventas.data.export.ExportadorReportes
 import mx.ambulantpoint.misventas.data.imagen.ProcesadorImagen
 import kotlinx.coroutines.flow.MutableStateFlow
+import mx.ambulantpoint.misventas.data.preferencias.PreferenciasDispositivo
+import mx.ambulantpoint.misventas.domain.venta.Carrito
 import mx.ambulantpoint.misventas.domain.puertos.EstadoSesion
 import mx.ambulantpoint.misventas.domain.puertos.PuertoAuth
 import mx.ambulantpoint.misventas.ui.components.Notificador
@@ -76,6 +78,18 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
      * le vuelve a pedir. Vive lo que vive el proceso: al volver a abrir la app se pide de nuevo.
      */
     val identidadVerificada by lazy { MutableStateFlow(auth.estado.value != EstadoSesion.ACTIVA) }
+
+    /**
+     * La app regresó de segundo plano después del tiempo elegido en Perfil y hay que verificar de nuevo.
+     * La pantalla de verificación se muestra encima de la app, sin perder lo capturado.
+     */
+    val reverificacionPendiente = MutableStateFlow(false)
+
+    /** Tema y tiempo de reverificación: ajustes solo de este teléfono. */
+    val preferencias by lazy { PreferenciasDispositivo(contexto) }
+
+    /** "Corregir venta": carrito armado con los productos de la venta cancelada, para la pantalla de venta. */
+    val carritoPorCorregir = MutableStateFlow<Carrito?>(null)
 
     val procesadorImagen by lazy { ProcesadorImagen(contexto) }
 
