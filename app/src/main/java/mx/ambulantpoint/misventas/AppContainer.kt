@@ -48,6 +48,7 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
     val cargaRepo by lazy { CargaRepo(db, reloj) }
     val precargaRepo by lazy { PrecargaRepo(db, reloj) }
     val fiadoRepo by lazy { mx.ambulantpoint.misventas.data.repository.FiadoRepo(db, reloj) }
+    val apartadoRepo by lazy { mx.ambulantpoint.misventas.data.repository.ApartadoRepo(db, reloj) }
 
     val conectividad by lazy { Conectividad(contexto) }
 
@@ -96,10 +97,16 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
     /** "Corregir venta": carrito armado con los productos de la venta cancelada, para la pantalla de venta. */
     val carritoPorCorregir = MutableStateFlow<Carrito?>(null)
 
+    /** Apartados: "Entregar" abre el cobro con los productos del apartado. */
+    val apartadoPorEntregar = MutableStateFlow<mx.ambulantpoint.misventas.domain.venta.EntregaApartado?>(null)
+
     val procesadorImagen by lazy { ProcesadorImagen(contexto) }
 
     /** RF 5.4 / 7.6: pantalla a la que lleva la notificación que se tocó (se consume al navegar). */
     val destinoNotificacion = MutableStateFlow<DestinoNotificacion?>(null)
+
+    /** Apartados: el apartado que se abrió desde su notificación. */
+    val apartadoNotificado = MutableStateFlow<String?>(null)
 
     /** El permiso de notificaciones se pide una vez por apertura de la app. */
     var permisoNotificacionesPedido = false

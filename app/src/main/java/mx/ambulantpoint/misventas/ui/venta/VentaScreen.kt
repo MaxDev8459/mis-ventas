@@ -89,6 +89,8 @@ import mx.ambulantpoint.misventas.ui.components.vm
 @Composable
 fun PantallaVenta(alRegresar: () -> Unit) {
     val modelo = vm { VentaViewModel(it) }
+    // Entrega de apartado: al cobrar o cancelar se regresa a donde se vino.
+    androidx.compose.runtime.LaunchedEffect(modelo.salir) { if (modelo.salir) alRegresar() }
     if (modelo.cobrando) {
         BackHandler { modelo.cerrarCobro() }
         PantallaCobro(modelo)
@@ -112,9 +114,14 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
     ) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize()) {
             if (caja == null) {
-                // RF 5.1: sin caja abierta no se vende.
-                MensajeVacio(Mensajes.ABRA_CAJA)
-                return@Column
+                // RF 5.1: sin caja abierta no se cobra; sí se puede apartar (no mueve dinero).
+                Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Caja cerrada: puedes armar un apartado. Para cobrar, abre la caja.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    )
+                }
             }
             OutlinedTextField(
                 value = busqueda,
@@ -173,6 +180,13 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
     }
 
     modelo.avisoCarga?.let { a -> DialogoAvisoCarga(a, modelo) }
+
+    modelo.formularioApartado?.let { f ->
+        mx.ambulantpoint.misventas.ui.apartados.DialogoApartado(
+            "Apartar · ${Formato.moneda(modelo.carrito.subtotalCentavos)}", f, modelo.guardandoApartado,
+            modelo::guardarApartado, modelo::cerrarApartar,
+        )
+    }
 
     // Venta rápida: monto libre sin producto ("Varios").
     if (modelo.pidiendoLibre) {
@@ -276,7 +290,8 @@ private fun TarjetaProducto(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    "Hay ${Formato.cantidad(p.existenciaMilesimas, p.tipoVenta)}",
+                    "Hay ${Formato.cantidad(p.existenciaMilesimas, p.tipoVenta)}" +
+                        if (t.apartadoMilesimas > 0) " · ${Formato.cantidad(t.apartadoMilesimas, p.tipoVenta)} apartado" else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -399,7 +414,15 @@ private fun PanelCarrito(modelo: VentaViewModel) {
                 Text(Formato.moneda(carrito.subtotalCentavos), style = MaterialTheme.typography.titleLarge)
             }
             Spacer(Modifier.size(8.dp))
-            BotonPrincipal("Cobrar", modelo::abrirCobro, habilitado = !carrito.estaVacio)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Apartados: solo productos del catálogo (sin monto libre); no requiere caja.
+                OutlinedButton(
+                    onClick = modelo::abrirApartar,
+                    enabled = !carrito.estaVacio && !carrito.tieneLibres,
+                    modifier = Modifier.weight(1f).heightIn(min = ALTO_BOTON),
+                ) { Text("Apartar") }
+                BotonPrincipal("Cobrar", modelo::abrirCobro, Modifier.weight(2f), habilitado = !carrito.estaVacio)
+            }
         }
     }
 }
@@ -449,7 +472,7 @@ private fun PantallaCobro(modelo: VentaViewModel) {
     val total = modelo.totalACobrar
     val datosTransferencia by modelo.datosTransferencia.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { BarraSuperior("Cobrar", modelo::cerrarCobro) }) { relleno ->
+    Scaffold(topBar = { BarraSuperior(modelo.entrega?.let { "Entregar apartado · ${it.nombre}" } ?: "Cobrar", modelo::cerrarCobro) }) { relleno ->
         Column(
             Modifier.padding(relleno).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -494,7 +517,8 @@ private fun PantallaCobro(modelo: VentaViewModel) {
                     )
                 }
                 // Fiado: no se ofrece si la venta tiene un monto libre (respuesta 6 del cliente).
-                if (!modelo.carrito.tieneLibres) {
+                // Apartados: se pagan completos al entregar (no se fían).
+                if (!modelo.carrito.tieneLibres && modelo.entrega == null) {
                     FilterChip(
                         selected = modelo.fiar,
                         onClick = modelo::elegirFiar,

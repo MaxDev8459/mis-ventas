@@ -64,7 +64,8 @@ import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.MensajeVacio
 import mx.ambulantpoint.misventas.ui.components.vm
 
-data class FilaExistencia(val p: ProductoConCategoria, val nivel: NivelExistencia)
+/** `apartadoMilesimas`: lo separado en apartados pendientes (el nivel se calcula con lo disponible). */
+data class FilaExistencia(val p: ProductoConCategoria, val nivel: NivelExistencia, val apartadoMilesimas: Long = 0)
 
 data class FiltroExistencias(val texto: String = "", val categoriaId: String? = null, val soloBaja: Boolean = false)
 
@@ -74,10 +75,16 @@ class ExistenciasViewModel(c: AppContainer) : ViewModel() {
 
     /** RF 4.3: productos activos con su nivel de existencia (RF 4.5). */
     val filas: StateFlow<List<FilaExistencia>?> = filtro.flatMapLatest { f ->
-        combine(c.productoRepo.observar(f.texto, f.categoriaId, activo = true), c.reporteRepo.observarVentasRecientesDeTodos()) { lista, recientes ->
+        combine(
+            c.productoRepo.observar(f.texto, f.categoriaId, activo = true),
+            c.reporteRepo.observarVentasRecientesDeTodos(),
+            c.apartadoRepo.observarApartadoPorProducto(),
+        ) { lista, recientes, apartado ->
             lista.map { p ->
                 val r = recientes[p.producto.id]
-                FilaExistencia(p, ReglaExistenciaBaja.nivel(p.producto.existenciaMilesimas, p.producto.tipoVenta, r?.dias ?: 0, r?.cantidadMilesimas ?: 0))
+                val ap = apartado[p.producto.id] ?: 0L
+                val disponible = mx.ambulantpoint.misventas.domain.regla.ReglaApartado.disponible(p.producto.existenciaMilesimas, ap)
+                FilaExistencia(p, ReglaExistenciaBaja.nivel(disponible, p.producto.tipoVenta, r?.dias ?: 0, r?.cantidadMilesimas ?: 0), ap)
             }.filter { !f.soloBaja || it.nivel != NivelExistencia.NORMAL }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -182,6 +189,12 @@ private fun FilaExistenciaVista(f: FilaExistencia, alPulsar: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(p.nombre, style = MaterialTheme.typography.bodyLarge, color = colorNombre)
             Text(f.p.categoriaNombre, style = MaterialTheme.typography.bodyMedium, color = colorCategoria)
+            if (f.apartadoMilesimas > 0) {
+                Text(
+                    "Apartado: ${Formato.cantidad(f.apartadoMilesimas, p.tipoVenta)}",
+                    style = MaterialTheme.typography.bodyMedium, color = colorCategoria, fontWeight = FontWeight.SemiBold,
+                )
+            }
             if (etiqueta != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Warning, contentDescription = null, tint = texto, modifier = Modifier.size(16.dp))

@@ -1,5 +1,7 @@
 package mx.ambulantpoint.misventas.data.repository
 
+import mx.ambulantpoint.misventas.domain.regla.ReglaApartado
+
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import mx.ambulantpoint.misventas.domain.regla.ReglaExistenciaBaja
@@ -63,6 +65,11 @@ class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) : Pu
             productoDao.sumarExistencia(productoId, cantidadMilesimas, ahora)
             producto.existenciaMilesimas + cantidadMilesimas
         } else {
+            // Apartados (respuesta 8): no se baja la existencia por debajo de lo apartado.
+            ReglaApartado.validarDisminucion(
+                producto.existenciaMilesimas, cantidadMilesimas, db.apartadoDao().apartadoDe(productoId),
+                producto.nombre, producto.tipoVenta,
+            )?.let { fallar(FallaDatos.Regla(it)) }
             if (productoDao.descontarExistencia(productoId, cantidadMilesimas, ahora) == 0) {
                 fallar(FallaDatos.DisminucionMayorAExistencia)
             }

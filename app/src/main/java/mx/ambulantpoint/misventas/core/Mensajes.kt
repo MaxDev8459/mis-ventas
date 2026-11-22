@@ -89,6 +89,25 @@ object Mensajes {
         const val MONTO_LIBRE_MAYOR_A_CERO = "El monto debe ser mayor a cero"
     }
 
+    /** Apartados (desarrollo independiente, Fase 4; textos del equipo, no del DFR). */
+    object Apartado {
+        const val LUGAR_LARGO = "El lugar debe tener hasta 60 caracteres"
+        const val ENTREGA_PASADA = "La fecha y hora de entrega ya pasaron"
+        const val APARTADO_GUARDADO = "El apartado se guardó exitosamente"
+        const val APARTADO_ACTUALIZADO = "El apartado se actualizó exitosamente"
+        const val APARTADO_CANCELADO = "El apartado se canceló. El producto vuelve a estar disponible"
+        const val APARTADO_ENTREGADO = "Apartado entregado y venta registrada exitosamente"
+        const val NO_PENDIENTE = "Este apartado ya no está pendiente"
+        const val NO_APARTAR_VARIOS = "Los montos libres no se pueden apartar"
+        const val NO_FIAR_APARTADO = "Los apartados se pagan completos al entregar"
+        const val ABRA_CAJA_ENTREGAR = "Abra caja para entregar el apartado"
+        fun confirmarCancelar(nombre: String) = "¿Desea cancelar el apartado de $nombre? El producto vuelve a estar disponible"
+        fun ajusteDebajoDeApartado(apartado: String, producto: String) =
+            "Hay $apartado de $producto en apartados. Cancele o cambie el apartado primero"
+        fun seLiberan(nombres: List<String>) =
+            " Se liberarán ${nombres.size} ${if (nombres.size == 1) "apartado no entregado" else "apartados no entregados"} (${nombres.joinToString(", ")})."
+    }
+
     // ---------- Módulo 4. Inventario ----------
     const val ENTRADA_REGISTRADA = "La entrada se registró exitosamente"
     const val AJUSTE_REGISTRADO = "El ajuste se registró exitosamente"

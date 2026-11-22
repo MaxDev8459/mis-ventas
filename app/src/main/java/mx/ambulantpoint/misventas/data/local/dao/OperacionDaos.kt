@@ -23,6 +23,8 @@ import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
 import mx.ambulantpoint.misventas.data.local.entity.Cliente
 import mx.ambulantpoint.misventas.data.local.entity.Abono
 import mx.ambulantpoint.misventas.data.local.entity.AplicacionAbono
+import mx.ambulantpoint.misventas.data.local.entity.Apartado
+import mx.ambulantpoint.misventas.data.local.entity.ApartadoDetalle
 
 @Dao
 interface CajaDao {
@@ -282,6 +284,8 @@ interface SyncDao {
           (SELECT COUNT(*) FROM cliente WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM abono WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM aplicacion_abono WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM apartado WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM apartado_detalle WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM eliminacion_pendiente)
         """,
     )
@@ -303,6 +307,8 @@ interface SyncDao {
     @Query("SELECT * FROM cliente WHERE pendienteSync = 1 LIMIT :n") suspend fun clientes(n: Int): List<Cliente>
     @Query("SELECT * FROM abono WHERE pendienteSync = 1 LIMIT :n") suspend fun abonos(n: Int): List<Abono>
     @Query("SELECT * FROM aplicacion_abono WHERE pendienteSync = 1 LIMIT :n") suspend fun aplicacionesAbono(n: Int): List<AplicacionAbono>
+    @Query("SELECT * FROM apartado WHERE pendienteSync = 1 LIMIT :n") suspend fun apartados(n: Int): List<Apartado>
+    @Query("SELECT * FROM apartado_detalle WHERE pendienteSync = 1 LIMIT :n") suspend fun apartadoDetalles(n: Int): List<ApartadoDetalle>
 
     // ── RF 7.1 + 2.9: eliminaciones ──
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -332,6 +338,8 @@ interface SyncDao {
     @Query("UPDATE cliente SET pendienteSync = 1") suspend fun pendienteClientes()
     @Query("UPDATE abono SET pendienteSync = 1") suspend fun pendienteAbonos()
     @Query("UPDATE aplicacion_abono SET pendienteSync = 1") suspend fun pendienteAplicacionesAbono()
+    @Query("UPDATE apartado SET pendienteSync = 1") suspend fun pendienteApartados()
+    @Query("UPDATE apartado_detalle SET pendienteSync = 1") suspend fun pendienteApartadoDetalles()
 
     // ── RF 7.4: recuperar en un dispositivo nuevo ──
 
@@ -351,6 +359,8 @@ interface SyncDao {
           (SELECT COUNT(*) FROM cliente WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM abono WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM aplicacion_abono WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM apartado WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM apartado_detalle WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM eliminacion_pendiente)
         """,
     )
@@ -358,6 +368,8 @@ interface SyncDao {
 
     @Query("DELETE FROM movimiento_inventario") suspend fun borrarMovimientos()
     @Query("DELETE FROM aplicacion_abono") suspend fun borrarAplicacionesAbono()
+    @Query("DELETE FROM apartado_detalle") suspend fun borrarApartadoDetalles()
+    @Query("DELETE FROM apartado") suspend fun borrarApartados()
     @Query("DELETE FROM abono") suspend fun borrarAbonos()
     @Query("DELETE FROM cliente") suspend fun borrarClientes()
     @Query("DELETE FROM venta_detalle") suspend fun borrarVentaDetalles()
@@ -388,5 +400,7 @@ interface SyncDao {
     @Insert suspend fun insertarClientes(l: List<Cliente>)
     @Insert suspend fun insertarAbonos(l: List<Abono>)
     @Insert suspend fun insertarAplicacionesAbono(l: List<AplicacionAbono>)
+    @Insert suspend fun insertarApartados(l: List<Apartado>)
+    @Insert suspend fun insertarApartadoDetalles(l: List<ApartadoDetalle>)
 }
 

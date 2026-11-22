@@ -363,6 +363,51 @@ data class AplicacionAbono(
 )
 
 /**
+ * Apartados (v8, `docs/10-ESPEC-APARTADOS.md`): pedido para entregar después. No mueve dinero ni la existencia
+ * total; mientras está PENDIENTE su producto queda separado (no se puede vender). El precio queda fijo al apartar.
+ */
+@Entity(tableName = "apartado", indices = [Index(value = ["estado", "entregaEn"])])
+data class Apartado(
+    @PrimaryKey val id: String,
+    val nombre: String,
+    val telefono: String? = null,
+    val lugar: String,
+    /** Fecha y hora de entrega (epoch ms). */
+    val entregaEn: Long,
+    val totalCentavos: Long,
+    val estado: EstadoApartado = EstadoApartado.PENDIENTE,
+    /** Venta con la que se entregó. */
+    val ventaId: String? = null,
+    /** Cuándo se entregó, canceló o liberó. */
+    val terminadoEn: Long? = null,
+    val creadoEn: Long,
+    val actualizadoEn: Long,
+    val pendienteSync: Boolean = true,
+)
+
+/** Producto de un apartado con su precio fijo (el del día en que se apartó). No cambia. */
+@Entity(
+    tableName = "apartado_detalle",
+    foreignKeys = [
+        ForeignKey(entity = Apartado::class, parentColumns = ["id"], childColumns = ["apartadoId"]),
+        ForeignKey(entity = Producto::class, parentColumns = ["id"], childColumns = ["productoId"]),
+    ],
+    indices = [Index(value = ["apartadoId"]), Index(value = ["productoId"])],
+)
+data class ApartadoDetalle(
+    @PrimaryKey val id: String,
+    val apartadoId: String,
+    val productoId: String,
+    val nombreProducto: String,
+    val tipoVenta: TipoVenta,
+    val cantidadMilesimas: Long,
+    val precioUnitarioCentavos: Long,
+    val importeCentavos: Long,
+    val creadoEn: Long,
+    val pendienteSync: Boolean = true,
+)
+
+/**
  * RF 7.1 + RF 2.9: una categoría eliminada que ya estaba en la nube se borra también allá en la
  * siguiente sincronización. Cuenta como registro pendiente hasta entonces.
  */

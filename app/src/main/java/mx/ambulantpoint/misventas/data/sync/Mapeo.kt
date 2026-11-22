@@ -23,6 +23,9 @@ import mx.ambulantpoint.misventas.data.local.entity.Abono
 import mx.ambulantpoint.misventas.data.local.entity.AplicacionAbono
 import mx.ambulantpoint.misventas.data.local.entity.TipoAbono
 import mx.ambulantpoint.misventas.data.local.entity.EstadoAbono
+import mx.ambulantpoint.misventas.data.local.entity.Apartado
+import mx.ambulantpoint.misventas.data.local.entity.ApartadoDetalle
+import mx.ambulantpoint.misventas.data.local.entity.EstadoApartado
 
 /**
  * Nombres de las colecciones en Firestore: `usuarios/{uid}/{coleccion}/{id}`. Son los mismos que
@@ -44,6 +47,8 @@ object Colecciones {
     const val CLIENTE = "cliente"
     const val ABONO = "abono"
     const val APLICACION_ABONO = "aplicacion_abono"
+    const val APARTADO = "apartado"
+    const val APARTADO_DETALLE = "apartado_detalle"
 }
 
 /*
@@ -265,6 +270,32 @@ fun aAbono(d: Map<String, Any?>) = Abono(
 
 fun aAplicacionAbono(d: Map<String, Any?>) = AplicacionAbono(
     id = d.texto("id"), abonoId = d.texto("abonoId"), ventaId = d.texto("ventaId"), montoCentavos = d.entero("montoCentavos"),
+    creadoEn = d.entero("creadoEn"), pendienteSync = false,
+)
+
+fun Apartado.aDocumento(): Map<String, Any?> = mapOf(
+    "id" to id, "nombre" to nombre, "telefono" to telefono, "lugar" to lugar, "entregaEn" to entregaEn,
+    "totalCentavos" to totalCentavos, "estado" to estado.name, "ventaId" to ventaId, "terminadoEn" to terminadoEn,
+    "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+fun ApartadoDetalle.aDocumento(): Map<String, Any?> = mapOf(
+    "id" to id, "apartadoId" to apartadoId, "productoId" to productoId, "nombreProducto" to nombreProducto,
+    "tipoVenta" to tipoVenta.name, "cantidadMilesimas" to cantidadMilesimas,
+    "precioUnitarioCentavos" to precioUnitarioCentavos, "importeCentavos" to importeCentavos, "creadoEn" to creadoEn,
+)
+
+fun aApartado(d: Map<String, Any?>) = Apartado(
+    id = d.texto("id"), nombre = d.texto("nombre"), telefono = d.textoONulo("telefono"), lugar = d.texto("lugar"),
+    entregaEn = d.entero("entregaEn"), totalCentavos = d.entero("totalCentavos"),
+    estado = d.enumO("estado", EstadoApartado.PENDIENTE), ventaId = d.textoONulo("ventaId"), terminadoEn = d.enteroONulo("terminadoEn"),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aApartadoDetalle(d: Map<String, Any?>) = ApartadoDetalle(
+    id = d.texto("id"), apartadoId = d.texto("apartadoId"), productoId = d.texto("productoId"), nombreProducto = d.texto("nombreProducto"),
+    tipoVenta = d.enumO("tipoVenta", TipoVenta.UNIDAD), cantidadMilesimas = d.entero("cantidadMilesimas"),
+    precioUnitarioCentavos = d.entero("precioUnitarioCentavos"), importeCentavos = d.entero("importeCentavos"),
     creadoEn = d.entero("creadoEn"), pendienteSync = false,
 )
 

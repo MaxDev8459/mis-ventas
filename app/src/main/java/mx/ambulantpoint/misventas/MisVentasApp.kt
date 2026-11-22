@@ -23,6 +23,7 @@ class MisVentasApp : Application() {
         alcanceApp.launch { contenedor.db.sembrarSiHaceFalta(contenedor.reloj) }
         // RF 5.4 / 7.6.
         Recordatorios.iniciar(this, alcanceApp)
+        mx.ambulantpoint.misventas.data.notificaciones.AlarmasApartados.iniciar(this, alcanceApp)
         // RF 7.1: sincronización con la app cerrada (solo Wi-Fi).
         SincronizacionWorker.programar(this)
     }

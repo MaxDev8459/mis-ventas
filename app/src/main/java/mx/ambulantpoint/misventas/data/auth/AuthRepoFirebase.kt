@@ -93,6 +93,7 @@ class AuthRepoFirebase(
                     s.marcarProductosPendientes(); s.pendienteCajas(); s.pendienteCortesFormaPago()
                     s.pendienteVentas(); s.pendienteVentaDetalles(); s.pendienteMovimientos(); s.pendienteCargas(); s.pendientePrecargas()
                     s.pendienteClientes(); s.pendienteAbonos(); s.pendienteAplicacionesAbono()
+                    s.pendienteApartados(); s.pendienteApartadoDetalles()
                 }
             }
         } catch (e: Exception) {

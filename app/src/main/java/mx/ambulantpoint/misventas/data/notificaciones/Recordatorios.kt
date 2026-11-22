@@ -34,7 +34,7 @@ import mx.ambulantpoint.misventas.domain.regla.ReglaNotificaciones
 import java.util.concurrent.TimeUnit
 
 /** A dónde lleva una notificación al tocarla. */
-enum class DestinoNotificacion { CORTE_CAJA, INICIO }
+enum class DestinoNotificacion { CORTE_CAJA, INICIO, APARTADO }
 
 /**
  * RF 5.4 y 7.6 — Notificaciones que llegan aun con la app cerrada y sin internet. WorkManager las

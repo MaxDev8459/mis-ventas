@@ -86,6 +86,7 @@ private object Ruta {
     const val REPORTE = "reporte"
     const val PERFIL_EDITAR = "perfil_editar"
     const val CLIENTE = "cliente"
+    const val APARTADO = "apartado"
     fun de(destino: Destino) = destino.name.lowercase()
 }
 
@@ -225,6 +226,11 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
     val destino by c.destinoNotificacion.collectAsStateWithLifecycle()
     LaunchedEffect(destino) {
         if (destino == DestinoNotificacion.CORTE_CAJA) nav.navigate(Ruta.CORTE)
+        // Apartados: la notificación abre ese apartado.
+        if (destino == DestinoNotificacion.APARTADO) {
+            c.apartadoNotificado.value?.let { nav.navigate("${Ruta.APARTADO}/$it") }
+            c.apartadoNotificado.value = null
+        }
         if (destino != null) c.destinoNotificacion.value = null
     }
     NavHost(nav, startDestination = Ruta.INICIO) {
@@ -274,6 +280,22 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
         }
         composable(Ruta.de(Destino.HISTORIAL)) {
             PantallaHistorial(regresar) { id -> nav.navigate("${Ruta.VENTA}/$id") }
+        }
+        composable(Ruta.de(Destino.APARTADOS)) {
+            mx.ambulantpoint.misventas.ui.apartados.PantallaApartados(
+                alRegresar = regresar,
+                alAbrir = { id -> nav.navigate("${Ruta.APARTADO}/$id") },
+                // Un apartado se arma en Vender (también con la caja cerrada).
+                alNuevo = { nav.navigate(Ruta.de(Destino.VENDER)) },
+            )
+        }
+        composable("${Ruta.APARTADO}/{id}") { e ->
+            mx.ambulantpoint.misventas.ui.apartados.PantallaApartado(
+                apartadoId = e.arguments?.getString("id").orEmpty(),
+                alRegresar = regresar,
+                alEntregar = { nav.navigate(Ruta.de(Destino.VENDER)) },
+                alVerVenta = { v -> nav.navigate("${Ruta.VENTA}/$v") },
+            )
         }
         composable(Ruta.de(Destino.CLIENTES)) {
             mx.ambulantpoint.misventas.ui.fiado.PantallaClientes(regresar) { id -> nav.navigate("${Ruta.CLIENTE}/$id") }

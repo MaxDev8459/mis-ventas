@@ -10,9 +10,9 @@
 | Dato | Valor |
 |---|---|
 | App real en el teléfono | **1.4.0** (versionCode 6), liberación, cuenta `maxicarlotas@gmail.com` |
-| Versión de la base Room | **7** (siguiente migración: 7→8) |
-| Pruebas JVM | 255 pasan (+ 38 instrumentadas con Room en el teléfono) |
-| Siguiente fase | **Fase 4: apartados con existencia separada** (sin empezar) |
+| Versión de la base Room | **8** en Mis Ventas Pruebas; la app real sigue en 7 hasta liberar la 1.5.0 |
+| Pruebas JVM | 273 pasan (+ 49 instrumentadas con Room en el teléfono) |
+| Siguiente fase | **Fase 4**: 1.5.0 instalada en Mis Ventas Pruebas, **esperando que el usuario la pruebe y la apruebe** |
 
 ## Checklist de fases
 
@@ -30,6 +30,13 @@
   - [x] El usuario la probó y la aprobó (con dos ajustes: cierre en Vender con monto libre + carga; ocultar la carga al calcular el corte)
   - [x] Liberada a la app real (1.4.0) con `install -r`, firma comparada y "Sincronizado" antes y después
 - [ ] **Fase 4:** apartados con existencia separada (Room v7→v8)
+  - [x] Preguntas al usuario y respuestas en `docs/07` (22-nov)
+  - [x] Especificación `docs/10-ESPEC-APARTADOS.md`, aprobada el 22-nov (apartar sin caja, teléfono opcional, lugar ≤ 60)
+  - [x] Programar con pruebas: `ApartadoTest` (18) y `ApartadoRoomTest` (11); alarmas exactas 15 min antes y a la hora
+  - [x] Migración 7→8 verificada con `scripts/verificar_migracion.py` (sintética v6→v8 y copia de Pruebas v7) y aplicada en Pruebas
+  - [x] Instalada en Mis Ventas Pruebas (1.5.0-pruebas)
+  - [ ] El usuario la prueba (incluidas las notificaciones con la app cerrada) y la aprueba
+  - [ ] Liberar a la app real (1.5.0)
 - [ ] **Fase 5:** reportes nuevos (comparar periodos, ventas por hora/día, fiado y mermas a precio de venta)
 
 ## Fase 3: lo que ya acordó el usuario (entrevista del 21-nov)
@@ -46,7 +53,7 @@ Las respuestas están en `docs/07` y la regla completa en `docs/09-ESPEC-FIADO.m
 
 1. **Al empezar:** `git pull` y leer este archivo.
 2. **Cambio grande:** confirmar el alcance con el usuario y escribir la especificación para que la valide **antes** de programar.
-3. **Room:** cada cambio de esquema lleva migración. Verificarla con `sqlite3` contra el `N.json` generado, con datos. Nunca usar `fallbackToDestructiveMigration`.
+3. **Room:** cada cambio de esquema lleva migración. Verificarla con `scripts/verificar_migracion.py` (base sintética y una copia de Mis Ventas Pruebas) contra el `N.json` generado. Nunca usar `fallbackToDestructiveMigration`.
 4. **Tablas nuevas que se respaldan:** agregarlas en `Mapeo.kt` (Colecciones, aDocumento, aX), `SincronizadorFirestore.tablas`, `SyncDao` (conteos de pendientes, lectura por lotes, pendienteX, borrarX, insertarX), `ServicioRecuperacion` (bajar, borrar, insertar) y `AuthRepoFirebase` (pendienteX al registrar otra cuenta).
 5. **Probar primero en Mis Ventas Pruebas** (`./gradlew test assembleDebug` + `adb install -r app/build/outputs/apk/debug/app-debug.apk`). Cuenta `maxicarlotas+pruebas@gmail.com`, ya con datos ficticios.
 6. **Liberar a la app real:** subir versionCode/versionName, `assembleRelease`, comparar la firma con `apksigner`, confirmar que la app real dice **"Sincronizado"** y `adb install -r`. **Nunca desinstalar.** Abrir la app y revisar `adb logcat -b crash`.

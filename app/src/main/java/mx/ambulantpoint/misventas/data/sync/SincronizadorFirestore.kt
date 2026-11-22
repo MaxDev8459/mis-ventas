@@ -104,6 +104,13 @@ class SincronizadorFirestore(
         Tabla("aplicacion_abono", Colecciones.APLICACION_ABONO) { n ->
             dao.aplicacionesAbono(n).map { Envio(it.id, it.aDocumento(), condicionId.format("creadoEn"), porId(it.id, it.creadoEn)) }
         },
+        // Apartados (v8).
+        Tabla("apartado", Colecciones.APARTADO) { n ->
+            dao.apartados(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
+        },
+        Tabla("apartado_detalle", Colecciones.APARTADO_DETALLE) { n ->
+            dao.apartadoDetalles(n).map { Envio(it.id, it.aDocumento(), condicionId.format("creadoEn"), porId(it.id, it.creadoEn)) }
+        },
     )
 
     /** Envía todo lo pendiente. Devuelve cuántos registros se confirmaron. Requiere sesión iniciada. */

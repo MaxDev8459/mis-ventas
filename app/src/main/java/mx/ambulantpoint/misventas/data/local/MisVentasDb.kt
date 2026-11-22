@@ -38,6 +38,9 @@ import mx.ambulantpoint.misventas.data.local.entity.Cliente
 import mx.ambulantpoint.misventas.data.local.entity.Abono
 import mx.ambulantpoint.misventas.data.local.entity.AplicacionAbono
 import mx.ambulantpoint.misventas.data.local.dao.FiadoDao
+import mx.ambulantpoint.misventas.data.local.dao.ApartadoDao
+import mx.ambulantpoint.misventas.data.local.entity.Apartado
+import mx.ambulantpoint.misventas.data.local.entity.ApartadoDetalle
 
 @Database(
     entities = [
@@ -45,8 +48,9 @@ import mx.ambulantpoint.misventas.data.local.dao.FiadoDao
         Caja::class, CorteFormaPago::class, Venta::class, VentaDetalle::class, MovimientoInventario::class,
         EliminacionPendiente::class, CargaCaja::class, Precarga::class,
         Cliente::class, Abono::class, AplicacionAbono::class,
+        Apartado::class, ApartadoDetalle::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class MisVentasDb : RoomDatabase() {
@@ -63,14 +67,38 @@ abstract class MisVentasDb : RoomDatabase() {
     abstract fun precargaDao(): PrecargaDao
     abstract fun syncDao(): SyncDao
     abstract fun fiadoDao(): FiadoDao
+    abstract fun apartadoDao(): ApartadoDao
 
     companion object {
         const val NOMBRE = "mis_ventas.db"
 
         fun crear(contexto: Context): MisVentasDb =
             Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE)
-                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8)
                 .build()
+
+        /** Apartados (SQL tomado de 8.json). Solo tablas nuevas: no toca los datos existentes. */
+        val MIGRACION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `apartado` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `telefono` TEXT, " +
+                        "`lugar` TEXT NOT NULL, `entregaEn` INTEGER NOT NULL, `totalCentavos` INTEGER NOT NULL, `estado` TEXT NOT NULL, " +
+                        "`ventaId` TEXT, `terminadoEn` INTEGER, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, " +
+                        "`pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_apartado_estado_entregaEn` ON `apartado` (`estado`, `entregaEn`)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `apartado_detalle` (`id` TEXT NOT NULL, `apartadoId` TEXT NOT NULL, " +
+                        "`productoId` TEXT NOT NULL, `nombreProducto` TEXT NOT NULL, `tipoVenta` TEXT NOT NULL, " +
+                        "`cantidadMilesimas` INTEGER NOT NULL, `precioUnitarioCentavos` INTEGER NOT NULL, `importeCentavos` INTEGER NOT NULL, " +
+                        "`creadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`apartadoId`) REFERENCES `apartado`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , " +
+                        "FOREIGN KEY(`productoId`) REFERENCES `producto`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_apartado_detalle_apartadoId` ON `apartado_detalle` (`apartadoId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_apartado_detalle_productoId` ON `apartado_detalle` (`productoId`)")
+            }
+        }
 
         /**
          * Fiado + venta rápida sin producto (SQL tomado de 7.json).

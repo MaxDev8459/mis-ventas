@@ -16,6 +16,8 @@ data class ProductoListado(
     val categoriaNombre: String,
     val favorito: Boolean,
     val imagenRuta: String,
+    /** Apartados: lo separado en apartados pendientes (`producto.existenciaMilesimas` ya es lo disponible). */
+    val apartadoMilesimas: Long = 0,
 )
 
 data class CategoriaChip(val id: String, val nombre: String)

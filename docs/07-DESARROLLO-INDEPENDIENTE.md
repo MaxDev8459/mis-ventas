@@ -100,6 +100,22 @@ Especificación completa en `docs/09-ESPEC-FIADO.md` (aprobada el 22-nov, aviso 
 - Ajuste pedido por el cliente: al calcular el corte se oculta la carga del día; solo queda el resumen
   (en "Cortes anteriores" la carga se sigue viendo).
 
+## Fase 4 — respuestas del cliente (22-nov-2026)
+
+Ya acordado el 21-nov: fecha, hora y lugar de entrega; nombre libre (sin lista de clientes); pago completo al
+entregar; el producto se separa (existencia apartada). Preguntas nuevas:
+
+| # | Pregunta | Respuesta |
+|---|---|---|
+| 1 | Existencia al apartar | **Se separa sin salir**: la existencia total no cambia; lo apartado no se puede vender (disponible = total − apartado). Al entregar baja como venta normal. |
+| 2 | Precio | **El del día en que se apartó.** |
+| 3 | Cobro al entregar | **Como una venta normal** en la caja abierta (forma de pago, descuento si está habilitado). **No se puede fiar.** |
+| 4 | Dónde se crea | **Desde Vender**: botón "Apartar" en lugar de cobrar. Solo productos del catálogo (sin monto libre). |
+| 5 | Si no viene el cliente | Sigue apartado hasta marcarlo "Entregado". **Al cerrar la caja** se liberan solos todos los apartados no entregados **de ese día y de días anteriores** (los de días futuros no se tocan). |
+| 6 | Modificar | **Fecha, hora, lugar y nombre.** Para cambiar productos: cancelar y apartar de nuevo. |
+| 7 | Avisos | **En Inicio y notificaciones**: una **15 minutos antes** ("en 15 minutos tienes que entregar…") y otra **a la hora exacta** ("es hora de entregar…"), con cliente, productos, lugar y hora. |
+| 8 | Merma o ajuste por debajo de lo apartado | **No se permite**: primero hay que cancelar o cambiar el apartado. |
+
 ## Versión 1.4.0 (22-nov-2026)
 
 Instalada en la app real con `install -r` (firma igual a la 1.3.0, indicador en "Sincronizado" antes de instalar).

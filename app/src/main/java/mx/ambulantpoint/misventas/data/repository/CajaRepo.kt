@@ -122,6 +122,8 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCa
         val ahora = reloj.ahora()
         val cerrada = caja.copy(estado = EstadoCaja.CERRADA, cerradaEn = ahora, actualizadoEn = ahora, pendienteSync = true)
         dao.actualizar(cerrada)
+        // Apartados (Fase 4): los no entregados de ese día y anteriores se liberan.
+        liberarApartados(db, caja.abiertaEn, ahora, java.time.ZoneId.systemDefault())
         cerrada
     }
 }

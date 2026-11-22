@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mx.ambulantpoint.misventas.AppContainer
 import mx.ambulantpoint.misventas.core.Formato
@@ -99,6 +100,11 @@ class ProductoInventarioViewModel(c: AppContainer, productoId: String) : ViewMod
     private val registrarEntrada = RegistrarEntrada(c.inventarioRepo, existenciaBaja)
     private val ajustarExistencia = AjustarExistencia(c.inventarioRepo, existenciaBaja)
     private val notificador: Notificador = c.notificador
+
+    /** Apartados: lo separado de este producto en apartados pendientes. */
+    val apartado: StateFlow<Long> = c.apartadoRepo.observarApartadoPorProducto()
+        .map { it[productoId] ?: 0L }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
     val producto: StateFlow<Producto?> = c.productoRepo.observarPorId(productoId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -167,6 +173,7 @@ fun etiquetaMotivo(m: MotivoAjuste) = when (m) {
 fun PantallaProductoInventario(productoId: String, alRegresar: () -> Unit) {
     val modelo = vm(key = productoId) { ProductoInventarioViewModel(it, productoId) }
     val producto by modelo.producto.collectAsStateWithLifecycle()
+    val apartado by modelo.apartado.collectAsStateWithLifecycle()
     val movimientos by modelo.movimientos.collectAsStateWithLifecycle()
     val rango by modelo.rango.collectAsStateWithLifecycle()
     var elegirFechas by remember { mutableStateOf(false) }
@@ -182,6 +189,12 @@ fun PantallaProductoInventario(productoId: String, alRegresar: () -> Unit) {
                         Column {
                             Text("Existencia actual", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(Formato.cantidad(p.existenciaMilesimas, p.tipoVenta), style = MaterialTheme.typography.headlineMedium)
+                            if (apartado > 0) {
+                                Text(
+                                    "Apartado: ${Formato.cantidad(apartado, p.tipoVenta)} · disponible ${Formato.cantidad(maxOf(0, p.existenciaMilesimas - apartado), p.tipoVenta)}",
+                                    style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.height(16.dp))

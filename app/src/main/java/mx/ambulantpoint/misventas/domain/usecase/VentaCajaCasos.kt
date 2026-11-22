@@ -122,6 +122,8 @@ class CobrarVenta(
         montoRecibido: String? = null,
         descuento: DescuentoCapturado? = null,
         fiado: FiadoCapturado? = null,
+        /** Apartados: se entrega este apartado (sus precios fijos van en el carrito). */
+        apartadoId: String? = null,
     ): Resultado<Hecho<VentaCobrada>> {
         val resumen = when (val r = PrepararCobro.calcular(carrito, forma, montoRecibido, descuento, fiar = fiado != null)) {
             is Resultado.Exito -> r.valor
@@ -144,13 +146,19 @@ class CobrarVenta(
             descuento = resumen.descuento,
             libres = carrito.libres.map { LineaLibre(it.descripcion, it.importeCentavos) },
             fiado = datosFiado,
+            apartadoId = apartadoId,
         )
         return ejecutar(Mensajes.Campo.NO_ENCONTRADO, operacion = { ventas.cobrar(solicitud) }) { cobrada ->
             val avisos = carrito.renglones.mapNotNull { r ->
                 val existencia = cobrada.existencias[r.producto.id] ?: return@mapNotNull null
                 existenciaBaja.aviso(ProductoRef(r.producto.id, r.producto.nombre, r.producto.tipoVenta), existencia)
             }
-            Hecho(cobrada, if (datosFiado != null) Mensajes.Fiado.VENTA_FIADA else Mensajes.VENTA_REGISTRADA, avisos)
+            val mensajeOk = when {
+                apartadoId != null -> Mensajes.Apartado.APARTADO_ENTREGADO
+                datosFiado != null -> Mensajes.Fiado.VENTA_FIADA
+                else -> Mensajes.VENTA_REGISTRADA
+            }
+            Hecho(cobrada, mensajeOk, avisos)
         }
     }
 }

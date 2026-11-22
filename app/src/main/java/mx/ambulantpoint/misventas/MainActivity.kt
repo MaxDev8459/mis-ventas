@@ -23,6 +23,8 @@ class MainActivity : FragmentActivity() {
         intent?.getStringExtra(Recordatorios.EXTRA_DESTINO)
             ?.let { n -> DestinoNotificacion.entries.firstOrNull { it.name == n } }
             ?.let { (application as MisVentasApp).contenedor.destinoNotificacion.value = it }
+        intent?.getStringExtra(mx.ambulantpoint.misventas.data.notificaciones.AlarmasApartados.EXTRA_APARTADO)
+            ?.let { (application as MisVentasApp).contenedor.apartadoNotificado.value = it }
         val preferencias = (application as MisVentasApp).contenedor.preferencias
         setContent {
             val tema by preferencias.tema.collectAsStateWithLifecycle()

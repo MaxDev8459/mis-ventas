@@ -3,6 +3,11 @@
 
     <!-- RF 5.4 / 7.6: notificaciones de caja abierta y de falta de respaldo. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Apartados (Fase 4): avisos 15 min antes y a la hora exacta de la entrega. Android 13+ concede
+         USE_EXACT_ALARM al instalar; en Android 12 se usa SCHEDULE_EXACT_ALARM. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".MisVentasApp"
@@ -22,6 +27,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".data.notificaciones.AvisoApartadoReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".data.notificaciones.ReprogramarApartadosReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

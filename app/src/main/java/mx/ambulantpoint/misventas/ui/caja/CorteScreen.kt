@@ -66,6 +66,7 @@ import mx.ambulantpoint.misventas.ui.components.vm
 class CorteViewModel(c: AppContainer) : ViewModel() {
     private val calcularCorte = CalcularCorte(c.cajaRepo)
     private val cerrarCaja = CerrarCaja(c.cajaRepo)
+    private val apartadoRepo = c.apartadoRepo
     private val notificador = c.notificador
 
     val caja: StateFlow<Caja?> = c.cajaRepo.observarAbierta()
@@ -83,6 +84,17 @@ class CorteViewModel(c: AppContainer) : ViewModel() {
     var corte by mutableStateOf<CorteCalculado?>(null)
         private set
     var confirmarCierre by mutableStateOf(false)
+
+    /** Apartados que se liberarán al cerrar (nombres), para avisar antes de confirmar. */
+    var porLiberar by mutableStateOf<List<String>>(emptyList())
+        private set
+
+    fun pedirCierre() {
+        viewModelScope.launch {
+            porLiberar = apartadoRepo.porLiberar().map { it.nombre }
+            confirmarCierre = true
+        }
+    }
     var cerrada by mutableStateOf(false)
         private set
 
@@ -150,7 +162,7 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
             if (modelo.corte == null) SeccionCarga(carga)
             modelo.corte?.let { c ->
                 ResumenCorte(c.corte.caja, c.corte.porFormaPago, c.corte.abonosPorForma)
-                BotonSecundario("Cerrar caja", { modelo.confirmarCierre = true })
+                BotonSecundario("Cerrar caja", modelo::pedirCierre)
             }
         }
     }
@@ -158,7 +170,11 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
     if (modelo.contandoBilletes) DialogoConteo(modelo)
 
     if (modelo.confirmarCierre) {
-        DialogoConfirmacion(Mensajes.CONFIRMAR_CERRAR_CAJA, modelo::cerrar, { modelo.confirmarCierre = false })
+        DialogoConfirmacion(
+            Mensajes.CONFIRMAR_CERRAR_CAJA +
+                (if (modelo.porLiberar.isNotEmpty()) "." + Mensajes.Apartado.seLiberan(modelo.porLiberar) else ""),
+            modelo::cerrar, { modelo.confirmarCierre = false },
+        )
     }
 }
 

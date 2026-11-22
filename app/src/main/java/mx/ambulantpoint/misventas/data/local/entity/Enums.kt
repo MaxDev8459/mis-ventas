@@ -23,3 +23,6 @@ enum class TipoAbono { ABONO, DEVOLUCION }
 
 /** Fiado (v7): los abonos no se borran; uno equivocado se cancela mientras su caja está abierta. */
 enum class EstadoAbono { REGISTRADO, CANCELADO }
+
+/** Apartados (v8): pendiente → entregado (se cobró), cancelado (a mano) o liberado (al cerrar la caja sin entregar). */
+enum class EstadoApartado { PENDIENTE, ENTREGADO, CANCELADO, LIBERADO }

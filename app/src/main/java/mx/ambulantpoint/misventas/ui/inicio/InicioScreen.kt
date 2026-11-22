@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Refresh
@@ -60,6 +61,8 @@ import mx.ambulantpoint.misventas.core.Formato
 import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.data.local.entity.Caja
 import mx.ambulantpoint.misventas.domain.regla.EstadoIndicador
+import mx.ambulantpoint.misventas.domain.regla.MomentoApartado
+import mx.ambulantpoint.misventas.domain.regla.ReglaApartado
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
 import mx.ambulantpoint.misventas.ui.components.vm
 
@@ -68,6 +71,9 @@ data class EstadoInicio(
     val caja: Caja? = null,
     val indicador: EstadoIndicador = EstadoIndicador.Sincronizado,
     val ultimaSincronizacion: Long? = null,
+    /** Apartados pendientes con entrega hoy y los atrasados. */
+    val apartadosHoy: Int = 0,
+    val apartadosAtrasados: Int = 0,
 )
 
 class InicioViewModel(c: AppContainer) : ViewModel() {
@@ -78,8 +84,16 @@ class InicioViewModel(c: AppContainer) : ViewModel() {
         c.cajaRepo.observarAbierta(),
         sync.indicador,
         sync.ultimaSincronizacion,
-    ) { perfil, caja, indicador, ultima ->
-        EstadoInicio(perfil?.nombreNegocio.orEmpty(), caja, indicador, ultima)
+        c.apartadoRepo.observarPendientes(),
+    ) { perfil, caja, indicador, ultima, apartados ->
+        val ahora = c.reloj.ahora()
+        val zona = java.time.ZoneId.systemDefault()
+        val momentos = apartados.map { ReglaApartado.momento(it.apartado.entregaEn, ahora, zona) }
+        EstadoInicio(
+            perfil?.nombreNegocio.orEmpty(), caja, indicador, ultima,
+            apartadosHoy = momentos.count { it == MomentoApartado.HOY },
+            apartadosAtrasados = momentos.count { it == MomentoApartado.ATRASADO },
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EstadoInicio())
 
     /** RF 7.3. */
@@ -91,6 +105,7 @@ enum class Destino(val titulo: String, val icono: ImageVector) {
     VENDER("Vender", Icons.Filled.ShoppingCart),
     CAJA("Caja", Icons.Filled.Lock),
     HISTORIAL("Historial de ventas", Icons.Filled.DateRange),
+    APARTADOS("Apartados", Icons.Filled.Notifications),
     CLIENTES("Clientes / Fiado", Icons.Filled.Person),
     CATALOGO("Catálogo", Icons.AutoMirrored.Filled.List),
     CATEGORIAS("Categorías", Icons.Filled.Menu),
@@ -154,6 +169,18 @@ private fun TarjetaEstado(estado: EstadoInicio, alSincronizarAhora: () -> Unit) 
                 Text(
                     "Desde ${Formato.fechaHora(caja.abiertaEn)} · Fondo ${Formato.moneda(caja.fondoCentavos)}",
                     style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            // Apartados: cuántos hay que entregar hoy y cuántos van atrasados.
+            if (estado.apartadosHoy + estado.apartadosAtrasados > 0) {
+                Text(
+                    listOfNotNull(
+                        estado.apartadosHoy.takeIf { it > 0 }?.let { "Apartados hoy: $it" },
+                        estado.apartadosAtrasados.takeIf { it > 0 }?.let { "Atrasados: $it" },
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }

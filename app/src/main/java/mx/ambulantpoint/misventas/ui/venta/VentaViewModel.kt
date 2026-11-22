@@ -54,6 +54,11 @@ import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.domain.usecase.AjustarExistencia
 import mx.ambulantpoint.misventas.domain.usecase.ProductoRef
 import mx.ambulantpoint.misventas.domain.usecase.FiadoCapturado
+import mx.ambulantpoint.misventas.domain.usecase.Apartar
+import mx.ambulantpoint.misventas.domain.regla.ReglaApartado
+import mx.ambulantpoint.misventas.domain.venta.EntregaApartado
+import mx.ambulantpoint.misventas.ui.apartados.FormularioApartado
+import kotlinx.coroutines.flow.first
 import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
 import mx.ambulantpoint.misventas.data.local.dao.ClienteConSaldo
 import mx.ambulantpoint.misventas.data.local.entity.Configuracion
@@ -79,8 +84,13 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     /** Chip elegido: Todos, Favoritos o una categoría. */
     private val filtro = MutableStateFlow<FiltroVenta>(FiltroVenta.Todos)
 
-    /** RF 3.1: solo productos activos con existencia mayor a cero (en orden alfabético). */
-    private val listados = productoRepo.observarParaVenta().map { l -> l.map(::aListado) }
+    /**
+     * RF 3.1: solo productos activos con existencia mayor a cero (en orden alfabético).
+     * Apartados: se muestra y se vende solo lo disponible (total − apartado).
+     */
+    private val listados = combine(productoRepo.observarParaVenta(), c.apartadoRepo.observarApartadoPorProducto()) { l, apartado ->
+        l.map { aListado(it, apartado[it.producto.id] ?: 0L) }.filter { it.producto.existenciaMilesimas > 0 }
+    }
 
     /** Chips de categoría: solo las que tienen productos para vender. */
     val categorias: StateFlow<List<CategoriaChip>> = listados.map(ReglaFiltroVenta::categorias)
@@ -154,7 +164,45 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     var carrito by mutableStateOf(c.carritoPorCorregir.value ?: Carrito())
         private set
 
-    init { c.carritoPorCorregir.value = null }
+    /** Apartados: si se viene a entregar un apartado, el cobro se abre con sus productos (precio fijo). */
+    val entrega: EntregaApartado? = c.apartadoPorEntregar.value
+
+    /** La pantalla se cierra (entrega cobrada o cancelada). */
+    var salir by mutableStateOf(false)
+        private set
+
+    init {
+        c.carritoPorCorregir.value = null
+        c.apartadoPorEntregar.value = null
+    }
+
+    // ── Apartar desde Vender (no requiere caja) ──
+    private val apartar = Apartar(c.apartadoRepo) { c.reloj.ahora() }
+    var formularioApartado by mutableStateOf<FormularioApartado?>(null)
+        private set
+    var guardandoApartado by mutableStateOf(false)
+        private set
+
+    fun abrirApartar() {
+        if (carrito.estaVacio) { notificador.mostrar(Mensajes.AGREGUE_UN_PRODUCTO); return }
+        if (carrito.tieneLibres) { notificador.mostrar(Mensajes.Apartado.NO_APARTAR_VARIOS); return }
+        formularioApartado = FormularioApartado()
+    }
+    fun cerrarApartar() { formularioApartado = null }
+
+    fun guardarApartado() {
+        val f = formularioApartado ?: return
+        if (guardandoApartado) return
+        viewModelScope.launch {
+            guardandoApartado = true
+            apartar(carrito, f.nombre, f.telefono, f.lugar, f.entregaEn()).atender(notificador) { f.errores = it }?.let { h ->
+                h.mensaje?.let(notificador::mostrar)
+                formularioApartado = null
+                carrito = Carrito()
+            }
+            guardandoApartado = false
+        }
+    }
 
     /** Merma desde la venta (producto roto): ajuste de inventario con motivo Merma. */
     var mermaDe by mutableStateOf<ProductoEnVenta?>(null)
@@ -429,7 +477,11 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         cobrando = true
     }
 
-    fun cerrarCobro() { cobrando = false }
+    fun cerrarCobro() {
+        cobrando = false
+        // Entrega de apartado: no se regresa a la captura (sus productos y precios no se cambian).
+        if (entrega != null) salir = true
+    }
 
     fun elegirForma(f: FormaPago) { forma = f; fiar = false; erroresCobro = emptyMap() }
     fun cambiarRecibido(texto: String) { recibido = texto; erroresCobro = emptyMap() }
@@ -456,10 +508,11 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         val fiado = if (fiar) FiadoCapturado(clienteId, pagoInicial, formaInicial) else null
         viewModelScope.launch {
             confirmando = true
-            cobrarVenta(carrito, forma, recibido.ifBlank { null }, descuento, fiado).atender(notificador) { erroresCobro = it }?.let { hecho ->
+            cobrarVenta(carrito, forma, recibido.ifBlank { null }, descuento, fiado, entrega?.apartadoId).atender(notificador) { erroresCobro = it }?.let { hecho ->
                 notificador.mostrar((listOfNotNull(hecho.mensaje) + hecho.avisos).joinToString("\n"))
                 carrito = Carrito()
                 cobrando = false
+                if (entrega != null) salir = true
                 recibido = ""
                 descuentoTexto = ""
             }
@@ -467,8 +520,25 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         }
     }
 
-    private fun aListado(p: ProductoConCategoria) = ProductoListado(
-        producto = ProductoEnVenta(p.producto.id, p.producto.nombre, p.producto.tipoVenta, p.producto.precioCentavos, p.producto.existenciaMilesimas),
+    // Va al final de la clase: necesita que `cobrando` y `forma` ya tengan su valor inicial.
+    init {
+        entrega?.let {
+            carrito = it.carrito
+            cobrando = true
+            // Efectivo preseleccionado en cuanto se cargan las formas de pago.
+            viewModelScope.launch {
+                val lista = c.formaPagoRepo.observarActivas().first { l -> l.isNotEmpty() }
+                if (forma == null) forma = lista.firstOrNull { f -> f.esEfectivo } ?: lista.first()
+            }
+        }
+    }
+
+    private fun aListado(p: ProductoConCategoria, apartado: Long) = ProductoListado(
+        producto = ProductoEnVenta(
+            p.producto.id, p.producto.nombre, p.producto.tipoVenta, p.producto.precioCentavos,
+            ReglaApartado.disponible(p.producto.existenciaMilesimas, apartado),
+        ),
+        apartadoMilesimas = apartado,
         categoriaId = p.producto.categoriaId,
         categoriaNombre = p.categoriaNombre,
         favorito = p.producto.favorito,

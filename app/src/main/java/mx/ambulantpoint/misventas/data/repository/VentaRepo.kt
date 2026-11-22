@@ -20,6 +20,8 @@ import mx.ambulantpoint.misventas.data.local.entity.TipoAbono
 import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
 import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
+import mx.ambulantpoint.misventas.domain.regla.ReglaApartado
+import mx.ambulantpoint.misventas.data.local.entity.EstadoApartado
 import mx.ambulantpoint.misventas.domain.puertos.PuertoVentas
 
 /** Un producto y su cantidad en la venta (milésimas: 2 pzas = 2000; 0.250 kg = 250). */
@@ -53,6 +55,8 @@ data class SolicitudCobro(
     val descuento: DescuentoVenta? = null,
     val libres: List<LineaLibre> = emptyList(),
     val fiado: DatosFiado? = null,
+    /** Apartados: entrega de este apartado (sus productos y precios fijos; las `lineas` se ignoran). */
+    val apartadoId: String? = null,
 )
 
 data class VentaCobrada(
@@ -69,6 +73,7 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
     private val movimientoDao = db.movimientoDao()
     private val cajaDao = db.cajaDao()
     private val fiadoDao = db.fiadoDao()
+    private val apartadoDao = db.apartadoDao()
 
     /** Lo abonado (abonos no cancelados) a una venta fiada: lo que se devolvería al cancelarla. */
     suspend fun abonadoAVenta(ventaId: String): Long = fiadoDao.abonadoAVenta(ventaId) ?: 0L
@@ -89,8 +94,19 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
      * El importe usa el precio vigente del producto en este momento.
      */
     override suspend fun cobrar(solicitud: SolicitudCobro): Resultado<VentaCobrada> = db.transaccion {
-        if (solicitud.lineas.isEmpty() && solicitud.libres.isEmpty()) fallar(FallaDatos.VentaSinProductos)
         val caja = cajaDao.abierta() ?: fallar(FallaDatos.SinCajaAbierta)
+        // Entrega de un apartado: sus productos con el precio fijo del día en que se apartó.
+        val apartado = solicitud.apartadoId?.let { id ->
+            if (solicitud.fiado != null) fallar(FallaDatos.Regla(Mensajes.Apartado.NO_FIAR_APARTADO))
+            if (solicitud.libres.isNotEmpty()) fallar(FallaDatos.Regla(Mensajes.Apartado.NO_APARTAR_VARIOS))
+            val a = apartadoDao.porId(id) ?: fallar(FallaDatos.NoEncontrado)
+            if (a.estado != EstadoApartado.PENDIENTE) fallar(FallaDatos.Regla(Mensajes.Apartado.NO_PENDIENTE))
+            a
+        }
+        val detallesApartado = apartado?.let { apartadoDao.detalles(it.id) }
+        if (solicitud.lineas.isEmpty() && solicitud.libres.isEmpty() && detallesApartado.isNullOrEmpty()) {
+            fallar(FallaDatos.VentaSinProductos)
+        }
         val fiado = solicitud.fiado
         val forma = if (fiado != null) {
             // Respuesta 6 del cliente: una venta con monto libre no se fía.
@@ -107,20 +123,23 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
         val ventaId = nuevoId()
 
         // Si el mismo producto viene en varias líneas, se suma para validar contra la existencia.
-        val cantidades = solicitud.lineas.groupBy { it.productoId }
-            .mapValues { (_, lineas) -> lineas.sumOf { it.cantidadMilesimas } }
+        val cantidades = detallesApartado?.groupBy { it.productoId }?.mapValues { (_, l) -> l.sumOf { it.cantidadMilesimas } }
+            ?: solicitud.lineas.groupBy { it.productoId }.mapValues { (_, lineas) -> lineas.sumOf { it.cantidadMilesimas } }
+        val precioFijo = detallesApartado?.associate { it.productoId to it.precioUnitarioCentavos }.orEmpty()
 
         val detalles = cantidades.map { (productoId, cantidad) ->
             val producto = productoDao.porId(productoId) ?: fallar(FallaDatos.NoEncontrado)
-            if (!producto.activo) fallar(FallaDatos.ProductoNoDisponible(productoId))
+            // Un apartado se entrega aunque el producto se haya desactivado después de apartarlo.
+            if (!producto.activo && apartado == null) fallar(FallaDatos.ProductoNoDisponible(productoId))
             if (cantidad <= 0 || !cantidadValida(producto.tipoVenta, cantidad)) fallar(FallaDatos.CantidadInvalida)
-            if (cantidad > producto.existenciaMilesimas) {
-                fallar(
-                    FallaDatos.ExistenciaInsuficiente(
-                        productoId, producto.nombre, producto.tipoVenta, producto.existenciaMilesimas,
-                    ),
-                )
+            // Apartados: solo se vende lo disponible (lo de otros apartados pendientes no).
+            val disponible = ReglaApartado.disponible(
+                producto.existenciaMilesimas, apartadoDao.apartadoDe(productoId, excepto = apartado?.id.orEmpty()),
+            )
+            if (cantidad > disponible) {
+                fallar(FallaDatos.ExistenciaInsuficiente(productoId, producto.nombre, producto.tipoVenta, disponible))
             }
+            val precio = precioFijo[productoId] ?: producto.precioCentavos
             VentaDetalle(
                 id = nuevoId(),
                 ventaId = ventaId,
@@ -128,8 +147,8 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
                 nombreProducto = producto.nombre,
                 tipoVenta = producto.tipoVenta,
                 cantidadMilesimas = cantidad,
-                precioUnitarioCentavos = producto.precioCentavos,
-                importeCentavos = Dinero.importe(cantidad, producto.precioCentavos),
+                precioUnitarioCentavos = precio,
+                importeCentavos = Dinero.importe(cantidad, precio),
                 creadoEn = ahora,
             ) to producto.existenciaMilesimas
         }
@@ -218,6 +237,9 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
                     existenciaResultanteMilesimas = resultante, ventaId = ventaId, creadoEn = ahora,
                 ),
             )
+        }
+        if (apartado != null && apartadoDao.terminar(apartado.id, EstadoApartado.ENTREGADO.name, ahora, ventaId) == 0) {
+            fallar(FallaDatos.Regla(Mensajes.Apartado.NO_PENDIENTE))
         }
         cajaDao.invalidarCorte(caja.id, ahora)
 

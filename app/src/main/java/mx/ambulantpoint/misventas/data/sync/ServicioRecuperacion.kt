@@ -146,6 +146,7 @@ class ServicioRecuperacion(
             Colecciones.CAJA, Colecciones.CORTE_FORMA_PAGO, Colecciones.VENTA, Colecciones.VENTA_DETALLE,
             Colecciones.MOVIMIENTO, Colecciones.CARGA, Colecciones.PRECARGA,
             Colecciones.CLIENTE, Colecciones.ABONO, Colecciones.APLICACION_ABONO,
+            Colecciones.APARTADO, Colecciones.APARTADO_DETALLE,
         )
         val datos = mutableMapOf(Colecciones.PERFIL to perfiles)
         colecciones.forEachIndexed { i, c ->
@@ -166,7 +167,7 @@ class ServicioRecuperacion(
         val dao = db.syncDao()
         db.withTransaction {
             // Hijos antes que padres (llaves foráneas).
-            dao.borrarAplicacionesAbono(); dao.borrarAbonos()
+            dao.borrarAplicacionesAbono(); dao.borrarAbonos(); dao.borrarApartadoDetalles(); dao.borrarApartados()
             dao.borrarMovimientos(); dao.borrarVentaDetalles(); dao.borrarVentas(); dao.borrarCortesFormaPago(); dao.borrarCargas(); dao.borrarPrecargas()
             dao.borrarCajas(); dao.borrarProductos(); dao.borrarFormasPago(); dao.borrarCategorias()
             dao.borrarClientes()
@@ -189,6 +190,9 @@ class ServicioRecuperacion(
             dao.insertarPrecargas(datos.getValue(Colecciones.PRECARGA).map(::aPrecarga))
             dao.insertarAbonos(datos.getValue(Colecciones.ABONO).map(::aAbono))
             dao.insertarAplicacionesAbono(datos.getValue(Colecciones.APLICACION_ABONO).map(::aAplicacionAbono))
+            // Respaldos anteriores a la v8 no tienen apartados.
+            dao.insertarApartados(datos.getValue(Colecciones.APARTADO).map(::aApartado))
+            dao.insertarApartadoDetalles(datos.getValue(Colecciones.APARTADO_DETALLE).map(::aApartadoDetalle))
         }
         // Una cuenta que nunca subió formas de pago recibe las iniciales (Efectivo y Transferencia).
         db.sembrarSiHaceFalta(reloj)

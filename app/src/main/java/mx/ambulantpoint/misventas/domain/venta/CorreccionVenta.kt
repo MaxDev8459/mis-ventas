@@ -12,6 +12,9 @@ data class LineaACorregir(
     val importeCentavos: Long = 0,
 )
 
+/** Apartados: entrega de un apartado desde la pantalla de cobro (sus productos con precio fijo). */
+data class EntregaApartado(val apartadoId: String, val nombre: String, val carrito: Carrito)
+
 /** Carrito armado para recapturar y los productos que ya no se pueden vender. */
 data class Correccion(val carrito: Carrito, val omitidos: List<String>)
 
