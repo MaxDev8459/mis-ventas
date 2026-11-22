@@ -21,7 +21,7 @@ Archivos que no están en git y se copian a mano entre sistemas: `app/google-ser
 ## Instalar en el teléfono sin perder datos
 El teléfono tiene instalada la versión de **liberación** (firmada con la llave de `firma/`). Hasta la 1.0.0 tenía un APK debug de Windows; la 1.0.1 (21-nov-2026) se instaló con **rotación de llave** (APK Signature Scheme v3.1, linaje debug → liberación en `firma/linaje-debug-a-liberacion.bin`, llave vieja en `firma/debug-windows.keystore`), así que Android ya acepta la llave de `firma/`. Antes de instalar, compara con `apksigner verify --print-certs` la firma del APK con la instalada. Para actualizarla sin borrar datos, instala siempre un APK firmado con esa misma llave (`assembleRelease` + `adb install -r`). Un APK debug de otra computadora trae otra firma: Android lo rechaza y la única salida sería desinstalar (borra los datos). Si eso pasa, **no desinstales**: avisa al usuario.
 
-Al empezar: `git pull`. Al terminar: commit y `git push`.
+Al empezar: `git pull` y leer **`docs/ESTADO.md`** (checklist de fases, siguiente paso, preguntas abiertas y cómo se trabaja). Al terminar: actualizar `docs/ESTADO.md`, commit y `git push`.
 
 ## Convenciones
 - Paquete `mx.ambulantpoint.misventas`. Código y nombres en español (dominio del negocio), convenciones oficiales de Kotlin.

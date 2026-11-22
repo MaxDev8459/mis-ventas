@@ -1,0 +1,73 @@
+# Estado del proyecto — Mis Ventas (desarrollo independiente)
+
+> **Léelo al empezar cada sesión** y actualízalo al terminar: marca lo hecho, anota decisiones y deja claro el siguiente paso.
+> Detalle de reglas y fases: `docs/07-DESARROLLO-INDEPENDIENTE.md` · Especificación de la carga v2: `docs/08-ESPEC-CARGA-V2.md`.
+
+**Última actualización:** 22-nov-2026
+
+## Dónde estamos
+
+| Dato | Valor |
+|---|---|
+| App real en el teléfono | **1.3.0** (versionCode 5), liberación, cuenta `maxicarlotas@gmail.com` |
+| Versión de la base Room | **6** (siguiente migración: 6→7) |
+| Pruebas JVM | 210 pasan |
+| Siguiente fase | **Fase 3: fiado + venta rápida sin producto** (sin empezar) |
+
+## Checklist de fases
+
+- [x] **Fase 0:** correcciones de la revisión contra el DFR y aviso de privacidad (1.0.1)
+- [x] **Fase 1:** corregir venta, merma desde Vender, calculadora de billetes, modo oscuro y huella configurable (1.1.0)
+- [x] **Fase 2a:** favoritos (★) y chips de categoría en Vender; búsqueda sin acentos (1.2.0, Room v4)
+- [x] **Fase 2b:** carga del día v1 y v2 (+ / −, Máx, precargas, unidad para kilo, "te quedan", sobrante en el corte) (1.3.0, Room v5–v6)
+- [x] Correcciones: texto legible en existencia baja/agotado con modo oscuro; doble toque en "regresar" (pantalla en blanco). También en la demo.
+- [ ] **Fase 3:** fiado + venta rápida sin producto (Room v6→v7)
+  - [ ] Hacer al usuario las preguntas abiertas (abajo) y anotar sus respuestas en `docs/07`
+  - [ ] Escribir la especificación (`docs/09-ESPEC-FIADO.md`) y que el usuario la valide
+  - [ ] Programar con pruebas unitarias (corte de caja con fiado y abonos = cálculo crítico)
+  - [ ] Probar en Mis Ventas Pruebas; el usuario la aprueba
+  - [ ] Liberar a la app real (1.4.0)
+- [ ] **Fase 4:** apartados con existencia separada (Room v7→v8)
+- [ ] **Fase 5:** reportes nuevos (comparar periodos, ventas por hora/día, fiado y mermas a precio de venta)
+
+## Fase 3: lo que ya acordó el usuario (entrevista del 21-nov)
+
+- **Fiado:** lista de clientes (nombre; teléfono opcional). Se paga en **abonos parciales o liquidando todo**. **El abono entra al corte del día en que se paga**, no del día en que se fió. El inventario **baja al entregar** el producto, como una venta normal.
+- **Venta rápida sin producto:** cobrar un monto libre (algo que no está en el catálogo). No descuenta inventario. En los reportes por producto aparece como "Varios".
+- **Cobro:** no cambia el flujo actual de cobrar, salvo lo necesario para fiar.
+
+### Preguntas abiertas de Fase 3 (hacerlas antes de programar; no inventar reglas)
+
+1. ¿En qué forma de pago entran los abonos (efectivo, transferencia, o eligen cada vez)?
+2. Al fiar, ¿el cliente puede dejar un pago parcial en ese momento (por ejemplo, paga $50 de $120)?
+3. ¿Cómo se ve en el corte? Propuesta: "total vendido" incluye lo fiado, el "efectivo esperado" solo suma lo cobrado y los abonos recibidos, y aparece una línea "Fiado del día" y otra "Abonos recibidos".
+4. ¿Qué pasa si se cancela una venta fiada que ya tiene abonos?
+5. ¿Hay límite de crédito por cliente o aviso de saldo alto?
+6. ¿Se pueden fiar las ventas rápidas sin producto?
+7. Venta rápida: ¿lleva descripción opcional (por ejemplo "Refresco de la tienda")? ¿Permite descuento?
+8. ¿Dónde se consulta el fiado: una pantalla "Clientes / Fiado" en Inicio, con su saldo y su historial de abonos?
+9. ¿Se reutiliza "Recordar por WhatsApp" el saldo? (En la entrevista **no** se eligió, así que confirmarlo antes de incluirlo.)
+
+## Cómo se trabaja (no saltarse)
+
+1. **Al empezar:** `git pull` y leer este archivo.
+2. **Cambio grande:** confirmar el alcance con el usuario y escribir la especificación para que la valide **antes** de programar.
+3. **Room:** cada cambio de esquema lleva migración. Verificarla con `sqlite3` contra el `N.json` generado, con datos. Nunca usar `fallbackToDestructiveMigration`.
+4. **Tablas nuevas que se respaldan:** agregarlas en `Mapeo.kt` (Colecciones, aDocumento, aX), `SincronizadorFirestore.tablas`, `SyncDao` (conteos de pendientes, lectura por lotes, pendienteX, borrarX, insertarX), `ServicioRecuperacion` (bajar, borrar, insertar) y `AuthRepoFirebase` (pendienteX al registrar otra cuenta).
+5. **Probar primero en Mis Ventas Pruebas** (`./gradlew test assembleDebug` + `adb install -r app/build/outputs/apk/debug/app-debug.apk`). Cuenta `maxicarlotas+pruebas@gmail.com`, ya con datos ficticios.
+6. **Liberar a la app real:** subir versionCode/versionName, `assembleRelease`, comparar la firma con `apksigner`, confirmar que la app real dice **"Sincronizado"** y `adb install -r`. **Nunca desinstalar.** Abrir la app y revisar `adb logcat -b crash`.
+7. **Al terminar:** actualizar este archivo y `docs/07`, hacer commit y `git push`.
+
+## Las tres apps del teléfono
+
+| App | Paquete | Firma | Cuenta | Uso |
+|---|---|---|---|---|
+| Mis Ventas | `mx.ambulantpoint.misventas` | liberación (`firma/`) | `maxicarlotas@gmail.com` | negocio real, **no tocar sin liberar** |
+| Mis Ventas Demo | `.demo` (rama `demo-entrega`, `~/LinuxProjects/mis-ventas-demo`) | debug | `comprasenlineamaxdev@gmail.com` | presentación del 27-nov; solo correcciones de errores |
+| Mis Ventas Pruebas | `.pruebas` (compilación debug de main) | debug | `maxicarlotas+pruebas@gmail.com` | probar cada fase antes de liberar |
+
+## Notas
+
+- La llave debug de Linux (`~/.android/debug.keystore`) es la de Windows, con copia en `firma/debug-windows.keystore`.
+- En Windows hay que copiar a mano `firma/` (completa), `keystore.properties` y el `google-services.json` nuevo (trae las tres apps).
+- Pendiente menor: en el teléfono quedó el paquete viejo `mx.ambulantpoint.misventas.test`. Es inofensivo; se puede desinstalar si el usuario lo pide.
