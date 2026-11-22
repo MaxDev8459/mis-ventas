@@ -1,5 +1,8 @@
 package mx.ambulantpoint.misventas.ui.caja
 
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -137,6 +140,13 @@ class DetalleCorteViewModel(c: AppContainer, cajaId: String) : ViewModel() {
 
     val porForma: StateFlow<List<CorteFormaPago>> = c.cajaRepo.observarCorteFormaPago(cajaId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Carga del día de esa caja (entre su apertura y su cierre). */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val carga: StateFlow<List<mx.ambulantpoint.misventas.domain.regla.RenglonCarga>> = caja
+        .filterNotNull()
+        .flatMapLatest { k -> c.cargaRepo.observarResumen(k.id, k.abiertaEn, k.cerradaEn ?: Long.MAX_VALUE) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }
 
 /** RF 5.5 — Resumen de un corte. */
@@ -145,12 +155,14 @@ fun PantallaDetalleCorte(cajaId: String, alRegresar: () -> Unit) {
     val modelo = vm(key = cajaId) { DetalleCorteViewModel(it, cajaId) }
     val caja by modelo.caja.collectAsStateWithLifecycle()
     val porForma by modelo.porForma.collectAsStateWithLifecycle()
+    val carga by modelo.carga.collectAsStateWithLifecycle()
     Scaffold(topBar = { BarraSuperior("Corte de caja", alRegresar) }) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             caja?.let { c ->
                 Text("Apertura: ${Formato.fechaHora(c.abiertaEn)}", style = MaterialTheme.typography.bodyLarge)
                 Text("Cierre: ${c.cerradaEn?.let(Formato::fechaHora).orEmpty()}", style = MaterialTheme.typography.bodyLarge)
                 ResumenCorte(c, porForma)
+                SeccionCarga(carga)
             }
         }
     }

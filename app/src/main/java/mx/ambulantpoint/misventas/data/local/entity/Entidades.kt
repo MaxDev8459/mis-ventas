@@ -156,6 +156,29 @@ data class CorteFormaPago(
     val pendienteSync: Boolean = true,
 )
 
+/**
+ * Carga del día (desarrollo independiente, v5): cuánto de cada producto lleva el vendedor al abrir
+ * caja. No mueve la existencia total (la casa + lo cargado); solo sirve para "te quedan X" y el
+ * sobrante al cerrar. Una fila por producto cargado en la caja; "agregar a la carga" la incrementa.
+ */
+@Entity(
+    tableName = "carga_caja",
+    primaryKeys = ["cajaId", "productoId"],
+    foreignKeys = [
+        ForeignKey(entity = Caja::class, parentColumns = ["id"], childColumns = ["cajaId"]),
+        ForeignKey(entity = Producto::class, parentColumns = ["id"], childColumns = ["productoId"]),
+    ],
+    indices = [Index(value = ["productoId"])],
+)
+data class CargaCaja(
+    val cajaId: String,
+    val productoId: String,
+    val cantidadMilesimas: Long,
+    val creadoEn: Long,
+    val actualizadoEn: Long,
+    val pendienteSync: Boolean = true,
+)
+
 /** RF 3.1 – 3.4. Guarda fecha y hora, descuento, total, forma de pago y estado. */
 @Entity(
     tableName = "venta",

@@ -1,5 +1,8 @@
 package mx.ambulantpoint.misventas.ui.caja
 
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
@@ -68,6 +71,12 @@ class CorteViewModel(c: AppContainer) : ViewModel() {
     val caja: StateFlow<Caja?> = c.cajaRepo.observarAbierta()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Carga del día: lo que sobra de cada producto (regresa a casa). */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val carga: StateFlow<List<mx.ambulantpoint.misventas.domain.regla.RenglonCarga>> = c.cajaRepo.observarAbierta()
+        .flatMapLatest { caja -> if (caja == null) flowOf(emptyList()) else c.cargaRepo.observarResumen(caja.id, caja.abiertaEn) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     var contado by mutableStateOf("")
     var error by mutableStateOf<String?>(null)
         private set
@@ -117,6 +126,7 @@ class CorteViewModel(c: AppContainer) : ViewModel() {
 fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
     val modelo = vm { CorteViewModel(it) }
     val caja by modelo.caja.collectAsStateWithLifecycle()
+    val carga by modelo.carga.collectAsStateWithLifecycle()
     LaunchedEffect(modelo.cerrada) { if (modelo.cerrada) alCerrar() }
 
     Scaffold(topBar = { BarraSuperior("Corte de caja", alRegresar) }) { relleno ->
@@ -135,6 +145,8 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
             BotonSecundario("Contar billetes y monedas", { modelo.contandoBilletes = true })
             BotonPrincipal("Calcular corte", modelo::calcular)
 
+            // Antes de cerrar se ve cuánto sobró de la carga.
+            SeccionCarga(carga)
             modelo.corte?.let { c ->
                 ResumenCorte(c.corte.caja, c.corte.porFormaPago)
                 BotonSecundario("Cerrar caja", { modelo.confirmarCierre = true })

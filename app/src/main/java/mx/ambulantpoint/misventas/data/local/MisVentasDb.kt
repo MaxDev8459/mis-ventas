@@ -21,6 +21,8 @@ import mx.ambulantpoint.misventas.data.local.entity.Caja
 import mx.ambulantpoint.misventas.data.local.entity.Categoria
 import mx.ambulantpoint.misventas.data.local.entity.Configuracion
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
+import mx.ambulantpoint.misventas.data.local.entity.CargaCaja
+import mx.ambulantpoint.misventas.data.local.dao.CargaDao
 import mx.ambulantpoint.misventas.data.local.entity.FormaPago
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -35,9 +37,9 @@ import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
     entities = [
         Perfil::class, Configuracion::class, Categoria::class, Producto::class, FormaPago::class,
         Caja::class, CorteFormaPago::class, Venta::class, VentaDetalle::class, MovimientoInventario::class,
-        EliminacionPendiente::class,
+        EliminacionPendiente::class, CargaCaja::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class MisVentasDb : RoomDatabase() {
@@ -50,6 +52,7 @@ abstract class MisVentasDb : RoomDatabase() {
     abstract fun ventaDao(): VentaDao
     abstract fun movimientoDao(): MovimientoDao
     abstract fun reporteDao(): ReporteDao
+    abstract fun cargaDao(): CargaDao
     abstract fun syncDao(): SyncDao
 
     companion object {
@@ -57,8 +60,22 @@ abstract class MisVentasDb : RoomDatabase() {
 
         fun crear(contexto: Context): MisVentasDb =
             Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE)
-                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5)
                 .build()
+
+        /** Carga del día: tabla nueva. No toca los datos existentes. */
+        val MIGRACION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `carga_caja` (`cajaId` TEXT NOT NULL, `productoId` TEXT NOT NULL, " +
+                        "`cantidadMilesimas` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, " +
+                        "`pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`cajaId`, `productoId`), " +
+                        "FOREIGN KEY(`cajaId`) REFERENCES `caja`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , " +
+                        "FOREIGN KEY(`productoId`) REFERENCES `producto`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_carga_caja_productoId` ON `carga_caja` (`productoId`)")
+            }
+        }
 
         /** Favoritos en Vender. Solo agrega una columna: los productos existentes quedan como no favoritos. */
         val MIGRACION_3_4 = object : Migration(3, 4) {

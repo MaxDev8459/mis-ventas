@@ -36,6 +36,14 @@ import mx.ambulantpoint.misventas.domain.usecase.ResumenCobro
 import mx.ambulantpoint.misventas.domain.venta.Carrito
 import mx.ambulantpoint.misventas.domain.venta.ProductoEnVenta
 import mx.ambulantpoint.misventas.domain.venta.CategoriaChip
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import mx.ambulantpoint.misventas.core.Dinero
+import mx.ambulantpoint.misventas.data.repository.FallaDatos
+import mx.ambulantpoint.misventas.domain.regla.MotivoAvisoCarga
+import mx.ambulantpoint.misventas.domain.regla.ReglaCarga
+import mx.ambulantpoint.misventas.domain.regla.RenglonCarga
 import mx.ambulantpoint.misventas.domain.venta.FiltroVenta
 import mx.ambulantpoint.misventas.domain.venta.ProductoListado
 import mx.ambulantpoint.misventas.domain.venta.ReglaFiltroVenta
@@ -43,6 +51,14 @@ import mx.ambulantpoint.misventas.ui.components.atender
 import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.domain.usecase.AjustarExistencia
 import mx.ambulantpoint.misventas.domain.usecase.ProductoRef
+
+/** Aviso de carga: el producto no se cargó o ya no queda de lo cargado. */
+data class AvisoCarga(
+    val producto: ProductoEnVenta,
+    val cantidadMilesimas: Long,
+    val motivo: MotivoAvisoCarga,
+    val renglon: RenglonCarga?,
+)
 
 /** RF 3.1 Registrar venta y RF 3.2 Cobrar venta. */
 class VentaViewModel(c: AppContainer) : ViewModel() {
@@ -85,6 +101,23 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
 
     val caja: StateFlow<Caja?> = c.cajaRepo.observarAbierta()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val cargaRepo = c.cargaRepo
+
+    /** Carga del día por producto (vacía si no se capturó: entonces no hay avisos). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val carga: StateFlow<Map<String, RenglonCarga>> = c.cajaRepo.observarAbierta()
+        .flatMapLatest { k -> if (k == null) flowOf(emptyList()) else cargaRepo.observarResumen(k.id, k.abiertaEn) }
+        .map { l -> l.associateBy { it.productoId } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    var avisoCarga by mutableStateOf<AvisoCarga?>(null)
+        private set
+    var agregarCargaTexto by mutableStateOf("")
+    var agregarCargaError by mutableStateOf<String?>(null)
+        private set
+    var agregandoCarga by mutableStateOf(false)
+        private set
 
     /** RF 3.6: solo con descuentos habilitados se muestra la opción al cobrar. */
     val descuentosHabilitados: StateFlow<Boolean> = c.configuracionRepo.observar()
@@ -172,7 +205,60 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         if (p.tipoVenta == TipoVenta.PESO) {
             pidiendoPeso = p; pesoTexto = ""; pesoError = null
         } else {
-            aplicar(carrito.agregar(p))
+            agregarRevisandoCarga(p, Dinero.MILESIMAS_POR_UNIDAD) { msg -> notificador.mostrar(msg) }
+        }
+    }
+
+    /**
+     * Agrega a la venta; si hay carga del día y el producto no se cargó o ya no queda, primero avisa
+     * (agregar a la carga o vender igual). [alFallar] recibe el mensaje si no hay existencia.
+     */
+    private fun agregarRevisandoCarga(p: ProductoEnVenta, cantidad: Long, alFallar: (String) -> Unit): Boolean {
+        val r = carrito.agregar(p, cantidad)
+        if (r is Resultado.Fallo) { (r.falla as? FallaMensaje)?.let { alFallar(it.mensaje) }; return false }
+        val mapa = carga.value
+        val motivo = ReglaCarga.aviso(mapa.isNotEmpty(), mapa[p.id], carrito.cantidadDe(p.id), cantidad)
+        if (motivo == null) {
+            carrito = (r as Resultado.Exito).valor
+        } else {
+            avisoCarga = AvisoCarga(p, cantidad, motivo, mapa[p.id])
+            agregarCargaTexto = ""
+            agregarCargaError = null
+        }
+        return true
+    }
+
+    fun cambiarAgregarCarga(t: String) { agregarCargaTexto = t; agregarCargaError = null }
+    fun cancelarAvisoCarga() { avisoCarga = null }
+
+    /** "Vender sin agregar": se agrega a la venta aunque no esté en la carga. */
+    fun venderSinAgregar() {
+        val a = avisoCarga ?: return
+        avisoCarga = null
+        aplicar(carrito.agregar(a.producto, a.cantidadMilesimas))
+    }
+
+    /** "Agregar a la carga": suma a lo cargado y agrega el producto a la venta. */
+    fun agregarACarga() {
+        val a = avisoCarga ?: return
+        val k = caja.value ?: return
+        if (agregandoCarga) return
+        val cantidad = when (val l = LectorNumeros.cantidad(agregarCargaTexto, a.producto.tipoVenta)) {
+            is Lectura.Error -> { agregarCargaError = l.mensaje; return }
+            is Lectura.Valor -> l.valor
+        }
+        viewModelScope.launch {
+            agregandoCarga = true
+            when (val r = cargaRepo.agregar(k.id, a.producto.id, cantidad)) {
+                is Resultado.Exito -> {
+                    avisoCarga = null
+                    aplicar(carrito.agregar(a.producto, a.cantidadMilesimas))
+                    notificador.mostrar("Se agregó a la carga del día")
+                }
+                is Resultado.Fallo -> agregarCargaError =
+                    (r.falla as? FallaDatos.CargaExcedeExistencia)?.mensaje ?: "No se pudo agregar a la carga"
+            }
+            agregandoCarga = false
         }
     }
 
@@ -181,10 +267,7 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         when (val l = LectorNumeros.cantidad(pesoTexto, TipoVenta.PESO)) {
             is Lectura.Error -> pesoError = l.mensaje
             is Lectura.Valor -> {
-                when (val r = carrito.agregar(p, l.valor)) {
-                    is Resultado.Exito -> { carrito = r.valor; pidiendoPeso = null }
-                    is Resultado.Fallo -> pesoError = (r.falla as? FallaMensaje)?.mensaje
-                }
+                if (agregarRevisandoCarga(p, l.valor) { pesoError = it }) pidiendoPeso = null
             }
         }
     }

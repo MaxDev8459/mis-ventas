@@ -72,6 +72,11 @@ class SincronizadorFirestore(
         Tabla("caja", Colecciones.CAJA) { n ->
             dao.cajas(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
         },
+        Tabla("carga_caja", Colecciones.CARGA) { n ->
+            dao.cargas(n).map {
+                Envio(it.idDocumento(), it.aDocumento(), "cajaId = ? AND productoId = ? AND actualizadoEn = ?", arrayOf(it.cajaId, it.productoId, it.actualizadoEn))
+            }
+        },
         Tabla("corte_forma_pago", Colecciones.CORTE_FORMA_PAGO) { n ->
             dao.cortesFormaPago(n).map {
                 Envio(it.idDocumento(), it.aDocumento(), "cajaId = ? AND formaPagoId = ? AND creadoEn = ?", arrayOf(it.cajaId, it.formaPagoId, it.creadoEn))

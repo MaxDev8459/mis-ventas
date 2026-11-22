@@ -144,7 +144,7 @@ class ServicioRecuperacion(
         val colecciones = listOf(
             Colecciones.CONFIGURACION, Colecciones.CATEGORIA, Colecciones.FORMA_PAGO, Colecciones.PRODUCTO,
             Colecciones.CAJA, Colecciones.CORTE_FORMA_PAGO, Colecciones.VENTA, Colecciones.VENTA_DETALLE,
-            Colecciones.MOVIMIENTO,
+            Colecciones.MOVIMIENTO, Colecciones.CARGA,
         )
         val datos = mutableMapOf(Colecciones.PERFIL to perfiles)
         colecciones.forEachIndexed { i, c ->
@@ -165,7 +165,7 @@ class ServicioRecuperacion(
         val dao = db.syncDao()
         db.withTransaction {
             // Hijos antes que padres (llaves foráneas).
-            dao.borrarMovimientos(); dao.borrarVentaDetalles(); dao.borrarVentas(); dao.borrarCortesFormaPago()
+            dao.borrarMovimientos(); dao.borrarVentaDetalles(); dao.borrarVentas(); dao.borrarCortesFormaPago(); dao.borrarCargas()
             dao.borrarCajas(); dao.borrarProductos(); dao.borrarFormasPago(); dao.borrarCategorias()
             dao.borrarConfiguracion(); dao.borrarPerfil(); dao.borrarEliminaciones()
 
@@ -179,6 +179,8 @@ class ServicioRecuperacion(
             dao.insertarVentas(datos.getValue(Colecciones.VENTA).map(::aVenta))
             dao.insertarVentaDetalles(datos.getValue(Colecciones.VENTA_DETALLE).map(::aVentaDetalle))
             dao.insertarMovimientos(datos.getValue(Colecciones.MOVIMIENTO).map(::aMovimiento))
+            // Respaldos anteriores a la v5 no tienen carga del día: la colección llega vacía.
+            dao.insertarCargas(datos.getValue(Colecciones.CARGA).map(::aCargaCaja))
         }
         // Una cuenta que nunca subió formas de pago recibe las iniciales (Efectivo y Transferencia).
         db.sembrarSiHaceFalta(reloj)

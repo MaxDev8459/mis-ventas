@@ -25,7 +25,7 @@ Cambios acordados con el cliente en la entrevista del 21-nov-2026. No vienen del
 | 0 | Correcciones de la revisión contra el DFR y aviso de privacidad | No | ✅ 1.0.1 (21-nov-2026) |
 | 1 | Corregir venta, merma desde la venta, calculadora de billetes, modo oscuro y huella configurable | No | ✅ 1.1.0 (21-nov-2026) |
 | 2a | Encontrar productos: favoritos y chips de categoría | v3→v4 | ✅ 1.2.0 (21-nov-2026) |
-| 2b | Carga del día al abrir caja | v4→v5 | Pendiente |
+| 2b | Carga del día al abrir caja | v4→v5 | En prueba (Mis Ventas Pruebas) |
 | 3 | Fiado + venta rápida sin producto | v5→v6 | Pendiente |
 | 4 | Apartados con existencia separada | v6→v7 | Pendiente |
 | 5 | Reportes nuevos | No | Pendiente |
@@ -47,3 +47,19 @@ Cambios acordados con el cliente en la entrevista del 21-nov-2026. No vienen del
 - La búsqueda ya no distingue acentos ("cafe" encuentra "Café") y se combina con el chip elegido.
 - La migración se verificó con `sqlite3`: v3 + `MIGRACION_3_4` tiene las mismas columnas que el esquema `4.json`.
 - 7 pruebas nuevas en `FiltroVentaTest.kt`, 191 en total.
+
+## Fase 2b — detalle (carga del día)
+
+Reglas confirmadas el 21-nov-2026:
+- Se captura al abrir caja, con "Omitir por hoy". Después se captura o edita desde Caja → "Carga del día".
+- No se puede cargar más de lo que había al abrir: existencia de hoy + lo vendido y las mermas de esa caja.
+- "Te quedan" = cargado − vendido (sin canceladas) − mermas registradas mientras la caja está abierta.
+- En Vender, si un producto no se cargó o ya no queda, un aviso permite "Agregar a la carga" (con cantidad) o "Vender sin agregar". Si no hay carga, no hay avisos.
+- En el corte (y en cortes anteriores) se ve por producto: cargó, vendió, merma y sobra.
+
+Implementación:
+- Tabla `carga_caja` (llave `cajaId` + `productoId`, migración 4→5 solo con `CREATE TABLE`). No mueve la existencia.
+- Se respalda en Firebase (colección `carga_caja`) y se incluye en pendientes, recuperación y cambio de cuenta. Los respaldos anteriores llegan sin carga.
+- `domain/regla/ReglaCarga`, `data/repository/CargaRepo`, `data/local/dao/CargaDao`, `ui/caja/CargaScreen`.
+- Migración verificada con `sqlite3` sobre una copia de la base de Mis Ventas Pruebas (v4): coincide con `5.json`.
+- 12 pruebas nuevas en `CargaTest.kt`, 203 en total.

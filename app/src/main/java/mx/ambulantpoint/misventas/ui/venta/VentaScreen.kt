@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.Color
 import mx.ambulantpoint.misventas.domain.venta.FiltroVenta
+import mx.ambulantpoint.misventas.domain.regla.MotivoAvisoCarga
+import mx.ambulantpoint.misventas.domain.regla.ReglaCarga
 import mx.ambulantpoint.misventas.domain.venta.ProductoListado
 import mx.ambulantpoint.misventas.ui.components.IconoEstrellaVacia
 import androidx.compose.foundation.layout.Arrangement
@@ -99,6 +101,7 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
     val caja by modelo.caja.collectAsStateWithLifecycle()
     val categorias by modelo.categorias.collectAsStateWithLifecycle()
     val filtro by modelo.filtroVigente.collectAsStateWithLifecycle()
+    val carga by modelo.carga.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { BarraSuperior("Vender", alRegresar) },
@@ -134,8 +137,10 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     items(lista, key = { it.producto.id }) { t ->
+                        val enCarrito = modelo.carrito.cantidadDe(t.producto.id)
                         TarjetaProducto(
-                            t, modelo.carrito.cantidadDe(t.producto.id),
+                            t, enCarrito,
+                            lineaCarga = lineaCarga(carga, t.producto, enCarrito),
                             alTocar = { modelo.tocar(t.producto) },
                             alMantener = { modelo.pedirMerma(t.producto) },
                             alEstrella = { modelo.cambiarFavorito(t) },
@@ -163,6 +168,8 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
             dismissButton = { TextButton(onClick = modelo::cancelarPeso, modifier = Modifier.heightIn(min = 48.dp)) { Text("Cancelar") } },
         )
     }
+
+    modelo.avisoCarga?.let { a -> DialogoAvisoCarga(a, modelo) }
 
     // Merma desde la venta: mantener presionado el producto.
     modelo.mermaDe?.let { p ->
@@ -198,6 +205,7 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
 private fun TarjetaProducto(
     t: ProductoListado,
     enCarritoMilesimas: Long,
+    lineaCarga: Pair<String, Boolean>?,
     alTocar: () -> Unit,
     alMantener: () -> Unit,
     alEstrella: () -> Unit,
@@ -242,6 +250,15 @@ private fun TarjetaProducto(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // Carga del día: lo que queda de lo cargado (o que no se cargó).
+                lineaCarga?.let { (texto, cargado) ->
+                    Text(
+                        texto,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = if (cargado) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (cargado) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (enCarritoMilesimas > 0) {
                     Text(
                         "En la venta: ${Formato.cantidad(enCarritoMilesimas, p.tipoVenta)}",
@@ -255,6 +272,54 @@ private fun TarjetaProducto(
 }
 
 private val DoradoFavorito = Color(0xFFF2A900)
+
+/** Texto de la carga para la tarjeta (y si el producto está cargado); null si hoy no hay carga. */
+private fun lineaCarga(
+    carga: Map<String, mx.ambulantpoint.misventas.domain.regla.RenglonCarga>,
+    p: mx.ambulantpoint.misventas.domain.venta.ProductoEnVenta,
+    enCarrito: Long,
+): Pair<String, Boolean>? {
+    if (carga.isEmpty()) return null
+    val r = carga[p.id] ?: return "No lo cargaste" to false
+    return "Te quedan ${Formato.cantidad(ReglaCarga.quedanConVenta(r, enCarrito), p.tipoVenta)} de la carga" to true
+}
+
+/** No se cargó o ya no queda de la carga: agregar a la carga (fue por más) o vender igual. */
+@Composable
+private fun DialogoAvisoCarga(a: AvisoCarga, modelo: VentaViewModel) {
+    val p = a.producto
+    AlertDialog(
+        onDismissRequest = modelo::cancelarAvisoCarga,
+        title = { Text(if (a.motivo == MotivoAvisoCarga.NO_CARGADO) "No lo cargaste" else "Ya no te queda de la carga") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val r = a.renglon
+                Text(
+                    if (r == null) {
+                        "${p.nombre} no está en la carga del día."
+                    } else {
+                        "${p.nombre}: cargaste ${Formato.cantidad(r.cargadoMilesimas, p.tipoVenta)}, " +
+                            "vendiste ${Formato.cantidad(r.vendidoMilesimas, p.tipoVenta)}" +
+                            (if (r.mermasMilesimas > 0) " y hubo ${Formato.cantidad(r.mermasMilesimas, p.tipoVenta)} de merma" else "") + "."
+                    },
+                )
+                Text("¿Cuánto agregas a la carga?", style = MaterialTheme.typography.bodyLarge)
+                CampoTexto(
+                    modelo.agregarCargaTexto, modelo::cambiarAgregarCarga, "Cantidad", error = modelo.agregarCargaError,
+                    teclado = if (p.tipoVenta == TipoVenta.PESO) KeyboardType.Decimal else KeyboardType.Number,
+                    sufijo = Formato.unidad(p.tipoVenta), imeAction = ImeAction.Done,
+                )
+                TextButton(onClick = modelo::venderSinAgregar, modifier = Modifier.heightIn(min = 48.dp)) { Text("Vender sin agregar") }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = modelo::agregarACarga, enabled = !modelo.agregandoCarga, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text("Agregar")
+            }
+        },
+        dismissButton = { TextButton(onClick = modelo::cancelarAvisoCarga, modifier = Modifier.heightIn(min = 48.dp)) { Text("Cancelar") } },
+    )
+}
 
 /** Chips que se deslizan: Todos, Favoritos y las categorías con productos para vender. */
 @Composable

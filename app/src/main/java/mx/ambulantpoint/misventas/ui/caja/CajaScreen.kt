@@ -1,5 +1,8 @@
 package mx.ambulantpoint.misventas.ui.caja
 
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flatMapLatest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -60,6 +63,14 @@ class CajaViewModel(c: AppContainer) : ViewModel() {
         private set
     var abriendo by mutableStateOf(false)
         private set
+    /** Recién se abrió la caja: la pantalla pasa a capturar la carga del día. */
+    var recienAbierta by mutableStateOf(false)
+
+    /** Carga del día de la caja abierta (vacía si no se capturó). */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val carga: StateFlow<List<mx.ambulantpoint.misventas.domain.regla.RenglonCarga>> = c.cajaRepo.observarAbierta()
+        .flatMapLatest { caja -> if (caja == null) flowOf(emptyList()) else c.cargaRepo.observarResumen(caja.id, caja.abiertaEn) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** RF 5.1. */
     fun abrir() {
@@ -69,6 +80,7 @@ class CajaViewModel(c: AppContainer) : ViewModel() {
             abrirCaja(fondo).atender(notificador) { error = it[Campos.FONDO] }?.let { hecho ->
                 hecho.mensaje?.let(notificador::mostrar)
                 fondo = ""
+                recienAbierta = true
             }
             abriendo = false
         }
@@ -77,9 +89,20 @@ class CajaViewModel(c: AppContainer) : ViewModel() {
 
 /** RF 5.1 Abrir caja; con caja abierta da acceso a vender y al corte (RF 5.2). */
 @Composable
-fun PantallaCaja(alRegresar: () -> Unit, alVender: () -> Unit, alCorte: () -> Unit, alCortes: () -> Unit) {
+fun PantallaCaja(
+    alRegresar: () -> Unit,
+    alVender: () -> Unit,
+    alCorte: () -> Unit,
+    alCortes: () -> Unit,
+    alCarga: (desdeApertura: Boolean) -> Unit,
+) {
     val modelo = vm { CajaViewModel(it) }
     val estado by modelo.estado.collectAsStateWithLifecycle()
+    val carga by modelo.carga.collectAsStateWithLifecycle()
+    // Al abrir caja se pasa a capturar la carga del día (se puede omitir).
+    LaunchedEffect(modelo.recienAbierta) {
+        if (modelo.recienAbierta) { modelo.recienAbierta = false; alCarga(true) }
+    }
 
     Scaffold(topBar = { BarraSuperior("Caja", alRegresar) }) { relleno ->
         Column(
@@ -114,6 +137,10 @@ fun PantallaCaja(alRegresar: () -> Unit, alVender: () -> Unit, alCorte: () -> Un
                         }
                     }
                     BotonPrincipal("Vender", alVender)
+                    BotonSecundario(
+                        if (carga.isEmpty()) "Capturar carga del día" else "Carga del día (${carga.size} productos)",
+                        { alCarga(false) },
+                    )
                     BotonSecundario("Corte de caja", alCorte)
                 }
             }

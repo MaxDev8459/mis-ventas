@@ -87,6 +87,7 @@ internal fun traducir(falla: Falla, general: String, campoNombre: String = Campo
     FallaDatos.CorreoYaRegistrado -> campo(Campos.CORREO, Mensajes.Campo.CORREO_YA_REGISTRADO)
     FallaDatos.CredencialesIncorrectas -> mensaje(Mensajes.CREDENCIALES_INCORRECTAS)
     FallaDatos.PendientesDeSincronizar -> mensaje(Mensajes.PENDIENTES_AL_CERRAR_SESION)
+    is FallaDatos.CargaExcedeExistencia -> mensaje(falla.mensaje)
     FallaDatos.NoEncontrado, FallaDatos.CantidadInvalida, FallaDatos.YaHayOtraCuenta -> mensaje(general)
     else -> mensaje(general)
 }

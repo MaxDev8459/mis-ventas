@@ -71,6 +71,9 @@ sealed interface FallaDatos : Falla {
     /** RF 1.3: no se cierra sesión con registros pendientes de sincronizar. */
     data object PendientesDeSincronizar : FallaDatos
 
+    /** Carga del día: no se puede cargar más que la existencia. Mensaje listo para mostrar. */
+    data class CargaExcedeExistencia(val mensaje: String) : FallaDatos
+
     /** Cantidad o monto fuera de rango (ej. cero o negativo). */
     data object CantidadInvalida : FallaDatos
 

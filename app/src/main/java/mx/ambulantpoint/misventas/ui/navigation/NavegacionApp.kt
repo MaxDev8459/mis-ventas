@@ -45,6 +45,7 @@ import mx.ambulantpoint.misventas.domain.puertos.EstadoSesion
 import mx.ambulantpoint.misventas.ui.auth.PantallaLogin
 import mx.ambulantpoint.misventas.ui.auth.PantallaRegistro
 import mx.ambulantpoint.misventas.ui.caja.PantallaCaja
+import mx.ambulantpoint.misventas.ui.caja.PantallaCarga
 import mx.ambulantpoint.misventas.ui.caja.PantallaCorte
 import mx.ambulantpoint.misventas.ui.caja.PantallaCortes
 import mx.ambulantpoint.misventas.ui.caja.PantallaDetalleCorte
@@ -80,6 +81,7 @@ private object Ruta {
     const val VENTA = "venta"
     const val CORTE = "corte"
     const val CORTES = "cortes"
+    const val CARGA = "carga"
     const val INVENTARIO = "inventario"
     const val REPORTE = "reporte"
     const val PERFIL_EDITAR = "perfil_editar"
@@ -255,7 +257,11 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
                 alVender = { nav.navigate(Ruta.de(Destino.VENDER)) },
                 alCorte = { nav.navigate(Ruta.CORTE) },
                 alCortes = { nav.navigate(Ruta.CORTES) },
+                alCarga = { apertura -> nav.navigate("${Ruta.CARGA}/$apertura") },
             )
+        }
+        composable("${Ruta.CARGA}/{apertura}") { e ->
+            PantallaCarga(desdeApertura = e.arguments?.getString("apertura") == "true", alTerminar = regresar)
         }
         composable(Ruta.de(Destino.HISTORIAL)) {
             PantallaHistorial(regresar) { id -> nav.navigate("${Ruta.VENTA}/$id") }

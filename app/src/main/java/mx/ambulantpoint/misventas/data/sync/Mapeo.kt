@@ -4,6 +4,7 @@ import mx.ambulantpoint.misventas.data.local.entity.Caja
 import mx.ambulantpoint.misventas.data.local.entity.Categoria
 import mx.ambulantpoint.misventas.data.local.entity.Configuracion
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
+import mx.ambulantpoint.misventas.data.local.entity.CargaCaja
 import mx.ambulantpoint.misventas.data.local.entity.FormaPago
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
 import mx.ambulantpoint.misventas.data.local.entity.Perfil
@@ -32,6 +33,7 @@ object Colecciones {
     const val VENTA = "venta"
     const val VENTA_DETALLE = "venta_detalle"
     const val MOVIMIENTO = "movimiento_inventario"
+    const val CARGA = "carga_caja"
 }
 
 /*
@@ -75,6 +77,19 @@ fun Caja.aDocumento(): Map<String, Any?> = mapOf(
     "descuentosCentavos" to descuentosCentavos, "efectivoEsperadoCentavos" to efectivoEsperadoCentavos,
     "efectivoContadoCentavos" to efectivoContadoCentavos, "diferenciaCentavos" to diferenciaCentavos,
     "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+/** Carga del día: llave compuesta (cajaId, productoId) → un solo id de documento. */
+fun CargaCaja.idDocumento(): String = "${cajaId}_$productoId"
+
+fun CargaCaja.aDocumento(): Map<String, Any?> = mapOf(
+    "cajaId" to cajaId, "productoId" to productoId, "cantidadMilesimas" to cantidadMilesimas,
+    "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+fun aCargaCaja(d: Map<String, Any?>) = CargaCaja(
+    cajaId = d.texto("cajaId"), productoId = d.texto("productoId"), cantidadMilesimas = d.entero("cantidadMilesimas"),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 
 /** Llave compuesta en Room (cajaId, formaPagoId) → un solo id de documento. */
