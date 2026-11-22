@@ -96,6 +96,22 @@ internal val TextoBaja = Color(0xFF7A4F00)
 internal val FondoAgotado = Color(0xFFFFE1DE)
 internal val TextoAgotado = Color(0xFF93000A)
 
+/**
+ * Nombre y categoría sobre los fondos pastel de baja/agotado: siempre oscuros, también en modo
+ * oscuro (ahí el texto normal es claro y no se leía sobre el pastel).
+ */
+internal val TextoSobrePastel = Color(0xFF1A1C19)
+internal val TextoSecundarioSobrePastel = Color(0xFF43483F)
+
+/** Colores del nombre y la categoría según el nivel: oscuros sobre pastel, los del tema en lo normal. */
+@Composable
+internal fun coloresNombre(nivel: NivelExistencia): Pair<Color, Color> =
+    if (nivel == NivelExistencia.NORMAL) {
+        MaterialTheme.colorScheme.onSurface to MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        TextoSobrePastel to TextoSecundarioSobrePastel
+    }
+
 /** RF 4.3 — Consultar existencias. */
 @Composable
 fun PantallaExistencias(alRegresar: () -> Unit, alAbrir: (String) -> Unit) {
@@ -162,9 +178,10 @@ private fun FilaExistenciaVista(f: FilaExistencia, alPulsar: () -> Unit) {
     ) {
         ImagenProducto(p.imagenRuta, Modifier.size(56.dp))
         Spacer(Modifier.width(12.dp))
+        val (colorNombre, colorCategoria) = coloresNombre(f.nivel)
         Column(Modifier.weight(1f)) {
-            Text(p.nombre, style = MaterialTheme.typography.bodyLarge)
-            Text(f.p.categoriaNombre, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(p.nombre, style = MaterialTheme.typography.bodyLarge, color = colorNombre)
+            Text(f.p.categoriaNombre, style = MaterialTheme.typography.bodyMedium, color = colorCategoria)
             if (etiqueta != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Warning, contentDescription = null, tint = texto, modifier = Modifier.size(16.dp))

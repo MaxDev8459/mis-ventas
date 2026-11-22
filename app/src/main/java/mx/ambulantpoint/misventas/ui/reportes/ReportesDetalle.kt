@@ -74,6 +74,7 @@ import mx.ambulantpoint.misventas.ui.inventario.FondoAgotado
 import mx.ambulantpoint.misventas.ui.inventario.FondoBaja
 import mx.ambulantpoint.misventas.ui.inventario.TextoAgotado
 import mx.ambulantpoint.misventas.ui.inventario.TextoBaja
+import mx.ambulantpoint.misventas.ui.inventario.coloresNombre
 
 // ───────────────────────── RF 6.2 / 6.4 ─────────────────────────
 
@@ -299,9 +300,10 @@ private fun FilaInventarioVista(f: FilaInventario) {
         Modifier.fillMaxWidth().background(fondo).heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val (colorNombre, colorCategoria) = coloresNombre(f.nivel)
         Column(Modifier.weight(1f)) {
-            Text(p.nombre, style = MaterialTheme.typography.bodyLarge)
-            Text(f.producto.categoriaNombre, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(p.nombre, style = MaterialTheme.typography.bodyLarge, color = colorNombre)
+            Text(f.producto.categoriaNombre, style = MaterialTheme.typography.bodyMedium, color = colorCategoria)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(Formato.cantidad(p.existenciaMilesimas, p.tipoVenta), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = texto)
