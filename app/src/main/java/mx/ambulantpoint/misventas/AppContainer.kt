@@ -77,6 +77,12 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
      */
     val identidadVerificada by lazy { MutableStateFlow(auth.estado.value != EstadoSesion.ACTIVA) }
 
+    /**
+     * RF 1.2: la app regresó de segundo plano tras [ReglaVerificacion.AUSENCIA_MINIMA_MS] y hay que
+     * verificar de nuevo. La pantalla de verificación se muestra encima de la app, sin perder lo capturado.
+     */
+    val reverificacionPendiente = MutableStateFlow(false)
+
     val procesadorImagen by lazy { ProcesadorImagen(contexto) }
 
     /** RF 5.4 / 7.6: pantalla a la que lleva la notificación que se tocó (se consume al navegar). */
