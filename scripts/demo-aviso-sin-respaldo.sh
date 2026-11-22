@@ -14,7 +14,7 @@
 # Uso: scripts/demo-aviso-sin-respaldo.sh [serie-del-teléfono]   (la serie sale en `adb devices`)
 set -euo pipefail
 
-PAQUETE=mx.ambulantpoint.misventas
+PAQUETE=mx.ambulantpoint.misventas.demo
 PREFS=shared_prefs/mis_ventas_sync.xml
 
 ADB=adb
