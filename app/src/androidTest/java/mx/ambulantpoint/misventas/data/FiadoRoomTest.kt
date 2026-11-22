@@ -216,6 +216,21 @@ class FiadoRoomTest {
         assertEquals(1, movs.count { it.tipo == TipoMovimiento.CANCELACION })
     }
 
+    /** Regresión (22-nov): con carga del día, un monto libre cerraba la app al entrar a Vender. */
+    @Test fun carga_del_dia_ignora_el_monto_libre() = runTest {
+        val carlota = p.producto("Carlota", 4_000, 10_000)
+        val caja = p.cajas.abrir(0).exito()
+        val carga = mx.ambulantpoint.misventas.data.repository.CargaRepo(p.db, p.reloj)
+        carga.agregar(caja.id, carlota.id, 5_000).exito()
+        p.ventas.cobrar(
+            SolicitudCobro(listOf(LineaVenta(carlota.id, 2_000)), p.efectivo().id, 10_000, libres = listOf(LineaLibre("", 1_500))),
+        ).exito()
+        val resumen = carga.observarResumen(caja.id, caja.abiertaEn).first()
+        assertEquals(1, resumen.size)
+        assertEquals(2_000L, resumen.single().vendidoMilesimas)
+        assertEquals(3_000L, resumen.single().quedanMilesimas)
+    }
+
     @Test fun venta_solo_con_monto_libre_se_cobra() = runTest {
         p.cajas.abrir(0).exito()
         val v = p.ventas.cobrar(SolicitudCobro(emptyList(), p.transferencia().id, libres = listOf(LineaLibre("", 2_500)))).exito()

@@ -52,12 +52,12 @@ interface CargaDao {
     )
     suspend fun cargaAnterior(cajaActual: String): List<CargaCaja>
 
-    /** Vendido por producto en la caja, sin ventas canceladas. */
+    /** Vendido por producto en la caja, sin ventas canceladas. El monto libre ("Varios", sin producto) no cuenta. */
     @Query(
         """
         SELECT d.productoId, SUM(d.cantidadMilesimas) AS cantidadMilesimas
         FROM venta_detalle d JOIN venta v ON v.id = d.ventaId
-        WHERE v.cajaId = :cajaId AND v.estado = 'REGISTRADA'
+        WHERE v.cajaId = :cajaId AND v.estado = 'REGISTRADA' AND d.productoId IS NOT NULL
         GROUP BY d.productoId
         """,
     )
