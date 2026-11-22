@@ -158,14 +158,38 @@ private fun DialogoRecuperar(modelo: LoginViewModel) {
 }
 
 /**
- * BORRADOR pendiente de revisión del cliente (LFPDPPP). El DFR pide mostrarlo y aceptarlo al
- * registrarse, pero no incluye su texto.
+ * Aviso de privacidad (LFPDPPP). El DFR pide mostrarlo y aceptarlo al registrarse, pero no incluye su
+ * texto: lo propuso el equipo y el cliente lo aprobó el 18-nov-2026
+ * (Validacion_Textos_Cliente_Mis_Ventas.docx). Datos de contacto definidos por el cliente el 21-nov-2026.
  */
 private const val AVISO_PRIVACIDAD =
-    "Max Carlotas, responsable del tratamiento de sus datos personales, recaba su nombre, apellidos, " +
-        "teléfono, nombre del negocio y correo electrónico con la finalidad de crear y administrar su cuenta " +
-        "en la aplicación Mis Ventas y de respaldar la información de su negocio.\n\n" +
-        "Sus datos no se compartirán con terceros salvo los proveedores tecnológicos necesarios para operar " +
-        "la aplicación. Puede ejercer sus derechos de acceso, rectificación, cancelación u oposición (ARCO) " +
-        "conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.\n\n" +
-        "(Borrador: texto pendiente de validación por el cliente.)"
+    "AVISO DE PRIVACIDAD — MIS VENTAS\n\n" +
+        "1. Responsable\n" +
+        "Max Carlotas es responsable del tratamiento de los datos personales que usted proporcione al usar " +
+        "la aplicación Mis Ventas.\n\n" +
+        "2. Datos personales que se recaban\n" +
+        "Nombre(s), apellido paterno, apellido materno, teléfono, nombre del negocio y correo electrónico. " +
+        "También se guarda la información del negocio que usted capture en la aplicación: productos, " +
+        "categorías, ventas, inventario y cortes de caja. No se recaban datos personales sensibles.\n\n" +
+        "3. Finalidades\n" +
+        "Sus datos se usan para:\n" +
+        "• Crear y administrar su cuenta, y permitirle iniciar sesión.\n" +
+        "• Guardar y respaldar en línea la información de su negocio, y recuperarla si cambia de teléfono.\n" +
+        "Estas finalidades son necesarias para que la aplicación funcione. Sus datos no se usan con fines " +
+        "de publicidad ni de mercadotecnia.\n\n" +
+        "4. Proveedores y transferencias\n" +
+        "Sus datos no se venden ni se transfieren a terceros. Para operar la aplicación se usan proveedores " +
+        "tecnológicos de autenticación y almacenamiento en la nube (Google Firebase), que tratan la " +
+        "información únicamente para prestar ese servicio.\n\n" +
+        "5. Derechos ARCO y revocación del consentimiento\n" +
+        "Usted puede solicitar el acceso, la rectificación, la cancelación o la oposición al tratamiento de " +
+        "sus datos (derechos ARCO), o revocar su consentimiento, enviando un correo a " +
+        "maxicarlotas@gmail.com con:\n" +
+        "• Su nombre y el medio para responderle.\n" +
+        "• Una descripción clara de lo que solicita.\n" +
+        "• Un documento que acredite su identidad.\n" +
+        "La solicitud se atenderá en los plazos que establece la Ley Federal de Protección de Datos " +
+        "Personales en Posesión de los Particulares.\n\n" +
+        "6. Cambios a este aviso\n" +
+        "Cualquier cambio a este aviso se dará a conocer dentro de la aplicación y en su ficha de Google Play.\n\n" +
+        "Última actualización: 21 de noviembre de 2026"

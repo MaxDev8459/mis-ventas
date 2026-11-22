@@ -67,7 +67,10 @@ Revisado para no introducir cambios no autorizados. Ninguno agrega reglas de neg
 |---|---|
 | Botones de monto rápido en el cobro ("Exacto", $50, $100…) | Cumplir el RNF de 4 toques; el monto sigue capturándose |
 | Textos de las alertas de campo ("Este campo es obligatorio"…) | El DFR pide las alertas pero no su texto. ✅ **Validados por el cliente el 18-nov-2026** (las 24 aprobadas sin cambios; validación sin firma) |
-| Aviso de privacidad | El DFR pide mostrarlo pero no da el texto. Texto completo aprobado por el cliente el 18-nov-2026; **pendiente**: domicilio y correo de contacto (serán públicos) y fecha. La app sigue mostrando el borrador corto |
+| Aviso de privacidad | El DFR pide mostrarlo pero no da el texto. Texto completo aprobado por el cliente el 18-nov-2026. El 21-nov-2026 el cliente definió el correo de contacto (maxicarlotas@gmail.com) y pidió no publicar domicilio. La app ya muestra el texto final |
+| Reverificar al volver de segundo plano | RF 1.2: además del arranque, se pide huella/PIN si la app estuvo en segundo plano 1 minuto o más. El margen (decisión del equipo) evita pedirla al tomar una foto o compartir un reporte |
+| Confirmación al reactivar | RF 2.4: "¿Desea reactivar el producto [nombre]?" (texto del equipo; el DFR pide la confirmación sin dar texto) |
+| Fallo al exportar | RF 6.6: "El reporte no se exportó exitosamente, intente de nuevo" (texto del equipo) |
 | La existencia inicial queda como primer movimiento "Entrada de mercancía" | Que el historial cuadre con la existencia |
 | No se puede renombrar "Efectivo" | El DFR solo permite renombrar las formas de pago adicionales |
 | Textos de ayuda: "Verifique que recibió el pago antes de confirmar", "(se modifica en Existencias)" | Recordatorios de reglas del DFR (RF 3.2 y 2.2) |
@@ -98,5 +101,16 @@ Revisado para no introducir cambios no autorizados. Ninguno agrega reglas de neg
 1. ~~Subir el repositorio a GitHub~~ ✅ hecho el 26-oct-2026.
 2. ~~Pantalla de formas de pago (RF 3.5)~~ ✅ hecha y probada en el teléfono el 18-nov-2026.
 3. ~~Validar con el cliente las alertas de campo~~ ✅ 18-nov-2026: el cliente aprobó las 24 sin cambios (`documentos del proyecto/Validacion_Textos_Cliente_Mis_Ventas.docx`, fuera del repo; sin firma).
-4. **Aviso de privacidad:** el cliente aprobó el texto completo del documento de validación, pero falta que defina el domicilio y el correo de contacto que se publicarán. Al tenerlos, reemplazar el borrador de `ui/auth/AccesoScreens.kt`.
-5. Filtro de fechas en movimientos de inventario (RF 4.4, opcional).
+4. ~~Aviso de privacidad~~ ✅ 21-nov-2026: texto aprobado, con el correo de contacto del cliente y sin domicilio (decisión del cliente).
+5. ~~Filtro de fechas en movimientos de inventario (RF 4.4)~~ ✅ 21-nov-2026: chips "Todos" / "Elegir fechas".
+
+**Revisión contra el DFR (21-nov-2026).** Correcciones aplicadas tras revisar RF por RF:
+- RF 1.2: verificación de identidad también al regresar de segundo plano (ver sección 4).
+- RF 2.4: confirmación antes de reactivar un producto.
+- RF 4.4: rango de fechas opcional en los movimientos de inventario.
+- RF 6 (reglas generales): el chip del periodo dice "Rango personalizado", como el DFR.
+- RF 6.6: mensaje si falla la generación del archivo.
+- SC-01: con letras en la CLABE se muestra "La CLABE solo debe tener números".
+- Aviso de privacidad final.
+- `allowBackup="false"`: el respaldo automático de Android ya no copia la base local (los datos se respaldan en Firebase, RF 7).
+- Se quitó la constante sin uso `Campo.EXISTENCIA_NO_VALIDA`.
