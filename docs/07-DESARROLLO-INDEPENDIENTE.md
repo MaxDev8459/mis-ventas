@@ -26,7 +26,7 @@ Cambios acordados con el cliente en la entrevista del 21-nov-2026. No vienen del
 | 1 | Corregir venta, merma desde la venta, calculadora de billetes, modo oscuro y huella configurable | No | ✅ 1.1.0 (21-nov-2026) |
 | 2a | Encontrar productos: favoritos y chips de categoría | v3→v4 | ✅ 1.2.0 (21-nov-2026) |
 | 2b | Carga del día (v1 y v2 con + / −, Máx y precargas) | v4→v5→v6 | ✅ 1.3.0 (21-nov-2026) |
-| 3 | Fiado + venta rápida sin producto | v6→v7 | Pendiente |
+| 3 | Fiado + venta rápida sin producto | v6→v7 | ✅ 1.4.0 (22-nov-2026) |
 | 4 | Apartados con existencia separada | v7→v8 | Pendiente |
 | 5 | Reportes nuevos | No | Pendiente |
 
@@ -84,6 +84,26 @@ Preguntas abiertas de `docs/ESTADO.md`, contestadas por el cliente:
 | 9 | Recordar por WhatsApp | **No por ahora** (se puede agregar después sin tocar la base). |
 
 Riesgos avisados al cliente: la devolución por cancelar una venta fiada con abonos solo se registra con la caja abierta y en el corte de hoy, aunque los abonos fueran de días ya cerrados.
+
+## Fase 3 — detalle
+
+Especificación completa en `docs/09-ESPEC-FIADO.md` (aprobada el 22-nov, aviso de saldo alto desde $150).
+- Tablas nuevas `cliente`, `abono` (abonos y devoluciones) y `aplicacion_abono` (cuánto de cada abono fue a cada venta).
+  `venta.formaPagoId` y `venta_detalle.productoId` pasan a opcionales: la migración 6→7 reconstruye ambas tablas
+  y revisa que no se pierdan filas ni se rompan llaves (si no cuadra, se revierte todo).
+- Migración verificada con `sqlite3` (script que aplica las sentencias de `MIGRACION_6_7` y compara contra `7.json`)
+  sobre una base sintética y sobre una copia de Mis Ventas Pruebas (54 ventas, 83 detalles), y aplicada en el teléfono.
+- Cálculos en `domain/regla/ReglaFiado` (45 pruebas en `FiadoTest`); transacciones en `FiadoRepo` y `VentaRepo`
+  (14 + 1 pruebas instrumentadas en `FiadoRoomTest`). Respaldo en Firebase, recuperación y cambio de cuenta.
+- Corrección durante la prueba: con carga del día, un monto libre cerraba la app al entrar a Vender
+  (`CargaDao.observarVendido` agrupaba renglones sin producto). Prueba de regresión agregada.
+- Ajuste pedido por el cliente: al calcular el corte se oculta la carga del día; solo queda el resumen
+  (en "Cortes anteriores" la carga se sigue viendo).
+
+## Versión 1.4.0 (22-nov-2026)
+
+Instalada en la app real con `install -r` (firma igual a la 1.3.0, indicador en "Sincronizado" antes de instalar).
+Abrió sin fallos y con "Sincronizado" después; la base pasó a v7.
 
 ## Versión 1.3.0 (21-nov-2026)
 

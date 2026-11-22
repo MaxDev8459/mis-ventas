@@ -9,10 +9,10 @@
 
 | Dato | Valor |
 |---|---|
-| App real en el teléfono | **1.3.0** (versionCode 5), liberación, cuenta `maxicarlotas@gmail.com` |
-| Versión de la base Room | **7** en Mis Ventas Pruebas; la app real sigue en 6 hasta liberar la 1.4.0 |
-| Pruebas JVM | 255 pasan (+ 37 instrumentadas con Room en el teléfono) |
-| Siguiente fase | **Fase 3**: 1.4.0 instalada en Mis Ventas Pruebas, **esperando que el usuario la pruebe y la apruebe** |
+| App real en el teléfono | **1.4.0** (versionCode 6), liberación, cuenta `maxicarlotas@gmail.com` |
+| Versión de la base Room | **7** (siguiente migración: 7→8) |
+| Pruebas JVM | 255 pasan (+ 38 instrumentadas con Room en el teléfono) |
+| Siguiente fase | **Fase 4: apartados con existencia separada** (sin empezar) |
 
 ## Checklist de fases
 
@@ -21,14 +21,14 @@
 - [x] **Fase 2a:** favoritos (★) y chips de categoría en Vender; búsqueda sin acentos (1.2.0, Room v4)
 - [x] **Fase 2b:** carga del día v1 y v2 (+ / −, Máx, precargas, unidad para kilo, "te quedan", sobrante en el corte) (1.3.0, Room v5–v6)
 - [x] Correcciones: texto legible en existencia baja/agotado con modo oscuro; doble toque en "regresar" (pantalla en blanco). También en la demo.
-- [ ] **Fase 3:** fiado + venta rápida sin producto (Room v6→v7)
+- [x] **Fase 3:** fiado + venta rápida sin producto (1.4.0, Room v7, 22-nov-2026)
   - [x] Hacer al usuario las preguntas abiertas y anotar sus respuestas en `docs/07` (22-nov)
   - [x] Escribir la especificación (`docs/09-ESPEC-FIADO.md`); aprobada el 22-nov (aviso desde $150)
   - [x] Programar con pruebas unitarias (`FiadoTest`, 45) e instrumentadas (`FiadoRoomTest`, 14)
   - [x] Migración 6→7 verificada con `sqlite3` (base sintética y copia de Pruebas) y ya aplicada en Pruebas
   - [x] Instalada en Mis Ventas Pruebas (1.4.0-pruebas)
-  - [ ] El usuario la prueba en Mis Ventas Pruebas y la aprueba
-  - [ ] Liberar a la app real (1.4.0)
+  - [x] El usuario la probó y la aprobó (con dos ajustes: cierre en Vender con monto libre + carga; ocultar la carga al calcular el corte)
+  - [x] Liberada a la app real (1.4.0) con `install -r`, firma comparada y "Sincronizado" antes y después
 - [ ] **Fase 4:** apartados con existencia separada (Room v7→v8)
 - [ ] **Fase 5:** reportes nuevos (comparar periodos, ventas por hora/día, fiado y mermas a precio de venta)
 
