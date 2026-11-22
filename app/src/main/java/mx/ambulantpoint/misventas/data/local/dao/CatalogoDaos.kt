@@ -101,6 +101,9 @@ interface ProductoDao {
     @Update
     suspend fun actualizar(producto: Producto)
 
+    @Query("UPDATE producto SET favorito = :favorito, actualizadoEn = :ahora, pendienteSync = 1 WHERE id = :id")
+    suspend fun cambiarFavorito(id: String, favorito: Boolean, ahora: Long): Int
+
     @Query("UPDATE producto SET activo = :activo, actualizadoEn = :ahora, pendienteSync = 1 WHERE id = :id")
     suspend fun cambiarEstado(id: String, activo: Boolean, ahora: Long): Int
 

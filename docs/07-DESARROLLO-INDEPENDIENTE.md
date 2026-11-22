@@ -24,9 +24,10 @@ Cambios acordados con el cliente en la entrevista del 21-nov-2026. No vienen del
 |---|---|---|---|
 | 0 | Correcciones de la revisión contra el DFR y aviso de privacidad | No | ✅ 1.0.1 (21-nov-2026) |
 | 1 | Corregir venta, merma desde la venta, calculadora de billetes, modo oscuro y huella configurable | No | ✅ 1.1.0 (21-nov-2026) |
-| 2 | Encontrar productos (ideas del cliente) + carga del día | v3→v4 | Pendiente |
-| 3 | Fiado + venta rápida sin producto | v4→v5 | Pendiente |
-| 4 | Apartados con existencia separada | v5→v6 | Pendiente |
+| 2a | Encontrar productos: favoritos y chips de categoría | v3→v4 | ✅ 1.2.0 (21-nov-2026) |
+| 2b | Carga del día al abrir caja | v4→v5 | Pendiente |
+| 3 | Fiado + venta rápida sin producto | v5→v6 | Pendiente |
+| 4 | Apartados con existencia separada | v6→v7 | Pendiente |
 | 5 | Reportes nuevos | No | Pendiente |
 
 ## Fase 1 — detalle
@@ -38,3 +39,11 @@ Cambios acordados con el cliente en la entrevista del 21-nov-2026. No vienen del
 - **Huella configurable** (`domain/regla/ReglaVerificacion`, `ui/navigation/NavegacionApp`): por defecto "Nunca", igual que en la 1.0. La verificación se muestra encima de la app sin perder lo capturado.
 - Tema y huella se guardan en `data/preferencias/PreferenciasDispositivo` (SharedPreferences, solo en ese teléfono). No tocan Room ni Firebase.
 - 15 pruebas nuevas en `FaseUnoTest.kt`, 184 en total.
+
+## Fase 2a — detalle
+
+- **Favoritos** (`Producto.favorito`, migración 3→4, que solo agrega la columna con `DEFAULT 0`): se marcan con la estrella de la foto en Vender. Se respaldan en Firebase (`Mapeo`); los respaldos anteriores se leen como no favorito.
+- **Chips deslizables** debajo de la búsqueda: Todos, ★ Favoritos y las categorías que tienen productos para vender. En todas las vistas los favoritos salen primero y después el resto en orden alfabético (`domain/venta/FiltroVenta`).
+- La búsqueda ya no distingue acentos ("cafe" encuentra "Café") y se combina con el chip elegido.
+- La migración se verificó con `sqlite3`: v3 + `MIGRACION_3_4` tiene las mismas columnas que el esquema `4.json`.
+- 7 pruebas nuevas en `FiltroVentaTest.kt`, 191 en total.

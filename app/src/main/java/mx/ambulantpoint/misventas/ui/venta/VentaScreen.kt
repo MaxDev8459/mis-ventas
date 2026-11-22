@@ -7,6 +7,14 @@ import android.content.Intent
 import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.graphics.Color
+import mx.ambulantpoint.misventas.domain.venta.FiltroVenta
+import mx.ambulantpoint.misventas.domain.venta.ProductoListado
+import mx.ambulantpoint.misventas.ui.components.IconoEstrellaVacia
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -89,6 +97,8 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
     val productos by modelo.productos.collectAsStateWithLifecycle()
     val busqueda by modelo.busqueda.collectAsStateWithLifecycle()
     val caja by modelo.caja.collectAsStateWithLifecycle()
+    val categorias by modelo.categorias.collectAsStateWithLifecycle()
+    val filtro by modelo.filtroVigente.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { BarraSuperior("Vender", alRegresar) },
@@ -108,10 +118,15 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             )
+            if (categorias.isNotEmpty()) BarraFiltros(categorias, filtro, modelo::elegirFiltro)
             val lista = productos
             when {
                 lista == null -> Unit
-                lista.isEmpty() -> MensajeVacio(Mensajes.SIN_PRODUCTOS)
+                // Sin productos para vender, o el chip/búsqueda no encontró nada.
+                lista.isEmpty() && categorias.isEmpty() -> MensajeVacio(Mensajes.SIN_PRODUCTOS)
+                lista.isEmpty() && filtro == FiltroVenta.Favoritos && busqueda.isBlank() ->
+                    MensajeVacio("Toque la estrella de un producto para tenerlo aquí")
+                lista.isEmpty() -> MensajeVacio("No hay productos que coincidan")
                 else -> LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(12.dp),
@@ -123,6 +138,7 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
                             t, modelo.carrito.cantidadDe(t.producto.id),
                             alTocar = { modelo.tocar(t.producto) },
                             alMantener = { modelo.pedirMerma(t.producto) },
+                            alEstrella = { modelo.cambiarFavorito(t) },
                         )
                     }
                 }
@@ -179,7 +195,13 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
 }
 
 @Composable
-private fun TarjetaProducto(t: Tarjeta, enCarritoMilesimas: Long, alTocar: () -> Unit, alMantener: () -> Unit) {
+private fun TarjetaProducto(
+    t: ProductoListado,
+    enCarritoMilesimas: Long,
+    alTocar: () -> Unit,
+    alMantener: () -> Unit,
+    alEstrella: () -> Unit,
+) {
     val p = t.producto
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         // Dentro de la tarjeta para que el efecto del toque respete sus esquinas.
@@ -191,7 +213,23 @@ private fun TarjetaProducto(t: Tarjeta, enCarritoMilesimas: Long, alTocar: () ->
                 onClick = alTocar,
             ),
         ) {
-            ImagenProducto(t.imagenRuta, Modifier.fillMaxWidth().aspectRatio(1.6f))
+            Box {
+                ImagenProducto(t.imagenRuta, Modifier.fillMaxWidth().aspectRatio(1.6f))
+                // Favorito: la estrella va sobre la foto, con fondo para verse en cualquier imagen.
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                ) {
+                    IconButton(onClick = alEstrella, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            if (t.favorito) Icons.Filled.Star else IconoEstrellaVacia,
+                            contentDescription = if (t.favorito) "Quitar de favoritos" else "Agregar a favoritos",
+                            tint = if (t.favorito) DoradoFavorito else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             Column(Modifier.padding(10.dp)) {
                 Text(p.nombre, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
@@ -212,6 +250,33 @@ private fun TarjetaProducto(t: Tarjeta, enCarritoMilesimas: Long, alTocar: () ->
                     )
                 }
             }
+        }
+    }
+}
+
+private val DoradoFavorito = Color(0xFFF2A900)
+
+/** Chips que se deslizan: Todos, Favoritos y las categorías con productos para vender. */
+@Composable
+private fun BarraFiltros(
+    categorias: List<mx.ambulantpoint.misventas.domain.venta.CategoriaChip>,
+    elegido: FiltroVenta,
+    alElegir: (FiltroVenta) -> Unit,
+) {
+    val opciones = listOf(FiltroVenta.Todos to "Todos", FiltroVenta.Favoritos to "★ Favoritos") +
+        categorias.map { FiltroVenta.DeCategoria(it.id) to it.nombre }
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(opciones, key = { it.first.toString() }) { (f, etiqueta) ->
+            FilterChip(
+                selected = elegido == f,
+                onClick = { alElegir(f) },
+                label = { Text(etiqueta, style = MaterialTheme.typography.labelLarge) },
+                // 48 dp: área táctil mínima sin quitarle mucho espacio a los productos.
+                modifier = Modifier.heightIn(min = 48.dp),
+            )
         }
     }
 }

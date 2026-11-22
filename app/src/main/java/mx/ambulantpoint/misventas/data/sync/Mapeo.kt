@@ -60,7 +60,7 @@ fun Categoria.aDocumento(): Map<String, Any?> = mapOf(
 fun Producto.aDocumento(): Map<String, Any?> = mapOf(
     "id" to id, "nombre" to nombre, "nombreNormalizado" to nombreNormalizado, "categoriaId" to categoriaId,
     "tipoVenta" to tipoVenta.name, "precioCentavos" to precioCentavos, "existenciaMilesimas" to existenciaMilesimas,
-    "activo" to activo, "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+    "activo" to activo, "favorito" to favorito, "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
 )
 
 fun FormaPago.aDocumento(): Map<String, Any?> = mapOf(
@@ -146,6 +146,8 @@ fun aProducto(d: Map<String, Any?>, imagenRuta: String) = Producto(
     categoriaId = d.texto("categoriaId"), tipoVenta = d.enumO("tipoVenta", TipoVenta.UNIDAD),
     precioCentavos = d.entero("precioCentavos"), existenciaMilesimas = d.entero("existenciaMilesimas"),
     imagenRuta = imagenRuta, activo = d.logico("activo", true),
+    // Respaldos anteriores a la v4 no tienen el campo: se leen como no favorito.
+    favorito = d.logico("favorito", false),
     creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 

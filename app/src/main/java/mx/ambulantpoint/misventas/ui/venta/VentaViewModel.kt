@@ -35,13 +35,14 @@ import mx.ambulantpoint.misventas.domain.usecase.PrepararCobro
 import mx.ambulantpoint.misventas.domain.usecase.ResumenCobro
 import mx.ambulantpoint.misventas.domain.venta.Carrito
 import mx.ambulantpoint.misventas.domain.venta.ProductoEnVenta
+import mx.ambulantpoint.misventas.domain.venta.CategoriaChip
+import mx.ambulantpoint.misventas.domain.venta.FiltroVenta
+import mx.ambulantpoint.misventas.domain.venta.ProductoListado
+import mx.ambulantpoint.misventas.domain.venta.ReglaFiltroVenta
 import mx.ambulantpoint.misventas.ui.components.atender
 import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.domain.usecase.AjustarExistencia
 import mx.ambulantpoint.misventas.domain.usecase.ProductoRef
-
-/** Producto mostrado en la pantalla de venta, con su imagen. */
-data class Tarjeta(val producto: ProductoEnVenta, val imagenRuta: String)
 
 /** RF 3.1 Registrar venta y RF 3.2 Cobrar venta. */
 class VentaViewModel(c: AppContainer) : ViewModel() {
@@ -49,12 +50,34 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
     private val notificador = c.notificador
     private val ajustarExistencia = AjustarExistencia(c.inventarioRepo, EvaluarExistenciaBaja(c.reporteRepo))
 
+    private val productoRepo = c.productoRepo
+
     val busqueda = MutableStateFlow("")
 
-    /** RF 3.1: solo productos activos con existencia mayor a cero. */
-    val productos: StateFlow<List<Tarjeta>?> = combine(c.productoRepo.observarParaVenta(), busqueda) { lista, texto ->
-        lista.filter { texto.isBlank() || it.producto.nombre.contains(texto.trim(), ignoreCase = true) }.map(::aTarjeta)
+    /** Chip elegido: Todos, Favoritos o una categoría. */
+    private val filtro = MutableStateFlow<FiltroVenta>(FiltroVenta.Todos)
+
+    /** RF 3.1: solo productos activos con existencia mayor a cero (en orden alfabético). */
+    private val listados = productoRepo.observarParaVenta().map { l -> l.map(::aListado) }
+
+    /** Chips de categoría: solo las que tienen productos para vender. */
+    val categorias: StateFlow<List<CategoriaChip>> = listados.map(ReglaFiltroVenta::categorias)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val filtroVigente: StateFlow<FiltroVenta> = combine(filtro, listados) { f, l -> ReglaFiltroVenta.vigente(f, l) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FiltroVenta.Todos)
+
+    /** Lo que se muestra: búsqueda + chip, con los favoritos primero. */
+    val productos: StateFlow<List<ProductoListado>?> = combine(listados, busqueda, filtro) { l, texto, f ->
+        ReglaFiltroVenta.aplicar(l, texto, ReglaFiltroVenta.vigente(f, l))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun elegirFiltro(f: FiltroVenta) { filtro.value = f }
+
+    /** Marca o desmarca con la estrella; se respalda en Firebase como cualquier cambio del producto. */
+    fun cambiarFavorito(p: ProductoListado) {
+        viewModelScope.launch { productoRepo.cambiarFavorito(p.producto.id, !p.favorito) }
+    }
 
     /** RF 3.2: solo formas de pago activas. Se carga desde el inicio para preseleccionar Efectivo. */
     val formas: StateFlow<List<FormaPago>> = c.formaPagoRepo.observarActivas()
@@ -238,8 +261,11 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         }
     }
 
-    private fun aTarjeta(p: ProductoConCategoria) = Tarjeta(
-        ProductoEnVenta(p.producto.id, p.producto.nombre, p.producto.tipoVenta, p.producto.precioCentavos, p.producto.existenciaMilesimas),
-        p.producto.imagenRuta,
+    private fun aListado(p: ProductoConCategoria) = ProductoListado(
+        producto = ProductoEnVenta(p.producto.id, p.producto.nombre, p.producto.tipoVenta, p.producto.precioCentavos, p.producto.existenciaMilesimas),
+        categoriaId = p.producto.categoriaId,
+        categoriaNombre = p.categoriaNombre,
+        favorito = p.producto.favorito,
+        imagenRuta = p.producto.imagenRuta,
     )
 }

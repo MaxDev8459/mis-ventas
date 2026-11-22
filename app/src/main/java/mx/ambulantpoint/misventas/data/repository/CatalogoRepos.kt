@@ -152,6 +152,12 @@ class ProductoRepo(private val db: MisVentasDb, private val reloj: Reloj) : Puer
     }
 
     /** RF 2.3 / 2.4. */
+    /** Favoritos en Vender: se respalda en Firebase como cualquier cambio del producto. */
+    suspend fun cambiarFavorito(id: String, favorito: Boolean): Resultado<Unit> = db.transaccion {
+        if (dao.cambiarFavorito(id, favorito, reloj.ahora()) == 0) fallar(FallaDatos.NoEncontrado)
+        Unit
+    }
+
     override suspend fun cambiarEstado(id: String, activo: Boolean): Resultado<Unit> = db.transaccion {
         if (dao.cambiarEstado(id, activo, reloj.ahora()) == 0) fallar(FallaDatos.NoEncontrado)
         Unit

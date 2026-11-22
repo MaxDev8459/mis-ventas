@@ -37,7 +37,7 @@ import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
         Caja::class, CorteFormaPago::class, Venta::class, VentaDetalle::class, MovimientoInventario::class,
         EliminacionPendiente::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class MisVentasDb : RoomDatabase() {
@@ -57,8 +57,15 @@ abstract class MisVentasDb : RoomDatabase() {
 
         fun crear(contexto: Context): MisVentasDb =
             Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE)
-                .addMigrations(MIGRACION_1_2, MIGRACION_2_3)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4)
                 .build()
+
+        /** Favoritos en Vender. Solo agrega una columna: los productos existentes quedan como no favoritos. */
+        val MIGRACION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `producto` ADD COLUMN `favorito` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
 
         /** SC-01: datos para transferencia en la configuración. No toca los datos existentes. */
         val MIGRACION_2_3 = object : Migration(2, 3) {

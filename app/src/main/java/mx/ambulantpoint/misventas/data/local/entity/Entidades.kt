@@ -1,5 +1,6 @@
 package mx.ambulantpoint.misventas.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -83,6 +84,8 @@ data class Producto(
     /** Ruta local de la imagen ya comprimida. */
     val imagenRuta: String,
     val activo: Boolean = true,
+    /** Desarrollo independiente (v4): sale primero en Vender y en el chip "Favoritos". */
+    @ColumnInfo(defaultValue = "0") val favorito: Boolean = false,
     val creadoEn: Long,
     val actualizadoEn: Long,
     val pendienteSync: Boolean = true,

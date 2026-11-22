@@ -221,7 +221,7 @@ class GenerarReporteMasVendidosTest {
 /** RF 6.5 — Reporte de inventario. */
 class ReporteInventarioTest {
     private fun prod(id: String, tipo: TipoVenta, existencia: Long, activo: Boolean = true) = ProductoConCategoria(
-        Producto(id, id, id, "cat", tipo, 1000, existencia, "/img.jpg", activo, 0, 0),
+        Producto(id, id, id, "cat", tipo, 1000, existencia, "/img.jpg", activo, creadoEn = 0, actualizadoEn = 0),
         "Categoría",
     )
 
