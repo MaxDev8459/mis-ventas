@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "mx.ambulantpoint.misventas"
+        applicationId = "mx.ambulantpoint.misventas.demo"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

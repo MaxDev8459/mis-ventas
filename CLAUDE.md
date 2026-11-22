@@ -1,5 +1,7 @@
 # Mis Ventas — instrucciones para Claude
 
+> **Rama `demo-entrega`:** es el código tal como se entregó (DFR v1.2), con otro `applicationId` (`mx.ambulantpoint.misventas.demo`) y nombre "Mis Ventas Demo" para instalarla junto a la app de ventas. No se desarrolla aquí: solo se compila para demostraciones. El desarrollo sigue en `main`.
+
 App Android de punto de venta offline-first para Max Carlotas (venta ambulante, ITZ). Desarrolla: Ambulant Point.
 
 ## Fuente de verdad
