@@ -18,6 +18,11 @@ import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
 import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
 import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
+import mx.ambulantpoint.misventas.data.local.entity.Cliente
+import mx.ambulantpoint.misventas.data.local.entity.Abono
+import mx.ambulantpoint.misventas.data.local.entity.AplicacionAbono
+import mx.ambulantpoint.misventas.data.local.entity.TipoAbono
+import mx.ambulantpoint.misventas.data.local.entity.EstadoAbono
 
 /**
  * Nombres de las colecciones en Firestore: `usuarios/{uid}/{coleccion}/{id}`. Son los mismos que
@@ -36,6 +41,9 @@ object Colecciones {
     const val MOVIMIENTO = "movimiento_inventario"
     const val CARGA = "carga_caja"
     const val PRECARGA = "precarga"
+    const val CLIENTE = "cliente"
+    const val ABONO = "abono"
+    const val APLICACION_ABONO = "aplicacion_abono"
 }
 
 /*
@@ -53,7 +61,7 @@ fun Perfil.aDocumento(): Map<String, Any?> = mapOf(
 fun Configuracion.aDocumento(): Map<String, Any?> = mapOf(
     "id" to id, "descuentosHabilitados" to descuentosHabilitados,
     "clabe" to clabe, "beneficiario" to beneficiario, "banco" to banco, "pasoKiloMilesimas" to pasoKiloMilesimas,
-    "actualizadoEn" to actualizadoEn,
+    "avisoSaldoCentavos" to avisoSaldoCentavos, "actualizadoEn" to actualizadoEn,
 )
 
 fun Categoria.aDocumento(): Map<String, Any?> = mapOf(
@@ -79,6 +87,7 @@ fun Caja.aDocumento(): Map<String, Any?> = mapOf(
     "totalVendidoCentavos" to totalVendidoCentavos, "numeroVentas" to numeroVentas,
     "descuentosCentavos" to descuentosCentavos, "efectivoEsperadoCentavos" to efectivoEsperadoCentavos,
     "efectivoContadoCentavos" to efectivoContadoCentavos, "diferenciaCentavos" to diferenciaCentavos,
+    "fiadoCentavos" to fiadoCentavos, "abonosCentavos" to abonosCentavos, "devolucionesCentavos" to devolucionesCentavos,
     "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
 )
 
@@ -119,7 +128,22 @@ fun Venta.aDocumento(): Map<String, Any?> = mapOf(
     "tipoDescuento" to tipoDescuento?.name, "valorDescuento" to valorDescuento, "descuentoCentavos" to descuentoCentavos,
     "totalCentavos" to totalCentavos, "formaPagoId" to formaPagoId, "montoRecibidoCentavos" to montoRecibidoCentavos,
     "cambioCentavos" to cambioCentavos, "estado" to estado.name, "canceladaEn" to canceladaEn,
+    "clienteId" to clienteId, "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+fun Cliente.aDocumento(): Map<String, Any?> = mapOf(
+    "id" to id, "nombre" to nombre, "nombreNormalizado" to nombreNormalizado, "telefono" to telefono,
     "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+fun Abono.aDocumento(): Map<String, Any?> = mapOf(
+    "id" to id, "clienteId" to clienteId, "cajaId" to cajaId, "fechaHora" to fechaHora, "tipo" to tipo.name,
+    "montoCentavos" to montoCentavos, "formaPagoId" to formaPagoId, "ventaId" to ventaId, "estado" to estado.name,
+    "canceladoEn" to canceladoEn, "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+fun AplicacionAbono.aDocumento(): Map<String, Any?> = mapOf(
+    "id" to id, "abonoId" to abonoId, "ventaId" to ventaId, "montoCentavos" to montoCentavos, "creadoEn" to creadoEn,
 )
 
 fun VentaDetalle.aDocumento(): Map<String, Any?> = mapOf(
@@ -163,6 +187,8 @@ fun aConfiguracion(d: Map<String, Any?>) = Configuracion(
     clabe = d.textoONulo("clabe"), beneficiario = d.textoONulo("beneficiario"), banco = d.textoONulo("banco"),
     // Respaldos anteriores a la v6 no lo tienen: 100 g.
     pasoKiloMilesimas = d.enteroONulo("pasoKiloMilesimas") ?: Configuracion.PASO_KILO_DEFECTO,
+    // Respaldos anteriores a la v7 no lo tienen: $150.
+    avisoSaldoCentavos = d.enteroONulo("avisoSaldoCentavos") ?: Configuracion.AVISO_SALDO_DEFECTO,
     actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 
@@ -195,6 +221,8 @@ fun aCaja(d: Map<String, Any?>) = Caja(
     numeroVentas = d.enteroONulo("numeroVentas")?.toInt(), descuentosCentavos = d.enteroONulo("descuentosCentavos"),
     efectivoEsperadoCentavos = d.enteroONulo("efectivoEsperadoCentavos"), efectivoContadoCentavos = d.enteroONulo("efectivoContadoCentavos"),
     diferenciaCentavos = d.enteroONulo("diferenciaCentavos"),
+    fiadoCentavos = d.enteroONulo("fiadoCentavos"), abonosCentavos = d.enteroONulo("abonosCentavos"),
+    devolucionesCentavos = d.enteroONulo("devolucionesCentavos"),
     creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 
@@ -208,16 +236,35 @@ fun aVenta(d: Map<String, Any?>) = Venta(
     id = d.texto("id"), cajaId = d.texto("cajaId"), fechaHora = d.entero("fechaHora"), subtotalCentavos = d.entero("subtotalCentavos"),
     tipoDescuento = d.enumONulo<TipoDescuento>("tipoDescuento"), valorDescuento = d.enteroONulo("valorDescuento"),
     descuentoCentavos = d.entero("descuentoCentavos"), totalCentavos = d.entero("totalCentavos"),
-    formaPagoId = d.texto("formaPagoId"), montoRecibidoCentavos = d.enteroONulo("montoRecibidoCentavos"),
+    // Venta fiada (v7): sin forma de pago. Respaldos anteriores siempre la traen.
+    formaPagoId = d.textoONulo("formaPagoId"), montoRecibidoCentavos = d.enteroONulo("montoRecibidoCentavos"),
     cambioCentavos = d.enteroONulo("cambioCentavos"), estado = d.enumO("estado", EstadoVenta.REGISTRADA),
-    canceladaEn = d.enteroONulo("canceladaEn"),
+    canceladaEn = d.enteroONulo("canceladaEn"), clienteId = d.textoONulo("clienteId"),
     creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 
 fun aVentaDetalle(d: Map<String, Any?>) = VentaDetalle(
-    id = d.texto("id"), ventaId = d.texto("ventaId"), productoId = d.texto("productoId"), nombreProducto = d.texto("nombreProducto"),
+    // Monto libre "Varios" (v7): sin producto.
+    id = d.texto("id"), ventaId = d.texto("ventaId"), productoId = d.textoONulo("productoId"), nombreProducto = d.texto("nombreProducto"),
     tipoVenta = d.enumO("tipoVenta", TipoVenta.UNIDAD), cantidadMilesimas = d.entero("cantidadMilesimas"),
     precioUnitarioCentavos = d.entero("precioUnitarioCentavos"), importeCentavos = d.entero("importeCentavos"),
+    creadoEn = d.entero("creadoEn"), pendienteSync = false,
+)
+
+fun aCliente(d: Map<String, Any?>) = Cliente(
+    id = d.texto("id"), nombre = d.texto("nombre"), nombreNormalizado = d.texto("nombreNormalizado"),
+    telefono = d.textoONulo("telefono"), creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aAbono(d: Map<String, Any?>) = Abono(
+    id = d.texto("id"), clienteId = d.texto("clienteId"), cajaId = d.texto("cajaId"), fechaHora = d.entero("fechaHora"),
+    tipo = d.enumO("tipo", TipoAbono.ABONO), montoCentavos = d.entero("montoCentavos"), formaPagoId = d.texto("formaPagoId"),
+    ventaId = d.textoONulo("ventaId"), estado = d.enumO("estado", EstadoAbono.REGISTRADO), canceladoEn = d.enteroONulo("canceladoEn"),
+    creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
+)
+
+fun aAplicacionAbono(d: Map<String, Any?>) = AplicacionAbono(
+    id = d.texto("id"), abonoId = d.texto("abonoId"), ventaId = d.texto("ventaId"), montoCentavos = d.entero("montoCentavos"),
     creadoEn = d.entero("creadoEn"), pendienteSync = false,
 )
 

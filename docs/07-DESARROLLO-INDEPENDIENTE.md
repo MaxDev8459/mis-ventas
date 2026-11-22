@@ -64,6 +64,27 @@ Implementación:
 - Migración verificada con `sqlite3` sobre una copia de la base de Mis Ventas Pruebas (v4): coincide con `5.json`.
 - 12 pruebas nuevas en `CargaTest.kt`, 203 en total.
 
+## Fase 3 — respuestas del cliente (22-nov-2026)
+
+Preguntas abiertas de `docs/ESTADO.md`, contestadas por el cliente:
+
+| # | Pregunta | Respuesta |
+|---|---|---|
+| 1 | Forma de pago de los abonos | **Se elige cada vez** (Efectivo, Transferencia, etc.). |
+| 2 | Pago parcial al fiar | **Sí, pago inicial opcional** (puede ser $0). Se registra como primer abono de ese día. |
+| 3 | Corte con fiado | **"Total vendido" incluye lo fiado.** El efectivo esperado suma solo lo cobrado en efectivo y los abonos en efectivo. Líneas aparte: "Fiado del día" y "Abonos recibidos". |
+| 4 | Cancelar una venta fiada con abonos | **Se cancela y se devuelve el dinero.** La devolución sale en el corte de hoy (caja abierta); los cortes cerrados no cambian. |
+| 4b | Forma de la devolución | **Siempre en efectivo**: resta al efectivo esperado de hoy. |
+| 4c | A qué se aplica un abono | **Al saldo total del cliente, de la venta fiada más vieja a la más nueva.** |
+| 5 | Límite de crédito | **Aviso de saldo alto**: un monto para todos los clientes. Si el saldo lo pasa, sale un aviso, pero se puede fiar. |
+| 6 | Fiar ventas rápidas | **No.** Si el carrito tiene un renglón "Varios", no aparece la opción de fiar. |
+| 7a | Descripción de la venta rápida | **Opcional.** Vacía se guarda como "Varios". En reportes por producto todo se junta en "Varios". |
+| 7b | Forma de la venta rápida | **Renglón "Varios" en el carrito**, junto con productos del catálogo; se cobra con el flujo de siempre (con descuento si está habilitado). |
+| 8 | Dónde se consulta el fiado | **Botón "Clientes / Fiado" en Inicio**: clientes con saldo y total por cobrar; detalle con ventas fiadas, abonos y "Registrar abono". |
+| 9 | Recordar por WhatsApp | **No por ahora** (se puede agregar después sin tocar la base). |
+
+Riesgos avisados al cliente: la devolución por cancelar una venta fiada con abonos solo se registra con la caja abierta y en el corte de hoy, aunque los abonos fueran de días ya cerrados.
+
 ## Versión 1.3.0 (21-nov-2026)
 
 Instalada en la app real con `install -r` (con el indicador en "Sincronizado" antes de instalar). Incluye la Fase 2 completa, la corrección del modo oscuro en existencias y la del doble toque en "regresar". Antes se probó en Mis Ventas Pruebas, que pasó por las migraciones v4→v5→v6 en el teléfono. La cadena v4→v6 también se verificó con `sqlite3` contra `6.json`, con datos intactos.

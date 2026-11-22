@@ -13,6 +13,9 @@ import mx.ambulantpoint.misventas.data.repository.CorteCaja
 import mx.ambulantpoint.misventas.data.repository.DescuentoVenta
 import mx.ambulantpoint.misventas.data.repository.LineaVenta
 import mx.ambulantpoint.misventas.data.repository.SolicitudCobro
+import mx.ambulantpoint.misventas.data.repository.DatosFiado
+import mx.ambulantpoint.misventas.data.repository.LineaLibre
+import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
 import mx.ambulantpoint.misventas.data.repository.VentaCobrada
 import mx.ambulantpoint.misventas.domain.puertos.PuertoCaja
 import mx.ambulantpoint.misventas.domain.puertos.PuertoVentas
@@ -34,6 +37,12 @@ class AbrirCaja(private val caja: PuertoCaja) {
         }
     }
 }
+
+/**
+ * Fiado tal como se captura al cobrar: cliente elegido, pago inicial opcional ("" = $0) y su forma de
+ * pago (obligatoria solo si hay pago inicial).
+ */
+data class FiadoCapturado(val clienteId: String?, val pagoInicial: String, val formaInicial: FormaPago?)
 
 /** Descuento tal como lo captura el vendedor (RF 3.6): "10" = 10 %, o "$15.00". */
 data class DescuentoCapturado(val tipo: TipoDescuento, val valor: String)
@@ -59,8 +68,10 @@ object PrepararCobro {
         forma: FormaPago?,
         montoRecibido: String?,
         descuento: DescuentoCapturado?,
+        fiar: Boolean = false,
     ): Resultado<ResumenCobro> {
         if (carrito.estaVacio) return mensaje(Mensajes.AGREGUE_UN_PRODUCTO)
+        if (fiar && carrito.tieneLibres) return mensaje(Mensajes.Fiado.NO_FIAR_VARIOS)
         val subtotal = carrito.subtotalCentavos
 
         val desc = descuento?.let { d ->
@@ -75,6 +86,8 @@ object PrepararCobro {
         }
         val total = subtotal - (desc?.centavos ?: 0)
 
+        // Fiado: sin forma de pago ni cambio (el pago inicial se valida en CobrarVenta).
+        if (fiar) return Resultado.Exito(ResumenCobro(subtotal, desc, total, null))
         if (forma == null) return campo(Campos.FORMA_PAGO, Mensajes.Campo.OBLIGATORIO)
         val cambio = if (forma.esEfectivo) {
             val recibido = when (val l = LectorNumeros.monto(montoRecibido, permitirCero = true)) {
@@ -108,30 +121,46 @@ class CobrarVenta(
         forma: FormaPago?,
         montoRecibido: String? = null,
         descuento: DescuentoCapturado? = null,
+        fiado: FiadoCapturado? = null,
     ): Resultado<Hecho<VentaCobrada>> {
-        val resumen = when (val r = PrepararCobro.calcular(carrito, forma, montoRecibido, descuento)) {
+        val resumen = when (val r = PrepararCobro.calcular(carrito, forma, montoRecibido, descuento, fiar = fiado != null)) {
             is Resultado.Exito -> r.valor
             is Resultado.Fallo -> return r
         }
+        val datosFiado = fiado?.let { f ->
+            val clienteId = f.clienteId ?: return campo(Campos.CLIENTE, Mensajes.Fiado.ELIJA_CLIENTE)
+            val pago = when (val l = LectorNumeros.monto(f.pagoInicial.ifBlank { "0" }, permitirCero = true)) {
+                is Lectura.Valor -> l.valor
+                is Lectura.Error -> return campo(Campos.PAGO_INICIAL, l.mensaje)
+            }
+            ReglaFiado.validarPagoInicial(pago, resumen.totalCentavos)?.let { return campo(Campos.PAGO_INICIAL, it) }
+            if (pago > 0 && f.formaInicial == null) return campo(Campos.FORMA_PAGO_INICIAL, Mensajes.Campo.OBLIGATORIO)
+            DatosFiado(clienteId, pago, if (pago > 0) f.formaInicial?.id else null)
+        }
         val solicitud = SolicitudCobro(
             lineas = carrito.renglones.map { LineaVenta(it.producto.id, it.cantidadMilesimas) },
-            formaPagoId = forma!!.id,
-            montoRecibidoCentavos = if (forma.esEfectivo) resumen.totalCentavos + (resumen.cambioCentavos ?: 0) else null,
+            formaPagoId = if (datosFiado != null) null else forma!!.id,
+            montoRecibidoCentavos = if (datosFiado == null && forma!!.esEfectivo) resumen.totalCentavos + (resumen.cambioCentavos ?: 0) else null,
             descuento = resumen.descuento,
+            libres = carrito.libres.map { LineaLibre(it.descripcion, it.importeCentavos) },
+            fiado = datosFiado,
         )
         return ejecutar(Mensajes.Campo.NO_ENCONTRADO, operacion = { ventas.cobrar(solicitud) }) { cobrada ->
             val avisos = carrito.renglones.mapNotNull { r ->
                 val existencia = cobrada.existencias[r.producto.id] ?: return@mapNotNull null
                 existenciaBaja.aviso(ProductoRef(r.producto.id, r.producto.nombre, r.producto.tipoVenta), existencia)
             }
-            Hecho(cobrada, Mensajes.VENTA_REGISTRADA, avisos)
+            Hecho(cobrada, if (datosFiado != null) Mensajes.Fiado.VENTA_FIADA else Mensajes.VENTA_REGISTRADA, avisos)
         }
     }
 }
 
 /** RF 3.3. */
 class CancelarVenta(private val ventas: PuertoVentas) {
-    fun confirmacion(venta: Venta): String = Mensajes.confirmarCancelarVenta(Formato.moneda(venta.totalCentavos))
+    /** Fiado: si la venta tiene abonos, avisa que se devuelven en efectivo. */
+    fun confirmacion(venta: Venta, abonadoCentavos: Long = 0): String =
+        Mensajes.confirmarCancelarVenta(Formato.moneda(venta.totalCentavos)) +
+            (if (abonadoCentavos > 0) Mensajes.Fiado.devolucionAlCancelar(Formato.moneda(abonadoCentavos)) else "")
 
     suspend operator fun invoke(ventaId: String): Resultado<Hecho<Venta>> =
         ejecutar(Mensajes.Campo.NO_ENCONTRADO, operacion = { ventas.cancelar(ventaId) }) {

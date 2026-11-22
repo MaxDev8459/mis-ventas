@@ -20,6 +20,9 @@ import mx.ambulantpoint.misventas.data.local.entity.EstadoVenta
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
 import mx.ambulantpoint.misventas.data.local.entity.Venta
 import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
+import mx.ambulantpoint.misventas.data.local.entity.Cliente
+import mx.ambulantpoint.misventas.data.local.entity.Abono
+import mx.ambulantpoint.misventas.data.local.entity.AplicacionAbono
 
 @Dao
 interface CajaDao {
@@ -114,8 +117,8 @@ interface VentaDao {
     /** RF 3.4: de la más reciente a la más antigua, con filtros opcionales. */
     @Query(
         """
-        SELECT v.*, f.nombre AS formaPagoNombre
-        FROM venta v JOIN forma_pago f ON f.id = v.formaPagoId
+        SELECT v.*, f.nombre AS formaPagoNombre, c.nombre AS clienteNombre
+        FROM venta v LEFT JOIN forma_pago f ON f.id = v.formaPagoId LEFT JOIN cliente c ON c.id = v.clienteId
         WHERE v.fechaHora BETWEEN :desde AND :hasta
           AND (:estado IS NULL OR v.estado = :estado)
           AND (:formaPagoId IS NULL OR v.formaPagoId = :formaPagoId)
@@ -182,11 +185,12 @@ interface ReporteDao {
     /** RF 6.2: incluye formas de pago desactivadas con ventas en el periodo. */
     @Query(
         """
-        SELECT f.id AS formaPagoId, f.nombre AS nombreFormaPago, f.esEfectivo AS esEfectivo,
+        SELECT COALESCE(f.id, '$ID_FIADO') AS formaPagoId, COALESCE(f.nombre, '$NOMBRE_FIADO') AS nombreFormaPago,
+               COALESCE(f.esEfectivo, 0) AS esEfectivo,
                COUNT(v.id) AS numeroVentas, SUM(v.totalCentavos) AS totalCentavos
-        FROM venta v JOIN forma_pago f ON f.id = v.formaPagoId
+        FROM venta v LEFT JOIN forma_pago f ON f.id = v.formaPagoId
         WHERE v.estado = 'REGISTRADA' AND v.fechaHora BETWEEN :desde AND :hasta
-        GROUP BY f.id ORDER BY totalCentavos DESC
+        GROUP BY COALESCE(f.id, '$ID_FIADO') ORDER BY totalCentavos DESC
         """,
     )
     suspend fun totalesPorFormaPago(desde: Long, hasta: Long): List<TotalFormaPago>
@@ -194,14 +198,15 @@ interface ReporteDao {
     /** RF 6.3: incluye productos desactivados. El orden final lo decide el dominio. */
     @Query(
         """
-        SELECT p.id AS productoId, p.nombre AS nombre, c.nombre AS categoriaNombre, p.tipoVenta AS tipoVenta,
+        SELECT COALESCE(p.id, '$ID_VARIOS') AS productoId, COALESCE(p.nombre, '$NOMBRE_VARIOS') AS nombre,
+               COALESCE(c.nombre, '$NOMBRE_VARIOS') AS categoriaNombre, COALESCE(p.tipoVenta, 'UNIDAD') AS tipoVenta,
                SUM(d.cantidadMilesimas) AS cantidadMilesimas, SUM(d.importeCentavos) AS importeCentavos
         FROM venta_detalle d
           JOIN venta v ON v.id = d.ventaId
-          JOIN producto p ON p.id = d.productoId
-          JOIN categoria c ON c.id = p.categoriaId
+          LEFT JOIN producto p ON p.id = d.productoId
+          LEFT JOIN categoria c ON c.id = p.categoriaId
         WHERE v.estado = 'REGISTRADA' AND v.fechaHora BETWEEN :desde AND :hasta
-        GROUP BY p.id
+        GROUP BY COALESCE(p.id, '$ID_VARIOS')
         ORDER BY importeCentavos DESC
         """,
     )
@@ -210,13 +215,14 @@ interface ReporteDao {
     /** RF 6.4: importe por categoría, de mayor a menor. */
     @Query(
         """
-        SELECT c.id AS categoriaId, c.nombre AS categoriaNombre, SUM(d.importeCentavos) AS importeCentavos
+        SELECT COALESCE(c.id, '$ID_VARIOS') AS categoriaId, COALESCE(c.nombre, '$NOMBRE_VARIOS') AS categoriaNombre,
+               SUM(d.importeCentavos) AS importeCentavos
         FROM venta_detalle d
           JOIN venta v ON v.id = d.ventaId
-          JOIN producto p ON p.id = d.productoId
-          JOIN categoria c ON c.id = p.categoriaId
+          LEFT JOIN producto p ON p.id = d.productoId
+          LEFT JOIN categoria c ON c.id = p.categoriaId
         WHERE v.estado = 'REGISTRADA' AND v.fechaHora BETWEEN :desde AND :hasta
-        GROUP BY c.id ORDER BY importeCentavos DESC
+        GROUP BY COALESCE(c.id, '$ID_VARIOS') ORDER BY importeCentavos DESC
         """,
     )
     suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria>
@@ -246,7 +252,7 @@ interface ReporteDao {
         SELECT d.productoId AS productoId, date(v.fechaHora / 1000, 'unixepoch', 'localtime') AS dia,
                SUM(d.cantidadMilesimas) AS cantidadMilesimas
         FROM venta_detalle d JOIN venta v ON v.id = d.ventaId
-        WHERE v.estado = 'REGISTRADA'
+        WHERE v.estado = 'REGISTRADA' AND d.productoId IS NOT NULL
         GROUP BY d.productoId, dia
         ORDER BY d.productoId, dia DESC
         """,
@@ -273,6 +279,9 @@ interface SyncDao {
           (SELECT COUNT(*) FROM venta WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta_detalle WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM movimiento_inventario WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM cliente WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM abono WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM aplicacion_abono WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM eliminacion_pendiente)
         """,
     )
@@ -291,6 +300,9 @@ interface SyncDao {
     @Query("SELECT * FROM venta WHERE pendienteSync = 1 LIMIT :n") suspend fun ventas(n: Int): List<Venta>
     @Query("SELECT * FROM venta_detalle WHERE pendienteSync = 1 LIMIT :n") suspend fun ventaDetalles(n: Int): List<VentaDetalle>
     @Query("SELECT * FROM movimiento_inventario WHERE pendienteSync = 1 LIMIT :n") suspend fun movimientos(n: Int): List<MovimientoInventario>
+    @Query("SELECT * FROM cliente WHERE pendienteSync = 1 LIMIT :n") suspend fun clientes(n: Int): List<Cliente>
+    @Query("SELECT * FROM abono WHERE pendienteSync = 1 LIMIT :n") suspend fun abonos(n: Int): List<Abono>
+    @Query("SELECT * FROM aplicacion_abono WHERE pendienteSync = 1 LIMIT :n") suspend fun aplicacionesAbono(n: Int): List<AplicacionAbono>
 
     // ── RF 7.1 + 2.9: eliminaciones ──
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -317,6 +329,9 @@ interface SyncDao {
     @Query("UPDATE venta SET pendienteSync = 1") suspend fun pendienteVentas()
     @Query("UPDATE venta_detalle SET pendienteSync = 1") suspend fun pendienteVentaDetalles()
     @Query("UPDATE movimiento_inventario SET pendienteSync = 1") suspend fun pendienteMovimientos()
+    @Query("UPDATE cliente SET pendienteSync = 1") suspend fun pendienteClientes()
+    @Query("UPDATE abono SET pendienteSync = 1") suspend fun pendienteAbonos()
+    @Query("UPDATE aplicacion_abono SET pendienteSync = 1") suspend fun pendienteAplicacionesAbono()
 
     // ── RF 7.4: recuperar en un dispositivo nuevo ──
 
@@ -333,12 +348,18 @@ interface SyncDao {
           (SELECT COUNT(*) FROM venta WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta_detalle WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM movimiento_inventario WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM cliente WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM abono WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM aplicacion_abono WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM eliminacion_pendiente)
         """,
     )
     suspend fun contarPendientesNegocio(): Int
 
     @Query("DELETE FROM movimiento_inventario") suspend fun borrarMovimientos()
+    @Query("DELETE FROM aplicacion_abono") suspend fun borrarAplicacionesAbono()
+    @Query("DELETE FROM abono") suspend fun borrarAbonos()
+    @Query("DELETE FROM cliente") suspend fun borrarClientes()
     @Query("DELETE FROM venta_detalle") suspend fun borrarVentaDetalles()
     @Query("DELETE FROM venta") suspend fun borrarVentas()
     @Query("DELETE FROM corte_forma_pago") suspend fun borrarCortesFormaPago()
@@ -364,5 +385,8 @@ interface SyncDao {
     @Insert suspend fun insertarVentas(l: List<Venta>)
     @Insert suspend fun insertarVentaDetalles(l: List<VentaDetalle>)
     @Insert suspend fun insertarMovimientos(l: List<MovimientoInventario>)
+    @Insert suspend fun insertarClientes(l: List<Cliente>)
+    @Insert suspend fun insertarAbonos(l: List<Abono>)
+    @Insert suspend fun insertarAplicacionesAbono(l: List<AplicacionAbono>)
 }
 

@@ -53,6 +53,10 @@ import mx.ambulantpoint.misventas.ui.components.atender
 import mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste
 import mx.ambulantpoint.misventas.domain.usecase.AjustarExistencia
 import mx.ambulantpoint.misventas.domain.usecase.ProductoRef
+import mx.ambulantpoint.misventas.domain.usecase.FiadoCapturado
+import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
+import mx.ambulantpoint.misventas.data.local.dao.ClienteConSaldo
+import mx.ambulantpoint.misventas.data.local.entity.Configuracion
 
 /** Aviso de carga: el producto no se cargó o ya no queda de lo cargado. */
 data class AvisoCarga(
@@ -211,6 +215,93 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         (PrepararCobro.calcular(carrito, forma, recibido.ifBlank { null }, descuento.takeIf { conDescuento.second == null }) as? Resultado.Exito)?.valor
     }
 
+    // ── Venta rápida: monto libre ("Varios") ──
+    var pidiendoLibre by mutableStateOf(false)
+        private set
+    var libreMonto by mutableStateOf("")
+    var libreDescripcion by mutableStateOf("")
+    var libreError by mutableStateOf<String?>(null)
+        private set
+
+    fun pedirLibre() { pidiendoLibre = true; libreMonto = ""; libreDescripcion = ""; libreError = null }
+    fun cancelarLibre() { pidiendoLibre = false }
+
+    fun agregarLibre() {
+        when (val l = LectorNumeros.monto(libreMonto)) {
+            is Lectura.Error -> libreError = l.mensaje
+            is Lectura.Valor -> when (val r = carrito.agregarLibre(mx.ambulantpoint.misventas.core.nuevoId(), libreDescripcion, l.valor)) {
+                is Resultado.Exito -> { carrito = r.valor; pidiendoLibre = false }
+                is Resultado.Fallo -> libreError = (r.falla as? FallaMensaje)?.mensaje ?: Mensajes.Campo.MONTO_NO_VALIDO
+            }
+        }
+    }
+
+    fun quitarLibre(id: String) { carrito = carrito.quitarLibre(id) }
+
+    // ── Fiado al cobrar ──
+    private val fiadoRepo = c.fiadoRepo
+
+    /** Clientes con su saldo, para elegir a quién se le fía. */
+    val clientes: StateFlow<List<ClienteConSaldo>> = fiadoRepo.observarClientes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Monto de aviso de saldo alto ($150 de inicio). */
+    val avisoSaldo: StateFlow<Long> = c.configuracionRepo.observar()
+        .map { it?.avisoSaldoCentavos ?: Configuracion.AVISO_SALDO_DEFECTO }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Configuracion.AVISO_SALDO_DEFECTO)
+
+    var fiar by mutableStateOf(false)
+        private set
+    var clienteTexto by mutableStateOf("")
+        private set
+    var clienteId by mutableStateOf<String?>(null)
+        private set
+    var pagoInicial by mutableStateOf("")
+        private set
+    var formaInicial by mutableStateOf<FormaPago?>(null)
+        private set
+    /** Aviso de saldo alto pendiente de confirmar ("Fiar de todos modos"). */
+    var avisoSaldoTexto by mutableStateOf<String?>(null)
+        private set
+    var creandoCliente by mutableStateOf(false)
+        private set
+
+    fun elegirFiar() {
+        if (carrito.tieneLibres) { notificador.mostrar(Mensajes.Fiado.NO_FIAR_VARIOS); return }
+        fiar = true
+        formaInicial = formaInicial ?: formas.value.firstOrNull { it.esEfectivo }
+        erroresCobro = emptyMap()
+    }
+
+    fun cambiarClienteTexto(t: String) {
+        clienteTexto = t
+        // Si coincide exacto con un cliente, queda elegido; si no, hay que elegir o crear.
+        clienteId = clientes.value.firstOrNull { ReglaFiado.normalizarNombre(it.cliente.nombre) == ReglaFiado.normalizarNombre(t) }?.cliente?.id
+        erroresCobro = emptyMap()
+    }
+
+    fun elegirCliente(c: ClienteConSaldo) { clienteId = c.cliente.id; clienteTexto = c.cliente.nombre; erroresCobro = emptyMap() }
+
+    /** Crea el cliente con el nombre escrito y lo deja elegido. */
+    fun crearCliente() {
+        if (creandoCliente) return
+        viewModelScope.launch {
+            creandoCliente = true
+            when (val r = fiadoRepo.guardarCliente(null, clienteTexto, "")) {
+                is Resultado.Exito -> { clienteId = r.valor.id; clienteTexto = r.valor.nombre }
+                is Resultado.Fallo -> erroresCobro = mapOf(Campos.CLIENTE to ((r.falla as? FallaDatos.Regla)?.mensaje ?: Mensajes.Campo.OBLIGATORIO))
+            }
+            creandoCliente = false
+        }
+    }
+
+    fun cambiarPagoInicial(t: String) { pagoInicial = t; erroresCobro = emptyMap() }
+    fun elegirFormaInicial(f: FormaPago) { formaInicial = f; erroresCobro = emptyMap() }
+    fun cancelarAvisoSaldo() { avisoSaldoTexto = null }
+
+    /** "Fiar de todos modos": el aviso no bloquea. */
+    fun fiarDeTodosModos() { avisoSaldoTexto = null; cobrar(avisoAceptado = true) }
+
     fun elegirTipoDescuento(t: TipoDescuento) { tipoDescuento = t; erroresCobro = emptyMap() }
     fun cambiarDescuento(texto: String) { descuentoTexto = texto; erroresCobro = emptyMap() }
 
@@ -334,20 +425,38 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         descuentoTexto = ""
         tipoDescuento = TipoDescuento.PORCENTAJE
         erroresCobro = emptyMap()
+        fiar = false; clienteTexto = ""; clienteId = null; pagoInicial = ""; formaInicial = null; avisoSaldoTexto = null
         cobrando = true
     }
 
     fun cerrarCobro() { cobrando = false }
 
-    fun elegirForma(f: FormaPago) { forma = f; erroresCobro = emptyMap() }
+    fun elegirForma(f: FormaPago) { forma = f; fiar = false; erroresCobro = emptyMap() }
     fun cambiarRecibido(texto: String) { recibido = texto; erroresCobro = emptyMap() }
 
     /** RF 3.2: guarda la venta (todo o nada) y deja la pantalla lista para la siguiente. */
-    fun confirmar() {
+    fun confirmar() = cobrar(avisoAceptado = false)
+
+    private fun cobrar(avisoAceptado: Boolean) {
         if (confirmando) return
+        // Fiado: aviso de saldo alto antes de guardar (no bloquea).
+        if (fiar && !avisoAceptado) {
+            val cliente = clientes.value.firstOrNull { it.cliente.id == clienteId }
+            val pago = (LectorNumeros.monto(pagoInicial.ifBlank { "0" }, permitirCero = true) as? Lectura.Valor)?.valor ?: 0L
+            if (cliente != null) {
+                val despues = ReglaFiado.saldoDespues(cliente.saldoCentavos, totalACobrar, pago)
+                if (ReglaFiado.pasaAviso(despues, avisoSaldo.value)) {
+                    avisoSaldoTexto = Mensajes.Fiado.avisoSaldoAlto(
+                        cliente.cliente.nombre, Formato.moneda(cliente.saldoCentavos), Formato.moneda(despues),
+                    )
+                    return
+                }
+            }
+        }
+        val fiado = if (fiar) FiadoCapturado(clienteId, pagoInicial, formaInicial) else null
         viewModelScope.launch {
             confirmando = true
-            cobrarVenta(carrito, forma, recibido.ifBlank { null }, descuento).atender(notificador) { erroresCobro = it }?.let { hecho ->
+            cobrarVenta(carrito, forma, recibido.ifBlank { null }, descuento, fiado).atender(notificador) { erroresCobro = it }?.let { hecho ->
                 notificador.mostrar((listOfNotNull(hecho.mensaje) + hecho.avisos).joinToString("\n"))
                 carrito = Carrito()
                 cobrando = false

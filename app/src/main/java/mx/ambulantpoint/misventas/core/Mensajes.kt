@@ -65,6 +65,30 @@ object Mensajes {
     const val DESCUENTO_NO_VALIDO = "El descuento no es válido"
     const val DESCUENTO_TOTAL_MINIMO = "El descuento debe dejar un total a cobrar de al menos \$1.00"
 
+    /** Fiado y venta rápida (desarrollo independiente, Fase 3; textos del equipo, no del DFR). */
+    object Fiado {
+        const val NOMBRE_LONGITUD = "El nombre debe tener de 2 a 40 caracteres"
+        const val CLIENTE_YA_REGISTRADO = "Ya hay un cliente con ese nombre"
+        const val CLIENTE_GUARDADO = "El cliente se guardó exitosamente"
+        const val ELIJA_CLIENTE = "Elija o escriba el cliente"
+        const val ABONO_MAYOR_A_CERO = "El abono debe ser mayor a cero"
+        const val SIN_SALDO = "El cliente no tiene saldo pendiente"
+        fun abonoMayorAlSaldo(saldo: String) = "El abono es mayor a lo que debe ($saldo)"
+        const val ABRA_CAJA_ABONO = "Abra caja para registrar el abono"
+        const val ABONO_REGISTRADO = "El abono se registró exitosamente"
+        const val ABONO_CANCELADO = "El abono se canceló"
+        const val ABONO_NO_CANCELABLE = "Este abono ya no se puede cancelar"
+        fun confirmarCancelarAbono(monto: String) = "¿Desea cancelar el abono de $monto? El saldo del cliente regresa"
+        const val PAGO_INICIAL_TOTAL = "Si paga todo, no es fiado: cobre la venta normal"
+        const val VENTA_FIADA = "Venta fiada registrada exitosamente"
+        const val NO_FIAR_VARIOS = "Las ventas con monto libre no se pueden fiar"
+        fun avisoSaldoAlto(cliente: String, debe: String, deberia: String) =
+            "$cliente ya debe $debe. Con esta venta debería $deberia."
+        fun devolucionAlCancelar(monto: String) = " Se devolverán $monto en efectivo al cliente."
+        const val AVISO_GUARDADO = "El monto de aviso se guardó exitosamente"
+        const val MONTO_LIBRE_MAYOR_A_CERO = "El monto debe ser mayor a cero"
+    }
+
     // ---------- Módulo 4. Inventario ----------
     const val ENTRADA_REGISTRADA = "La entrada se registró exitosamente"
     const val AJUSTE_REGISTRADO = "El ajuste se registró exitosamente"

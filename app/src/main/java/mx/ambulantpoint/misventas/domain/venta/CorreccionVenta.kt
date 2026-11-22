@@ -1,9 +1,16 @@
 package mx.ambulantpoint.misventas.domain.venta
 
 import mx.ambulantpoint.misventas.core.Resultado
+import mx.ambulantpoint.misventas.core.nuevoId
 
 /** Un producto de la venta cancelada: qué se vendió y cuánto. */
-data class LineaACorregir(val productoId: String, val nombre: String, val cantidadMilesimas: Long)
+data class LineaACorregir(
+    /** null = monto libre ("Varios"): regresa al carrito con su descripción e importe. */
+    val productoId: String?,
+    val nombre: String,
+    val cantidadMilesimas: Long,
+    val importeCentavos: Long = 0,
+)
 
 /** Carrito armado para recapturar y los productos que ya no se pueden vender. */
 data class Correccion(val carrito: Carrito, val omitidos: List<String>)
@@ -19,6 +26,10 @@ object ReglaCorreccion {
         var carrito = Carrito()
         val omitidos = mutableListOf<String>()
         for (l in lineas) {
+            if (l.productoId == null) {
+                (carrito.agregarLibre(nuevoId(), l.nombre, l.importeCentavos) as? Resultado.Exito)?.let { carrito = it.valor }
+                continue
+            }
             val p = productoActual(l.productoId)
             if (p == null) { omitidos += l.nombre; continue }
             when (val r = carrito.agregar(p, l.cantidadMilesimas)) {

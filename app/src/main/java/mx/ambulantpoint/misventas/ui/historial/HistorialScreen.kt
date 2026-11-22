@@ -170,7 +170,7 @@ fun PantallaHistorial(alRegresar: () -> Unit, alAbrir: (String) -> Unit) {
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(Formato.fechaHora(v.venta.fechaHora), style = MaterialTheme.typography.bodyLarge)
-                                Text("${v.formaPagoNombre} · ${etiquetaEstado(v.venta.estado)}", style = MaterialTheme.typography.bodyMedium,
+                                Text("${v.etiquetaPago} · ${etiquetaEstado(v.venta.estado)}", style = MaterialTheme.typography.bodyMedium,
                                     color = if (v.venta.estado == EstadoVenta.CANCELADA) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Text(Formato.moneda(v.venta.totalCentavos), style = MaterialTheme.typography.titleLarge)

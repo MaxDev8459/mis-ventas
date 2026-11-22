@@ -74,6 +74,9 @@ sealed interface FallaDatos : Falla {
     /** Carga del día: no se puede cargar más que la existencia. Mensaje listo para mostrar. */
     data class CargaExcedeExistencia(val mensaje: String) : FallaDatos
 
+    /** Fiado y venta rápida: regla de negocio no cumplida. Mensaje listo para mostrar (de ReglaFiado). */
+    data class Regla(val mensaje: String) : FallaDatos
+
     /** Cantidad o monto fuera de rango (ej. cero o negativo). */
     data object CantidadInvalida : FallaDatos
 

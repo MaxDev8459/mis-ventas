@@ -17,3 +17,9 @@ enum class MotivoAjuste { MERMA, PRODUCTO_CADUCADO, CONSUMO_PROPIO, CORRECCION_C
 
 /** RF 3.6: tipo de descuento aplicado en una venta. */
 enum class TipoDescuento { PORCENTAJE, MONTO_FIJO }
+
+/** Fiado (v7): un abono del cliente o la devolución de lo abonado al cancelar una venta fiada. */
+enum class TipoAbono { ABONO, DEVOLUCION }
+
+/** Fiado (v7): los abonos no se borran; uno equivocado se cancela mientras su caja está abierta. */
+enum class EstadoAbono { REGISTRADO, CANCELADO }

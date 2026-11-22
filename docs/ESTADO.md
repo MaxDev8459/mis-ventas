@@ -10,9 +10,9 @@
 | Dato | Valor |
 |---|---|
 | App real en el teléfono | **1.3.0** (versionCode 5), liberación, cuenta `maxicarlotas@gmail.com` |
-| Versión de la base Room | **6** (siguiente migración: 6→7) |
-| Pruebas JVM | 210 pasan |
-| Siguiente fase | **Fase 3: fiado + venta rápida sin producto** (sin empezar) |
+| Versión de la base Room | **7** en Mis Ventas Pruebas; la app real sigue en 6 hasta liberar la 1.4.0 |
+| Pruebas JVM | 255 pasan (+ 37 instrumentadas con Room en el teléfono) |
+| Siguiente fase | **Fase 3**: 1.4.0 instalada en Mis Ventas Pruebas, **esperando que el usuario la pruebe y la apruebe** |
 
 ## Checklist de fases
 
@@ -22,10 +22,12 @@
 - [x] **Fase 2b:** carga del día v1 y v2 (+ / −, Máx, precargas, unidad para kilo, "te quedan", sobrante en el corte) (1.3.0, Room v5–v6)
 - [x] Correcciones: texto legible en existencia baja/agotado con modo oscuro; doble toque en "regresar" (pantalla en blanco). También en la demo.
 - [ ] **Fase 3:** fiado + venta rápida sin producto (Room v6→v7)
-  - [ ] Hacer al usuario las preguntas abiertas (abajo) y anotar sus respuestas en `docs/07`
-  - [ ] Escribir la especificación (`docs/09-ESPEC-FIADO.md`) y que el usuario la valide
-  - [ ] Programar con pruebas unitarias (corte de caja con fiado y abonos = cálculo crítico)
-  - [ ] Probar en Mis Ventas Pruebas; el usuario la aprueba
+  - [x] Hacer al usuario las preguntas abiertas y anotar sus respuestas en `docs/07` (22-nov)
+  - [x] Escribir la especificación (`docs/09-ESPEC-FIADO.md`); aprobada el 22-nov (aviso desde $150)
+  - [x] Programar con pruebas unitarias (`FiadoTest`, 45) e instrumentadas (`FiadoRoomTest`, 14)
+  - [x] Migración 6→7 verificada con `sqlite3` (base sintética y copia de Pruebas) y ya aplicada en Pruebas
+  - [x] Instalada en Mis Ventas Pruebas (1.4.0-pruebas)
+  - [ ] El usuario la prueba en Mis Ventas Pruebas y la aprueba
   - [ ] Liberar a la app real (1.4.0)
 - [ ] **Fase 4:** apartados con existencia separada (Room v7→v8)
 - [ ] **Fase 5:** reportes nuevos (comparar periodos, ventas por hora/día, fiado y mermas a precio de venta)
@@ -36,17 +38,9 @@
 - **Venta rápida sin producto:** cobrar un monto libre (algo que no está en el catálogo). No descuenta inventario. En los reportes por producto aparece como "Varios".
 - **Cobro:** no cambia el flujo actual de cobrar, salvo lo necesario para fiar.
 
-### Preguntas abiertas de Fase 3 (hacerlas antes de programar; no inventar reglas)
+### Preguntas de Fase 3: contestadas el 22-nov
 
-1. ¿En qué forma de pago entran los abonos (efectivo, transferencia, o eligen cada vez)?
-2. Al fiar, ¿el cliente puede dejar un pago parcial en ese momento (por ejemplo, paga $50 de $120)?
-3. ¿Cómo se ve en el corte? Propuesta: "total vendido" incluye lo fiado, el "efectivo esperado" solo suma lo cobrado y los abonos recibidos, y aparece una línea "Fiado del día" y otra "Abonos recibidos".
-4. ¿Qué pasa si se cancela una venta fiada que ya tiene abonos?
-5. ¿Hay límite de crédito por cliente o aviso de saldo alto?
-6. ¿Se pueden fiar las ventas rápidas sin producto?
-7. Venta rápida: ¿lleva descripción opcional (por ejemplo "Refresco de la tienda")? ¿Permite descuento?
-8. ¿Dónde se consulta el fiado: una pantalla "Clientes / Fiado" en Inicio, con su saldo y su historial de abonos?
-9. ¿Se reutiliza "Recordar por WhatsApp" el saldo? (En la entrevista **no** se eligió, así que confirmarlo antes de incluirlo.)
+Las respuestas están en `docs/07` y la regla completa en `docs/09-ESPEC-FIADO.md`.
 
 ## Cómo se trabaja (no saltarse)
 

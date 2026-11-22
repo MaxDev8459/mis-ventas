@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -90,6 +91,7 @@ enum class Destino(val titulo: String, val icono: ImageVector) {
     VENDER("Vender", Icons.Filled.ShoppingCart),
     CAJA("Caja", Icons.Filled.Lock),
     HISTORIAL("Historial de ventas", Icons.Filled.DateRange),
+    CLIENTES("Clientes / Fiado", Icons.Filled.Person),
     CATALOGO("Catálogo", Icons.AutoMirrored.Filled.List),
     CATEGORIAS("Categorías", Icons.Filled.Menu),
     EXISTENCIAS("Existencias", Icons.Filled.Info),

@@ -52,6 +52,7 @@ class DetalleVentaViewModel(c: AppContainer, private val ventaId: String) : View
     private val notificador = c.notificador
     private val productos = c.productoRepo
     private val carritoPorCorregir = c.carritoPorCorregir
+    private val fiado = c.fiadoRepo
 
     val detalles: StateFlow<List<VentaDetalle>> = repo.observarDetalles(ventaId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -59,6 +60,11 @@ class DetalleVentaViewModel(c: AppContainer, private val ventaId: String) : View
     var venta by mutableStateOf<Venta?>(null)
         private set
     var formaPago by mutableStateOf("")
+        private set
+    /** Fiado: cliente y lo abonado a esta venta (lo que se devolvería al cancelarla). */
+    var cliente by mutableStateOf<String?>(null)
+        private set
+    var abonado by mutableStateOf(0L)
         private set
     /** RF 3.3: solo ventas registradas de la caja abierta. */
     var cancelable by mutableStateOf(false)
@@ -76,23 +82,28 @@ class DetalleVentaViewModel(c: AppContainer, private val ventaId: String) : View
             val v = repo.porId(ventaId) ?: return@launch
             venta = v
             formaPago = formas.observarTodas().first().firstOrNull { it.id == v.formaPagoId }?.nombre.orEmpty()
+            cliente = v.clienteId?.let { fiado.observarCliente(it).first()?.nombre }
+            abonado = if (v.clienteId != null) repo.abonadoAVenta(ventaId) else 0L
             cancelable = repo.esCancelable(ventaId)
         }
     }
 
-    fun textoConfirmacion(): String = venta?.let { cancelarVenta.confirmacion(it) }.orEmpty()
+    fun textoConfirmacion(): String = venta?.let { cancelarVenta.confirmacion(it, abonado) }.orEmpty()
 
     fun textoCorreccion(): String =
-        venta?.let { Mensajes.confirmarCorregirVenta(Formato.moneda(it.totalCentavos), it.descuentoCentavos > 0) }.orEmpty()
+        venta?.let {
+            Mensajes.confirmarCorregirVenta(Formato.moneda(it.totalCentavos), it.descuentoCentavos > 0) +
+                (if (abonado > 0) Mensajes.Fiado.devolucionAlCancelar(Formato.moneda(abonado)) else "")
+        }.orEmpty()
 
     /** Corregir venta = cancelar (la existencia regresa) y cargar sus productos en una venta nueva. */
     fun corregir() {
         confirmandoCorreccion = false
         viewModelScope.launch {
             val lineas = repo.observarDetalles(ventaId).first()
-                .map { LineaACorregir(it.productoId, it.nombreProducto, it.cantidadMilesimas) }
+                .map { LineaACorregir(it.productoId, it.nombreProducto, it.cantidadMilesimas, it.importeCentavos) }
             cancelarVenta(ventaId).atender(notificador) {} ?: return@launch
-            val hoy = lineas.map { it.productoId }.distinct().associateWith { productos.porId(it) }
+            val hoy = lineas.mapNotNull { it.productoId }.distinct().associateWith { productos.porId(it) }
             val correccion = ReglaCorreccion.armar(lineas) { id ->
                 hoy[id]?.takeIf { it.activo }?.let { p ->
                     ProductoEnVenta(p.id, p.nombre, p.tipoVenta, p.precioCentavos, p.existenciaMilesimas)
@@ -157,7 +168,13 @@ fun PantallaDetalleVenta(ventaId: String, alRegresar: () -> Unit, alCorregir: ()
             Renglon("Subtotal", Formato.moneda(v.subtotalCentavos))
             Renglon("Descuento", Formato.moneda(v.descuentoCentavos))
             Renglon("Total", Formato.moneda(v.totalCentavos), fuerte = true)
-            Renglon("Forma de pago", modelo.formaPago)
+            if (v.clienteId != null) {
+                Renglon("Fiado a", modelo.cliente.orEmpty())
+                Renglon(if (v.estado == EstadoVenta.CANCELADA) "Devuelto en efectivo" else "Pagado", Formato.moneda(modelo.abonado))
+                if (v.estado == EstadoVenta.REGISTRADA) Renglon("Debe", Formato.moneda(maxOf(0, v.totalCentavos - modelo.abonado)), fuerte = true)
+            } else {
+                Renglon("Forma de pago", modelo.formaPago)
+            }
             v.montoRecibidoCentavos?.let { Renglon("Monto recibido", Formato.moneda(it)) }
             v.cambioCentavos?.let { Renglon("Cambio", Formato.moneda(it)) }
 

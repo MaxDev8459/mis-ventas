@@ -10,12 +10,20 @@ import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
 import mx.ambulantpoint.misventas.data.local.entity.EstadoCaja
 import mx.ambulantpoint.misventas.domain.puertos.PuertoCaja
 import mx.ambulantpoint.misventas.domain.regla.ReglaCorte
+import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
+import mx.ambulantpoint.misventas.domain.regla.ConceptosCorte
+import mx.ambulantpoint.misventas.data.local.dao.TotalFormaPago
 
 /** Resumen del corte (RF 5.2 / 5.5). */
 data class CorteCaja(
     val caja: Caja,
     val porFormaPago: List<CorteFormaPago>,
+    /** Fiado (v7): abonos recibidos en la caja por forma de pago (`numeroVentas` = número de abonos). */
+    val abonosPorForma: List<TotalFormaPago> = emptyList(),
 ) {
+    val fiadoCentavos get() = caja.fiadoCentavos ?: 0L
+    val abonosCentavos get() = caja.abonosCentavos ?: 0L
+    val devolucionesCentavos get() = caja.devolucionesCentavos ?: 0L
     val fondoCentavos get() = caja.fondoCentavos
     val totalVendidoCentavos get() = caja.totalVendidoCentavos ?: 0L
     val numeroVentas get() = caja.numeroVentas ?: 0
@@ -29,6 +37,10 @@ data class CorteCaja(
 /** RF 5.1 – 5.5. */
 class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCaja {
     private val dao = db.cajaDao()
+    private val fiadoDao = db.fiadoDao()
+
+    /** Fiado (v7): abonos de una caja por forma de pago (no cambian después de cerrar la caja). */
+    fun observarAbonosPorForma(cajaId: String): Flow<List<TotalFormaPago>> = fiadoDao.observarAbonosPorFormaDeCaja(cajaId)
 
     fun observarAbierta(): Flow<Caja?> = dao.observarAbierta()
     suspend fun abierta(): Caja? = dao.abierta()
@@ -53,7 +65,7 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCa
 
     /**
      * RF 5.2: calcula y guarda el corte de la caja abierta (no la cierra).
-     * Efectivo esperado = fondo + ventas en efectivo; diferencia = contado − esperado.
+     * Efectivo esperado = fondo + ventas en efectivo + abonos en efectivo − devoluciones; diferencia = contado − esperado.
      */
     override suspend fun calcularCorte(efectivoContadoCentavos: Long): Resultado<CorteCaja> = db.transaccion {
         if (efectivoContadoCentavos < 0) fallar(FallaDatos.CantidadInvalida)
@@ -62,7 +74,18 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCa
         val resumen = dao.resumenVentas(caja.id)
         val porForma = dao.totalesPorFormaPago(caja.id)
         val ventasEfectivo = porForma.filter { it.esEfectivo }.sumOf { it.totalCentavos }
-        val esperado = ReglaCorte.efectivoEsperado(caja.fondoCentavos, ventasEfectivo)
+        // Fiado (v7): las ventas fiadas no entran por forma de pago; sí los abonos y las devoluciones.
+        val fiado = fiadoDao.fiadoDeCaja(caja.id)
+        val abonos = fiadoDao.abonosPorFormaDeCaja(caja.id)
+        val devoluciones = fiadoDao.devolucionesDeCaja(caja.id)
+        val esperado = ReglaFiado.efectivoEsperado(
+            ConceptosCorte(
+                fondoCentavos = caja.fondoCentavos,
+                ventasEfectivoCentavos = ventasEfectivo,
+                abonosEfectivoCentavos = abonos.filter { it.esEfectivo }.sumOf { it.totalCentavos },
+                devolucionesCentavos = devoluciones,
+            ),
+        )
 
         val conCorte = caja.copy(
             corteCalculadoEn = ahora,
@@ -73,6 +96,9 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCa
             efectivoEsperadoCentavos = esperado,
             efectivoContadoCentavos = efectivoContadoCentavos,
             diferenciaCentavos = ReglaCorte.diferencia(efectivoContadoCentavos, esperado),
+            fiadoCentavos = fiado,
+            abonosCentavos = abonos.sumOf { it.totalCentavos },
+            devolucionesCentavos = devoluciones,
             actualizadoEn = ahora,
             pendienteSync = true,
         )
@@ -86,7 +112,7 @@ class CajaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoCa
         }
         dao.borrarCorteFormaPago(caja.id)
         if (filas.isNotEmpty()) dao.insertarCorteFormaPago(filas)
-        CorteCaja(conCorte, filas)
+        CorteCaja(conCorte, filas, abonos)
     }
 
     /** RF 5.3: requiere corte vigente (sin ventas ni cancelaciones posteriores). */

@@ -6,6 +6,7 @@ import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.core.Resultado
 import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
 import mx.ambulantpoint.misventas.domain.regla.fallo
+import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
 
 /** Lo que la pantalla de venta necesita saber de un producto. */
 data class ProductoEnVenta(
@@ -20,14 +21,32 @@ data class RenglonCarrito(val producto: ProductoEnVenta, val cantidadMilesimas: 
     val importeCentavos: Long get() = Dinero.importe(cantidadMilesimas, producto.precioCentavos)
 }
 
+/** Venta rápida (v7): monto libre sin producto; en reportes sale como "Varios". */
+data class RenglonLibre(val id: String, val descripcion: String, val importeCentavos: Long)
+
 /**
  * RF 3.1: venta en captura. Inmutable: cada operación devuelve un carrito nuevo, así el
  * ViewModel solo reemplaza el estado y el total se recalcula al instante.
  */
-data class Carrito(val renglones: List<RenglonCarrito> = emptyList()) {
+data class Carrito(
+    val renglones: List<RenglonCarrito> = emptyList(),
+    /** Venta rápida: montos libres sin producto (no mueven inventario). */
+    val libres: List<RenglonLibre> = emptyList(),
+) {
 
-    val subtotalCentavos: Long get() = renglones.sumOf { it.importeCentavos }
-    val estaVacio: Boolean get() = renglones.isEmpty()
+    val subtotalCentavos: Long get() = renglones.sumOf { it.importeCentavos } + libres.sumOf { it.importeCentavos }
+    val estaVacio: Boolean get() = renglones.isEmpty() && libres.isEmpty()
+
+    /** Una venta con monto libre no se puede fiar (respuesta 6 del cliente). */
+    val tieneLibres: Boolean get() = libres.isNotEmpty()
+
+    /** Agrega un monto libre (mayor a cero). La descripción vacía queda como "Varios". */
+    fun agregarLibre(id: String, descripcion: String, importeCentavos: Long): Resultado<Carrito> {
+        if (importeCentavos <= 0) return fallo(Mensajes.Fiado.MONTO_LIBRE_MAYOR_A_CERO)
+        return Resultado.Exito(copy(libres = libres + RenglonLibre(id, ReglaFiado.descripcionLibre(descripcion), importeCentavos)))
+    }
+
+    fun quitarLibre(id: String): Carrito = copy(libres = libres.filterNot { it.id == id })
 
     fun cantidadDe(productoId: String): Long = renglones.firstOrNull { it.producto.id == productoId }?.cantidadMilesimas ?: 0
 
@@ -55,8 +74,8 @@ data class Carrito(val renglones: List<RenglonCarrito> = emptyList()) {
         } else {
             renglones + RenglonCarrito(producto, cantidadMilesimas)
         }
-        return Resultado.Exito(Carrito(nuevos))
+        return Resultado.Exito(copy(renglones = nuevos))
     }
 
-    fun quitar(productoId: String): Carrito = Carrito(renglones.filterNot { it.producto.id == productoId })
+    fun quitar(productoId: String): Carrito = copy(renglones = renglones.filterNot { it.producto.id == productoId })
 }

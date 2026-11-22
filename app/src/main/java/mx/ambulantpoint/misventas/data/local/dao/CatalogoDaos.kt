@@ -151,6 +151,10 @@ interface FormaPagoDao {
     @Update
     suspend fun actualizar(formaPago: FormaPago)
 
+    /** "Efectivo" (predeterminada): la devolución del fiado siempre es en efectivo. */
+    @Query("SELECT * FROM forma_pago WHERE esEfectivo = 1 LIMIT 1")
+    suspend fun efectivo(): FormaPago?
+
     @Query("SELECT COUNT(*) FROM forma_pago")
     suspend fun contar(): Int
 }

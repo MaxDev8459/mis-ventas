@@ -37,12 +37,15 @@ data class Configuracion(
     val banco: String? = null,
     /** Carga del día (v6): paso de + / − y de "N de cada producto" en productos por kilo (100 g por defecto). */
     @ColumnInfo(defaultValue = "100") val pasoKiloMilesimas: Long = PASO_KILO_DEFECTO,
+    /** Fiado (v7): si el saldo de un cliente pasa este monto, se avisa al fiarle (no bloquea). */
+    @ColumnInfo(defaultValue = "15000") val avisoSaldoCentavos: Long = AVISO_SALDO_DEFECTO,
     val actualizadoEn: Long,
     val pendienteSync: Boolean = true,
 ) {
     companion object {
         const val ID_UNICA = "configuracion"
         const val PASO_KILO_DEFECTO = 100L
+        const val AVISO_SALDO_DEFECTO = 15_000L
     }
 }
 
@@ -136,6 +139,12 @@ data class Caja(
     val efectivoContadoCentavos: Long? = null,
     /** contado − esperado: positivo = sobrante, negativo = faltante. */
     val diferenciaCentavos: Long? = null,
+    /** Fiado (v7), guardado con el corte: total de las ventas fiadas de la caja. */
+    val fiadoCentavos: Long? = null,
+    /** Fiado (v7), guardado con el corte: abonos recibidos (todas las formas de pago). */
+    val abonosCentavos: Long? = null,
+    /** Fiado (v7), guardado con el corte: devoluciones en efectivo por cancelar ventas fiadas. */
+    val devolucionesCentavos: Long? = null,
     val creadoEn: Long,
     val actualizadoEn: Long,
     val pendienteSync: Boolean = true,
@@ -202,14 +211,35 @@ data class Precarga(
     val pendienteSync: Boolean = true,
 )
 
-/** RF 3.1 – 3.4. Guarda fecha y hora, descuento, total, forma de pago y estado. */
+/**
+ * Fiado (v7): cliente al que se le fía. Nunca se borra; el nombre no se repite (sin distinguir
+ * mayúsculas, acentos ni espacios). El saldo no se guarda: se calcula de sus ventas y abonos.
+ */
+@Entity(tableName = "cliente", indices = [Index(value = ["nombreNormalizado"], unique = true)])
+data class Cliente(
+    @PrimaryKey val id: String,
+    val nombre: String,
+    val nombreNormalizado: String,
+    val telefono: String? = null,
+    val creadoEn: Long,
+    val actualizadoEn: Long,
+    val pendienteSync: Boolean = true,
+)
+
+/**
+ * RF 3.1 – 3.4. Guarda fecha y hora, descuento, total, forma de pago y estado.
+ * Fiado (v7): una venta fiada no tiene forma de pago (`formaPagoId` null) y sí `clienteId`.
+ */
 @Entity(
     tableName = "venta",
     foreignKeys = [
         ForeignKey(entity = Caja::class, parentColumns = ["id"], childColumns = ["cajaId"]),
         ForeignKey(entity = FormaPago::class, parentColumns = ["id"], childColumns = ["formaPagoId"]),
+        ForeignKey(entity = Cliente::class, parentColumns = ["id"], childColumns = ["clienteId"]),
     ],
-    indices = [Index(value = ["cajaId"]), Index(value = ["formaPagoId"]), Index(value = ["fechaHora"])],
+    indices = [
+        Index(value = ["cajaId"]), Index(value = ["formaPagoId"]), Index(value = ["fechaHora"]), Index(value = ["clienteId"]),
+    ],
 )
 data class Venta(
     @PrimaryKey val id: String,
@@ -221,17 +251,23 @@ data class Venta(
     val valorDescuento: Long? = null,
     val descuentoCentavos: Long = 0,
     val totalCentavos: Long,
-    val formaPagoId: String,
+    /** null = venta fiada. */
+    val formaPagoId: String?,
     val montoRecibidoCentavos: Long? = null,
     val cambioCentavos: Long? = null,
     val estado: EstadoVenta = EstadoVenta.REGISTRADA,
     val canceladaEn: Long? = null,
+    /** Fiado (v7): cliente al que se le fió; null = venta cobrada. */
+    val clienteId: String? = null,
     val creadoEn: Long,
     val actualizadoEn: Long,
     val pendienteSync: Boolean = true,
 )
 
-/** Línea de venta. Conserva nombre y precio del momento (RF 2.2: el cambio de precio no la afecta). */
+/**
+ * Línea de venta. Conserva nombre y precio del momento (RF 2.2: el cambio de precio no la afecta).
+ * Venta rápida (v7): `productoId` null = monto libre ("Varios"); el nombre guardado es su descripción.
+ */
 @Entity(
     tableName = "venta_detalle",
     foreignKeys = [
@@ -243,7 +279,7 @@ data class Venta(
 data class VentaDetalle(
     @PrimaryKey val id: String,
     val ventaId: String,
-    val productoId: String,
+    val productoId: String?,
     val nombreProducto: String,
     val tipoVenta: TipoVenta,
     val cantidadMilesimas: Long,
@@ -271,6 +307,57 @@ data class MovimientoInventario(
     val motivo: MotivoAjuste? = null,
     val especificacionMotivo: String? = null,
     val ventaId: String? = null,
+    val creadoEn: Long,
+    val pendienteSync: Boolean = true,
+)
+
+/**
+ * Fiado (v7): dinero que entra (ABONO) o sale (DEVOLUCION) por el fiado de un cliente, en una caja.
+ * Entra al corte de la caja en que se registra. La devolución siempre es en efectivo y lleva la venta
+ * cancelada (`ventaId`). Un abono equivocado se marca CANCELADO (no se borra).
+ */
+@Entity(
+    tableName = "abono",
+    foreignKeys = [
+        ForeignKey(entity = Cliente::class, parentColumns = ["id"], childColumns = ["clienteId"]),
+        ForeignKey(entity = Caja::class, parentColumns = ["id"], childColumns = ["cajaId"]),
+        ForeignKey(entity = FormaPago::class, parentColumns = ["id"], childColumns = ["formaPagoId"]),
+        ForeignKey(entity = Venta::class, parentColumns = ["id"], childColumns = ["ventaId"]),
+    ],
+    indices = [Index(value = ["clienteId"]), Index(value = ["cajaId"]), Index(value = ["formaPagoId"]), Index(value = ["ventaId"])],
+)
+data class Abono(
+    @PrimaryKey val id: String,
+    val clienteId: String,
+    val cajaId: String,
+    val fechaHora: Long,
+    val tipo: TipoAbono,
+    /** Siempre positivo; la devolución resta por su tipo. */
+    val montoCentavos: Long,
+    val formaPagoId: String,
+    /** Solo en devoluciones: la venta fiada que se canceló. */
+    val ventaId: String? = null,
+    val estado: EstadoAbono = EstadoAbono.REGISTRADO,
+    val canceladoEn: Long? = null,
+    val creadoEn: Long,
+    val actualizadoEn: Long,
+    val pendienteSync: Boolean = true,
+)
+
+/** Fiado (v7): cuánto de un abono se aplicó a cada venta fiada (de la más vieja a la más nueva). No cambia. */
+@Entity(
+    tableName = "aplicacion_abono",
+    foreignKeys = [
+        ForeignKey(entity = Abono::class, parentColumns = ["id"], childColumns = ["abonoId"]),
+        ForeignKey(entity = Venta::class, parentColumns = ["id"], childColumns = ["ventaId"]),
+    ],
+    indices = [Index(value = ["abonoId"]), Index(value = ["ventaId"])],
+)
+data class AplicacionAbono(
+    @PrimaryKey val id: String,
+    val abonoId: String,
+    val ventaId: String,
+    val montoCentavos: Long,
     val creadoEn: Long,
     val pendienteSync: Boolean = true,
 )

@@ -47,6 +47,7 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
     val reporteRepo by lazy { ReporteRepo(db) }
     val cargaRepo by lazy { CargaRepo(db, reloj) }
     val precargaRepo by lazy { PrecargaRepo(db, reloj) }
+    val fiadoRepo by lazy { mx.ambulantpoint.misventas.data.repository.FiadoRepo(db, reloj) }
 
     val conectividad by lazy { Conectividad(contexto) }
 

@@ -85,6 +85,10 @@ class SincronizadorFirestore(
                 Envio(it.idDocumento(), it.aDocumento(), "cajaId = ? AND formaPagoId = ? AND creadoEn = ?", arrayOf(it.cajaId, it.formaPagoId, it.creadoEn))
             }
         },
+        // Fiado (v7): clientes antes que ventas y abonos (mismo orden que las llaves foráneas).
+        Tabla("cliente", Colecciones.CLIENTE) { n ->
+            dao.clientes(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
+        },
         Tabla("venta", Colecciones.VENTA) { n ->
             dao.ventas(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
         },
@@ -93,6 +97,12 @@ class SincronizadorFirestore(
         },
         Tabla("movimiento_inventario", Colecciones.MOVIMIENTO) { n ->
             dao.movimientos(n).map { Envio(it.id, it.aDocumento(), condicionId.format("creadoEn"), porId(it.id, it.creadoEn)) }
+        },
+        Tabla("abono", Colecciones.ABONO) { n ->
+            dao.abonos(n).map { Envio(it.id, it.aDocumento(), condicionId.format("actualizadoEn"), porId(it.id, it.actualizadoEn)) }
+        },
+        Tabla("aplicacion_abono", Colecciones.APLICACION_ABONO) { n ->
+            dao.aplicacionesAbono(n).map { Envio(it.id, it.aDocumento(), condicionId.format("creadoEn"), porId(it.id, it.creadoEn)) }
         },
     )
 

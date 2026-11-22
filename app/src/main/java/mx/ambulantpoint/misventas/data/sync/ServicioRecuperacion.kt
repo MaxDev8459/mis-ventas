@@ -145,6 +145,7 @@ class ServicioRecuperacion(
             Colecciones.CONFIGURACION, Colecciones.CATEGORIA, Colecciones.FORMA_PAGO, Colecciones.PRODUCTO,
             Colecciones.CAJA, Colecciones.CORTE_FORMA_PAGO, Colecciones.VENTA, Colecciones.VENTA_DETALLE,
             Colecciones.MOVIMIENTO, Colecciones.CARGA, Colecciones.PRECARGA,
+            Colecciones.CLIENTE, Colecciones.ABONO, Colecciones.APLICACION_ABONO,
         )
         val datos = mutableMapOf(Colecciones.PERFIL to perfiles)
         colecciones.forEachIndexed { i, c ->
@@ -165,8 +166,10 @@ class ServicioRecuperacion(
         val dao = db.syncDao()
         db.withTransaction {
             // Hijos antes que padres (llaves foráneas).
+            dao.borrarAplicacionesAbono(); dao.borrarAbonos()
             dao.borrarMovimientos(); dao.borrarVentaDetalles(); dao.borrarVentas(); dao.borrarCortesFormaPago(); dao.borrarCargas(); dao.borrarPrecargas()
             dao.borrarCajas(); dao.borrarProductos(); dao.borrarFormasPago(); dao.borrarCategorias()
+            dao.borrarClientes()
             dao.borrarConfiguracion(); dao.borrarPerfil(); dao.borrarEliminaciones()
 
             dao.insertarPerfiles(perfiles.map(::aPerfil).take(1))
@@ -176,12 +179,16 @@ class ServicioRecuperacion(
             dao.insertarProductos(productos)
             dao.insertarCajas(datos.getValue(Colecciones.CAJA).map(::aCaja))
             dao.insertarCortesFormaPago(datos.getValue(Colecciones.CORTE_FORMA_PAGO).map(::aCorteFormaPago))
+            // Respaldos anteriores a la v7 no tienen fiado: las colecciones llegan vacías.
+            dao.insertarClientes(datos.getValue(Colecciones.CLIENTE).map(::aCliente))
             dao.insertarVentas(datos.getValue(Colecciones.VENTA).map(::aVenta))
             dao.insertarVentaDetalles(datos.getValue(Colecciones.VENTA_DETALLE).map(::aVentaDetalle))
             dao.insertarMovimientos(datos.getValue(Colecciones.MOVIMIENTO).map(::aMovimiento))
             // Respaldos anteriores a la v5 no tienen carga del día: la colección llega vacía.
             dao.insertarCargas(datos.getValue(Colecciones.CARGA).map(::aCargaCaja))
             dao.insertarPrecargas(datos.getValue(Colecciones.PRECARGA).map(::aPrecarga))
+            dao.insertarAbonos(datos.getValue(Colecciones.ABONO).map(::aAbono))
+            dao.insertarAplicacionesAbono(datos.getValue(Colecciones.APLICACION_ABONO).map(::aAplicacionAbono))
         }
         // Una cuenta que nunca subió formas de pago recibe las iniciales (Efectivo y Transferencia).
         db.sembrarSiHaceFalta(reloj)

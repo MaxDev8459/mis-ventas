@@ -85,6 +85,7 @@ private object Ruta {
     const val INVENTARIO = "inventario"
     const val REPORTE = "reporte"
     const val PERFIL_EDITAR = "perfil_editar"
+    const val CLIENTE = "cliente"
     fun de(destino: Destino) = destino.name.lowercase()
 }
 
@@ -273,6 +274,14 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
         }
         composable(Ruta.de(Destino.HISTORIAL)) {
             PantallaHistorial(regresar) { id -> nav.navigate("${Ruta.VENTA}/$id") }
+        }
+        composable(Ruta.de(Destino.CLIENTES)) {
+            mx.ambulantpoint.misventas.ui.fiado.PantallaClientes(regresar) { id -> nav.navigate("${Ruta.CLIENTE}/$id") }
+        }
+        composable("${Ruta.CLIENTE}/{id}") { e ->
+            mx.ambulantpoint.misventas.ui.fiado.PantallaCliente(e.arguments?.getString("id").orEmpty(), regresar) { id ->
+                nav.navigate("${Ruta.VENTA}/$id")
+            }
         }
         composable("${Ruta.VENTA}/{id}") { e ->
             PantallaDetalleVenta(

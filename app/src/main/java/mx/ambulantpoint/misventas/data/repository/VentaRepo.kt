@@ -14,6 +14,12 @@ import mx.ambulantpoint.misventas.data.local.entity.TipoDescuento
 import mx.ambulantpoint.misventas.data.local.entity.TipoMovimiento
 import mx.ambulantpoint.misventas.data.local.entity.Venta
 import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
+import mx.ambulantpoint.misventas.data.local.entity.Abono
+import mx.ambulantpoint.misventas.data.local.entity.AplicacionAbono
+import mx.ambulantpoint.misventas.data.local.entity.TipoAbono
+import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
+import mx.ambulantpoint.misventas.core.Mensajes
+import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
 import mx.ambulantpoint.misventas.domain.puertos.PuertoVentas
 
 /** Un producto y su cantidad en la venta (milésimas: 2 pzas = 2000; 0.250 kg = 250). */
@@ -27,12 +33,26 @@ data class DescuentoVenta(
     val centavos: Long,
 )
 
+/** Venta rápida: monto libre sin producto ("Varios" si no lleva descripción). */
+data class LineaLibre(val descripcion: String, val importeCentavos: Long)
+
+/** Fiado: cliente y pago inicial opcional (se registra como primer abono de esta venta). */
+data class DatosFiado(
+    val clienteId: String,
+    val pagoInicialCentavos: Long = 0,
+    /** Obligatoria si hay pago inicial. */
+    val formaPagoInicialId: String? = null,
+)
+
 data class SolicitudCobro(
     val lineas: List<LineaVenta>,
-    val formaPagoId: String,
+    /** null solo si la venta es fiada. */
+    val formaPagoId: String?,
     /** Solo en efectivo. */
     val montoRecibidoCentavos: Long? = null,
     val descuento: DescuentoVenta? = null,
+    val libres: List<LineaLibre> = emptyList(),
+    val fiado: DatosFiado? = null,
 )
 
 data class VentaCobrada(
@@ -48,6 +68,10 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
     private val productoDao = db.productoDao()
     private val movimientoDao = db.movimientoDao()
     private val cajaDao = db.cajaDao()
+    private val fiadoDao = db.fiadoDao()
+
+    /** Lo abonado (abonos no cancelados) a una venta fiada: lo que se devolvería al cancelarla. */
+    suspend fun abonadoAVenta(ventaId: String): Long = fiadoDao.abonadoAVenta(ventaId) ?: 0L
 
     fun observarHistorial(
         desde: Long,
@@ -65,10 +89,19 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
      * El importe usa el precio vigente del producto en este momento.
      */
     override suspend fun cobrar(solicitud: SolicitudCobro): Resultado<VentaCobrada> = db.transaccion {
-        if (solicitud.lineas.isEmpty()) fallar(FallaDatos.VentaSinProductos)
+        if (solicitud.lineas.isEmpty() && solicitud.libres.isEmpty()) fallar(FallaDatos.VentaSinProductos)
         val caja = cajaDao.abierta() ?: fallar(FallaDatos.SinCajaAbierta)
-        val forma = db.formaPagoDao().porId(solicitud.formaPagoId)
-        if (forma == null || !forma.activa) fallar(FallaDatos.FormaPagoNoDisponible)
+        val fiado = solicitud.fiado
+        val forma = if (fiado != null) {
+            // Respuesta 6 del cliente: una venta con monto libre no se fía.
+            if (solicitud.libres.isNotEmpty()) fallar(FallaDatos.Regla(Mensajes.Fiado.NO_FIAR_VARIOS))
+            fiadoDao.cliente(fiado.clienteId) ?: fallar(FallaDatos.Regla(Mensajes.Fiado.ELIJA_CLIENTE))
+            null
+        } else {
+            val f = solicitud.formaPagoId?.let { db.formaPagoDao().porId(it) }
+            if (f == null || !f.activa) fallar(FallaDatos.FormaPagoNoDisponible)
+            f
+        }
 
         val ahora = reloj.ahora()
         val ventaId = nuevoId()
@@ -101,7 +134,17 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
             ) to producto.existenciaMilesimas
         }
 
-        val subtotal = detalles.sumOf { it.first.importeCentavos }
+        // Venta rápida: renglones sin producto (no mueven inventario).
+        val libres = solicitud.libres.map { l ->
+            if (l.importeCentavos <= 0) fallar(FallaDatos.CantidadInvalida)
+            VentaDetalle(
+                id = nuevoId(), ventaId = ventaId, productoId = null, nombreProducto = ReglaFiado.descripcionLibre(l.descripcion),
+                tipoVenta = TipoVenta.UNIDAD, cantidadMilesimas = Dinero.MILESIMAS_POR_UNIDAD,
+                precioUnitarioCentavos = l.importeCentavos, importeCentavos = l.importeCentavos, creadoEn = ahora,
+            )
+        }
+
+        val subtotal = detalles.sumOf { it.first.importeCentavos } + libres.sumOf { it.importeCentavos }
         val descuento = solicitud.descuento?.centavos ?: 0L
         val total = subtotal - descuento
         // Defensa de datos; los mensajes y límites finos (1 %–99 %, < subtotal) los valida el dominio.
@@ -111,7 +154,7 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
 
         val recibido: Long?
         val cambio: Long?
-        if (forma.esEfectivo) {
+        if (forma != null && forma.esEfectivo) {
             recibido = solicitud.montoRecibidoCentavos ?: fallar(FallaDatos.MontoRecibidoInsuficiente)
             if (recibido < total) fallar(FallaDatos.MontoRecibidoInsuficiente)
             cambio = recibido - total
@@ -129,29 +172,48 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
             valorDescuento = solicitud.descuento?.valor,
             descuentoCentavos = descuento,
             totalCentavos = total,
-            formaPagoId = forma.id,
+            formaPagoId = forma?.id,
             montoRecibidoCentavos = recibido,
             cambioCentavos = cambio,
+            clienteId = fiado?.clienteId,
             creadoEn = ahora,
             actualizadoEn = ahora,
         )
         ventaDao.insertar(venta)
-        ventaDao.insertarDetalles(detalles.map { it.first })
+        ventaDao.insertarDetalles(detalles.map { it.first } + libres)
+
+        // Pago inicial del fiado: primer abono, aplicado completo a esta venta y en el corte de hoy.
+        if (fiado != null && fiado.pagoInicialCentavos != 0L) {
+            ReglaFiado.validarPagoInicial(fiado.pagoInicialCentavos, total)?.let { fallar(FallaDatos.Regla(it)) }
+            val formaInicial = fiado.formaPagoInicialId?.let { db.formaPagoDao().porId(it) }
+            if (formaInicial == null || !formaInicial.activa) fallar(FallaDatos.FormaPagoNoDisponible)
+            val abonoId = nuevoId()
+            fiadoDao.insertarAbono(
+                Abono(
+                    id = abonoId, clienteId = fiado.clienteId, cajaId = caja.id, fechaHora = ahora, tipo = TipoAbono.ABONO,
+                    montoCentavos = fiado.pagoInicialCentavos, formaPagoId = formaInicial.id, creadoEn = ahora, actualizadoEn = ahora,
+                ),
+            )
+            fiadoDao.insertarAplicaciones(
+                listOf(AplicacionAbono(nuevoId(), abonoId, ventaId, fiado.pagoInicialCentavos, ahora)),
+            )
+        }
 
         val existencias = mutableMapOf<String, Long>()
         for ((detalle, existenciaAnterior) in detalles) {
-            if (productoDao.descontarExistencia(detalle.productoId, detalle.cantidadMilesimas, ahora) == 0) {
+            val productoId = detalle.productoId!!
+            if (productoDao.descontarExistencia(productoId, detalle.cantidadMilesimas, ahora) == 0) {
                 fallar(
                     FallaDatos.ExistenciaInsuficiente(
-                        detalle.productoId, detalle.nombreProducto, detalle.tipoVenta, existenciaAnterior,
+                        productoId, detalle.nombreProducto, detalle.tipoVenta, existenciaAnterior,
                     ),
                 )
             }
             val resultante = existenciaAnterior - detalle.cantidadMilesimas
-            existencias[detalle.productoId] = resultante
+            existencias[productoId] = resultante
             movimientoDao.insertar(
                 MovimientoInventario(
-                    id = nuevoId(), productoId = detalle.productoId, fechaHora = ahora,
+                    id = nuevoId(), productoId = productoId, fechaHora = ahora,
                     tipo = TipoMovimiento.VENTA, cantidadMilesimas = -detalle.cantidadMilesimas,
                     existenciaResultanteMilesimas = resultante, ventaId = ventaId, creadoEn = ahora,
                 ),
@@ -159,7 +221,7 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
         }
         cajaDao.invalidarCorte(caja.id, ahora)
 
-        VentaCobrada(venta, detalles.map { it.first }, existencias)
+        VentaCobrada(venta, detalles.map { it.first } + libres, existencias)
     }
 
     /**
@@ -175,13 +237,30 @@ class VentaRepo(private val db: MisVentasDb, private val reloj: Reloj) : PuertoV
         val ahora = reloj.ahora()
         if (ventaDao.marcarCancelada(ventaId, ahora) == 0) fallar(FallaDatos.VentaNoCancelable)
 
+        // Lo abonado a una venta fiada se devuelve en efectivo en esta caja (respuestas 4 y 4b).
+        if (venta.clienteId != null) {
+            val abonado = fiadoDao.abonadoAVenta(ventaId) ?: 0L
+            if (abonado > 0) {
+                val efectivo = db.formaPagoDao().efectivo() ?: fallar(FallaDatos.FormaPagoNoDisponible)
+                fiadoDao.insertarAbono(
+                    Abono(
+                        id = nuevoId(), clienteId = venta.clienteId, cajaId = caja.id, fechaHora = ahora,
+                        tipo = TipoAbono.DEVOLUCION, montoCentavos = abonado, formaPagoId = efectivo.id, ventaId = ventaId,
+                        creadoEn = ahora, actualizadoEn = ahora,
+                    ),
+                )
+            }
+        }
+
         for (detalle in ventaDao.detalles(ventaId)) {
-            productoDao.sumarExistencia(detalle.productoId, detalle.cantidadMilesimas, ahora)
-            val existencia = productoDao.porId(detalle.productoId)?.existenciaMilesimas
+            // Monto libre ("Varios"): no movió inventario, no regresa nada.
+            val productoId = detalle.productoId ?: continue
+            productoDao.sumarExistencia(productoId, detalle.cantidadMilesimas, ahora)
+            val existencia = productoDao.porId(productoId)?.existenciaMilesimas
                 ?: fallar(FallaDatos.NoEncontrado)
             movimientoDao.insertar(
                 MovimientoInventario(
-                    id = nuevoId(), productoId = detalle.productoId, fechaHora = ahora,
+                    id = nuevoId(), productoId = productoId, fechaHora = ahora,
                     tipo = TipoMovimiento.CANCELACION, cantidadMilesimas = detalle.cantidadMilesimas,
                     existenciaResultanteMilesimas = existencia, ventaId = ventaId, creadoEn = ahora,
                 ),

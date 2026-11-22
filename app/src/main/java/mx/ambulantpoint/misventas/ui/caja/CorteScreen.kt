@@ -148,7 +148,7 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
             // Antes de cerrar se ve cuánto sobró de la carga.
             SeccionCarga(carga)
             modelo.corte?.let { c ->
-                ResumenCorte(c.corte.caja, c.corte.porFormaPago)
+                ResumenCorte(c.corte.caja, c.corte.porFormaPago, c.corte.abonosPorForma)
                 BotonSecundario("Cerrar caja", { modelo.confirmarCierre = true })
             }
         }
@@ -166,7 +166,12 @@ fun PantallaCorte(alRegresar: () -> Unit, alCerrar: () -> Unit) {
  * efectivo esperado, efectivo contado y diferencia (sobrante / faltante / sin diferencia).
  */
 @Composable
-fun ResumenCorte(caja: Caja, porFormaPago: List<CorteFormaPago>) {
+fun ResumenCorte(
+    caja: Caja,
+    porFormaPago: List<CorteFormaPago>,
+    /** Fiado (v7): abonos de la caja por forma de pago. */
+    abonos: List<mx.ambulantpoint.misventas.data.local.dao.TotalFormaPago> = emptyList(),
+) {
     val diferencia = caja.diferenciaCentavos ?: 0
     val tipo = ReglaCorte.tipoDiferencia(diferencia)
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
@@ -180,6 +185,20 @@ fun ResumenCorte(caja: Caja, porFormaPago: List<CorteFormaPago>) {
             Text("Total por forma de pago", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             if (porFormaPago.isEmpty()) Linea("Sin ventas", Formato.moneda(0))
             porFormaPago.forEach { Linea("${it.nombreFormaPago} (${it.numeroVentas})", Formato.moneda(it.totalCentavos)) }
+            // Fiado (v7): lo fiado no entra al efectivo; los abonos sí (según su forma de pago).
+            val fiado = caja.fiadoCentavos ?: 0
+            val totalAbonos = caja.abonosCentavos ?: abonos.sumOf { it.totalCentavos }
+            val devoluciones = caja.devolucionesCentavos ?: 0
+            if (fiado > 0) Linea("Fiado del día", Formato.moneda(fiado))
+            if (totalAbonos > 0 || abonos.isNotEmpty()) {
+                HorizontalDivider()
+                Row(Modifier.fillMaxWidth()) {
+                    Text("Abonos recibidos", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Text(Formato.moneda(totalAbonos), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                }
+                abonos.forEach { Linea("${it.nombreFormaPago} (${it.numeroVentas})", Formato.moneda(it.totalCentavos)) }
+            }
+            if (devoluciones > 0) Linea("Devoluciones en efectivo", "−" + Formato.moneda(devoluciones))
             HorizontalDivider()
             Linea("Efectivo esperado", Formato.moneda(caja.efectivoEsperadoCentavos ?: 0))
             Linea("Efectivo contado", Formato.moneda(caja.efectivoContadoCentavos ?: 0))

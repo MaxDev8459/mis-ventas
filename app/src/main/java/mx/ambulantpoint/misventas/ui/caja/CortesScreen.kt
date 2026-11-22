@@ -141,6 +141,10 @@ class DetalleCorteViewModel(c: AppContainer, cajaId: String) : ViewModel() {
     val porForma: StateFlow<List<CorteFormaPago>> = c.cajaRepo.observarCorteFormaPago(cajaId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Fiado (v7): abonos de esa caja por forma de pago (no cambian después del cierre). */
+    val abonos: StateFlow<List<mx.ambulantpoint.misventas.data.local.dao.TotalFormaPago>> = c.cajaRepo.observarAbonosPorForma(cajaId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     /** Carga del día de esa caja (entre su apertura y su cierre). */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val carga: StateFlow<List<mx.ambulantpoint.misventas.domain.regla.RenglonCarga>> = caja
@@ -156,12 +160,13 @@ fun PantallaDetalleCorte(cajaId: String, alRegresar: () -> Unit) {
     val caja by modelo.caja.collectAsStateWithLifecycle()
     val porForma by modelo.porForma.collectAsStateWithLifecycle()
     val carga by modelo.carga.collectAsStateWithLifecycle()
+    val abonos by modelo.abonos.collectAsStateWithLifecycle()
     Scaffold(topBar = { BarraSuperior("Corte de caja", alRegresar) }) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             caja?.let { c ->
                 Text("Apertura: ${Formato.fechaHora(c.abiertaEn)}", style = MaterialTheme.typography.bodyLarge)
                 Text("Cierre: ${c.cerradaEn?.let(Formato::fechaHora).orEmpty()}", style = MaterialTheme.typography.bodyLarge)
-                ResumenCorte(c, porForma)
+                ResumenCorte(c, porForma, abonos)
                 SeccionCarga(carga)
             }
         }

@@ -72,6 +72,8 @@ import mx.ambulantpoint.misventas.core.Mensajes
 import mx.ambulantpoint.misventas.data.local.entity.TipoVenta
 import mx.ambulantpoint.misventas.domain.usecase.Campos
 import mx.ambulantpoint.misventas.domain.venta.RenglonCarrito
+import mx.ambulantpoint.misventas.domain.venta.RenglonLibre
+import mx.ambulantpoint.misventas.domain.regla.ReglaFiado
 import mx.ambulantpoint.misventas.ui.catalogo.ImagenProducto
 import mx.ambulantpoint.misventas.ui.components.ALTO_BOTON
 import mx.ambulantpoint.misventas.ui.components.BarraSuperior
@@ -171,6 +173,33 @@ private fun PantallaCaptura(modelo: VentaViewModel, alRegresar: () -> Unit) {
     }
 
     modelo.avisoCarga?.let { a -> DialogoAvisoCarga(a, modelo) }
+
+    // Venta rápida: monto libre sin producto ("Varios").
+    if (modelo.pidiendoLibre) {
+        AlertDialog(
+            onDismissRequest = modelo::cancelarLibre,
+            title = { Text("Monto libre") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Para algo que no está en el catálogo. No descuenta inventario; en reportes sale como \"Varios\".",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    CampoTexto(
+                        modelo.libreMonto, { modelo.libreMonto = it }, "Monto *", error = modelo.libreError,
+                        teclado = KeyboardType.Decimal, prefijo = "$",
+                    )
+                    CampoTexto(
+                        modelo.libreDescripcion, { if (it.length <= ReglaFiado.DESCRIPCION_MAX) modelo.libreDescripcion = it },
+                        "Descripción (opcional)", imeAction = ImeAction.Done,
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = modelo::agregarLibre, modifier = Modifier.heightIn(min = 48.dp)) { Text("Agregar") } },
+            dismissButton = { TextButton(onClick = modelo::cancelarLibre, modifier = Modifier.heightIn(min = 48.dp)) { Text("Cancelar") } },
+        )
+    }
 
     // Merma desde la venta: mantener presionado el producto.
     modelo.mermaDe?.let { p ->
@@ -360,11 +389,13 @@ private fun PanelCarrito(modelo: VentaViewModel) {
             if (!carrito.estaVacio) {
                 LazyColumn(Modifier.heightIn(max = 200.dp)) {
                     items(carrito.renglones, key = { it.producto.id }) { r -> FilaCarrito(r, modelo) }
+                    items(carrito.libres, key = { "libre-" + it.id }) { l -> FilaLibre(l, modelo) }
                 }
                 HorizontalDivider(Modifier.padding(vertical = 6.dp))
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Total", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = modelo::pedirLibre, modifier = Modifier.heightIn(min = 48.dp)) { Text("+ Monto libre") }
+                Text("Total", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).padding(start = 12.dp))
                 Text(Formato.moneda(carrito.subtotalCentavos), style = MaterialTheme.typography.titleLarge)
             }
             Spacer(Modifier.size(8.dp))
@@ -391,6 +422,18 @@ private fun FilaCarrito(r: RenglonCarrito, modelo: VentaViewModel) {
         }
         Text(Formato.moneda(r.importeCentavos), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.width(88.dp).padding(start = 4.dp))
         IconButton(onClick = { modelo.quitar(p.id) }) { Icon(Icons.Filled.Close, contentDescription = "Quitar ${p.nombre}") }
+    }
+}
+
+@Composable
+private fun FilaLibre(l: RenglonLibre, modelo: VentaViewModel) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        Column(Modifier.weight(1f)) {
+            Text(l.descripcion, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("Monto libre", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Text(Formato.moneda(l.importeCentavos), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.width(88.dp).padding(start = 4.dp))
+        IconButton(onClick = { modelo.quitarLibre(l.id) }) { Icon(Icons.Filled.Close, contentDescription = "Quitar ${l.descripcion}") }
     }
 }
 
@@ -444,16 +487,27 @@ private fun PantallaCobro(modelo: VentaViewModel) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 formas.forEach { f ->
                     FilterChip(
-                        selected = forma?.id == f.id,
+                        selected = !modelo.fiar && forma?.id == f.id,
                         onClick = { modelo.elegirForma(f) },
                         label = { Text(f.nombre, style = MaterialTheme.typography.labelLarge) },
+                        modifier = Modifier.heightIn(min = ALTO_BOTON),
+                    )
+                }
+                // Fiado: no se ofrece si la venta tiene un monto libre (respuesta 6 del cliente).
+                if (!modelo.carrito.tieneLibres) {
+                    FilterChip(
+                        selected = modelo.fiar,
+                        onClick = modelo::elegirFiar,
+                        label = { Text("Fiar", style = MaterialTheme.typography.labelLarge) },
                         modifier = Modifier.heightIn(min = ALTO_BOTON),
                     )
                 }
             }
             errores[Campos.FORMA_PAGO]?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-            if (forma?.esEfectivo == true) {
+            if (modelo.fiar) {
+                SeccionFiar(modelo, formas, errores)
+            } else if (forma?.esEfectivo == true) {
                 CampoTexto(
                     modelo.recibido, modelo::cambiarRecibido, "Monto recibido *",
                     error = errores[Campos.MONTO_RECIBIDO], teclado = KeyboardType.Decimal, prefijo = "$", imeAction = ImeAction.Done,
@@ -496,13 +550,85 @@ private fun PantallaCobro(modelo: VentaViewModel) {
             }
 
             Spacer(Modifier.size(4.dp))
-            BotonPrincipal("Confirmar cobro", modelo::confirmar, cargando = modelo.confirmando)
+            BotonPrincipal(if (modelo.fiar) "Fiar venta" else "Confirmar cobro", modelo::confirmar, cargando = modelo.confirmando)
         }
+    }
+
+    modelo.avisoSaldoTexto?.let { texto ->
+        AlertDialog(
+            onDismissRequest = modelo::cancelarAvisoSaldo,
+            title = { Text("Saldo alto") },
+            text = { Text(texto, style = MaterialTheme.typography.bodyLarge) },
+            confirmButton = { TextButton(onClick = modelo::fiarDeTodosModos, modifier = Modifier.heightIn(min = 48.dp)) { Text("Fiar de todos modos") } },
+            dismissButton = { TextButton(onClick = modelo::cancelarAvisoSaldo, modifier = Modifier.heightIn(min = 48.dp)) { Text("Cancelar") } },
+        )
     }
 
     val datos = datosTransferencia
     if (modelo.mostrandoDatosTransferencia && datos != null) {
         DialogoDatosTransferencia(datos, total) { modelo.mostrandoDatosTransferencia = false }
+    }
+}
+
+/** Fiado: elegir o crear el cliente, ver su saldo y capturar el pago inicial opcional. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SeccionFiar(modelo: VentaViewModel, formas: List<mx.ambulantpoint.misventas.data.local.entity.FormaPago>, errores: Map<String, String>) {
+    val clientes by modelo.clientes.collectAsStateWithLifecycle()
+    val elegido = clientes.firstOrNull { it.cliente.id == modelo.clienteId }
+    CampoTexto(
+        modelo.clienteTexto, modelo::cambiarClienteTexto, "Cliente *", error = errores[Campos.CLIENTE],
+    )
+    if (elegido != null) {
+        Text(
+            "Debe ahora: ${Formato.moneda(elegido.saldoCentavos)}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        val texto = ReglaFiado.normalizarNombre(modelo.clienteTexto)
+        val sugeridos = clientes
+            .filter { texto.isEmpty() || ReglaFiado.normalizarNombre(it.cliente.nombre).contains(texto) }
+            .sortedWith(compareByDescending<mx.ambulantpoint.misventas.data.local.dao.ClienteConSaldo> { it.saldoCentavos > 0 }.thenBy { it.cliente.nombre.lowercase() })
+            .take(8)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            sugeridos.forEach { c ->
+                OutlinedButton(onClick = { modelo.elegirCliente(c) }, modifier = Modifier.heightIn(min = ALTO_BOTON)) {
+                    Text(c.cliente.nombre + if (c.saldoCentavos > 0) " · debe ${Formato.moneda(c.saldoCentavos)}" else "")
+                }
+            }
+        }
+        if (modelo.clienteTexto.isNotBlank()) {
+            OutlinedButton(
+                onClick = modelo::crearCliente,
+                enabled = !modelo.creandoCliente,
+                modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_BOTON),
+            ) { Text("Nuevo cliente: ${modelo.clienteTexto.trim()}") }
+        }
+    }
+    CampoTexto(
+        modelo.pagoInicial, modelo::cambiarPagoInicial, "Deja ahora (opcional)",
+        error = errores[Campos.PAGO_INICIAL], teclado = KeyboardType.Decimal, prefijo = "$", imeAction = ImeAction.Done,
+    )
+    val pago = (mx.ambulantpoint.misventas.core.LectorNumeros.monto(modelo.pagoInicial, permitirCero = true)
+        as? mx.ambulantpoint.misventas.core.Lectura.Valor)?.valor ?: 0L
+    if (pago > 0) {
+        Text("¿Cómo paga lo que deja? *", style = MaterialTheme.typography.bodyLarge)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            formas.forEach { f ->
+                FilterChip(
+                    selected = modelo.formaInicial?.id == f.id,
+                    onClick = { modelo.elegirFormaInicial(f) },
+                    label = { Text(f.nombre, style = MaterialTheme.typography.labelLarge) },
+                    modifier = Modifier.heightIn(min = ALTO_BOTON),
+                )
+            }
+        }
+        errores[Campos.FORMA_PAGO_INICIAL]?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Text(
+            "Queda debiendo: ${Formato.moneda(maxOf(0, modelo.totalACobrar - pago))}",
+            style = MaterialTheme.typography.headlineSmall,
+        )
     }
 }
 

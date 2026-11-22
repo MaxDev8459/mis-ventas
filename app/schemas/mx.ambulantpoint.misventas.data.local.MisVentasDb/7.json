@@ -1,0 +1,1558 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "d001e8c615101283f572be1e0f3cbd59",
+    "entities": [
+      {
+        "tableName": "perfil",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombres` TEXT NOT NULL, `apellidoPaterno` TEXT NOT NULL, `apellidoMaterno` TEXT NOT NULL, `telefono` TEXT NOT NULL, `nombreNegocio` TEXT NOT NULL, `correo` TEXT NOT NULL, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombres",
+            "columnName": "nombres",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apellidoPaterno",
+            "columnName": "apellidoPaterno",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apellidoMaterno",
+            "columnName": "apellidoMaterno",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreNegocio",
+            "columnName": "nombreNegocio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correo",
+            "columnName": "correo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "configuracion",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `descuentosHabilitados` INTEGER NOT NULL, `clabe` TEXT, `beneficiario` TEXT, `banco` TEXT, `pasoKiloMilesimas` INTEGER NOT NULL DEFAULT 100, `avisoSaldoCentavos` INTEGER NOT NULL DEFAULT 15000, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descuentosHabilitados",
+            "columnName": "descuentosHabilitados",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clabe",
+            "columnName": "clabe",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "beneficiario",
+            "columnName": "beneficiario",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "banco",
+            "columnName": "banco",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pasoKiloMilesimas",
+            "columnName": "pasoKiloMilesimas",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "100"
+          },
+          {
+            "fieldPath": "avisoSaldoCentavos",
+            "columnName": "avisoSaldoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "15000"
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "categoria",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `nombreNormalizado` TEXT NOT NULL, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreNormalizado",
+            "columnName": "nombreNormalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_categoria_nombreNormalizado",
+            "unique": true,
+            "columnNames": [
+              "nombreNormalizado"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_categoria_nombreNormalizado` ON `${TABLE_NAME}` (`nombreNormalizado`)"
+          }
+        ]
+      },
+      {
+        "tableName": "producto",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `nombreNormalizado` TEXT NOT NULL, `categoriaId` TEXT NOT NULL, `tipoVenta` TEXT NOT NULL, `precioCentavos` INTEGER NOT NULL, `existenciaMilesimas` INTEGER NOT NULL, `imagenRuta` TEXT NOT NULL, `activo` INTEGER NOT NULL, `favorito` INTEGER NOT NULL DEFAULT 0, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`categoriaId`) REFERENCES `categoria`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreNormalizado",
+            "columnName": "nombreNormalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoriaId",
+            "columnName": "categoriaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoVenta",
+            "columnName": "tipoVenta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precioCentavos",
+            "columnName": "precioCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "existenciaMilesimas",
+            "columnName": "existenciaMilesimas",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imagenRuta",
+            "columnName": "imagenRuta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "favorito",
+            "columnName": "favorito",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_producto_nombreNormalizado",
+            "unique": true,
+            "columnNames": [
+              "nombreNormalizado"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_producto_nombreNormalizado` ON `${TABLE_NAME}` (`nombreNormalizado`)"
+          },
+          {
+            "name": "index_producto_categoriaId",
+            "unique": false,
+            "columnNames": [
+              "categoriaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_producto_categoriaId` ON `${TABLE_NAME}` (`categoriaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "categoria",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "categoriaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "forma_pago",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `nombreNormalizado` TEXT NOT NULL, `activa` INTEGER NOT NULL, `esEfectivo` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreNormalizado",
+            "columnName": "nombreNormalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activa",
+            "columnName": "activa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "esEfectivo",
+            "columnName": "esEfectivo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_forma_pago_nombreNormalizado",
+            "unique": true,
+            "columnNames": [
+              "nombreNormalizado"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_forma_pago_nombreNormalizado` ON `${TABLE_NAME}` (`nombreNormalizado`)"
+          }
+        ]
+      },
+      {
+        "tableName": "caja",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `estado` TEXT NOT NULL, `fondoCentavos` INTEGER NOT NULL, `abiertaEn` INTEGER NOT NULL, `cerradaEn` INTEGER, `corteCalculadoEn` INTEGER, `corteVigente` INTEGER NOT NULL, `totalVendidoCentavos` INTEGER, `numeroVentas` INTEGER, `descuentosCentavos` INTEGER, `efectivoEsperadoCentavos` INTEGER, `efectivoContadoCentavos` INTEGER, `diferenciaCentavos` INTEGER, `fiadoCentavos` INTEGER, `abonosCentavos` INTEGER, `devolucionesCentavos` INTEGER, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fondoCentavos",
+            "columnName": "fondoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "abiertaEn",
+            "columnName": "abiertaEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cerradaEn",
+            "columnName": "cerradaEn",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "corteCalculadoEn",
+            "columnName": "corteCalculadoEn",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "corteVigente",
+            "columnName": "corteVigente",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalVendidoCentavos",
+            "columnName": "totalVendidoCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "numeroVentas",
+            "columnName": "numeroVentas",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "descuentosCentavos",
+            "columnName": "descuentosCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "efectivoEsperadoCentavos",
+            "columnName": "efectivoEsperadoCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "efectivoContadoCentavos",
+            "columnName": "efectivoContadoCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "diferenciaCentavos",
+            "columnName": "diferenciaCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fiadoCentavos",
+            "columnName": "fiadoCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "abonosCentavos",
+            "columnName": "abonosCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "devolucionesCentavos",
+            "columnName": "devolucionesCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_caja_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_caja_estado` ON `${TABLE_NAME}` (`estado`)"
+          },
+          {
+            "name": "index_caja_cerradaEn",
+            "unique": false,
+            "columnNames": [
+              "cerradaEn"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_caja_cerradaEn` ON `${TABLE_NAME}` (`cerradaEn`)"
+          }
+        ]
+      },
+      {
+        "tableName": "corte_forma_pago",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cajaId` TEXT NOT NULL, `formaPagoId` TEXT NOT NULL, `nombreFormaPago` TEXT NOT NULL, `numeroVentas` INTEGER NOT NULL, `totalCentavos` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`cajaId`, `formaPagoId`), FOREIGN KEY(`cajaId`) REFERENCES `caja`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`formaPagoId`) REFERENCES `forma_pago`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "cajaId",
+            "columnName": "cajaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formaPagoId",
+            "columnName": "formaPagoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreFormaPago",
+            "columnName": "nombreFormaPago",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "numeroVentas",
+            "columnName": "numeroVentas",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalCentavos",
+            "columnName": "totalCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cajaId",
+            "formaPagoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_corte_forma_pago_formaPagoId",
+            "unique": false,
+            "columnNames": [
+              "formaPagoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_corte_forma_pago_formaPagoId` ON `${TABLE_NAME}` (`formaPagoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "caja",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cajaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "forma_pago",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "formaPagoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "venta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `cajaId` TEXT NOT NULL, `fechaHora` INTEGER NOT NULL, `subtotalCentavos` INTEGER NOT NULL, `tipoDescuento` TEXT, `valorDescuento` INTEGER, `descuentoCentavos` INTEGER NOT NULL, `totalCentavos` INTEGER NOT NULL, `formaPagoId` TEXT, `montoRecibidoCentavos` INTEGER, `cambioCentavos` INTEGER, `estado` TEXT NOT NULL, `canceladaEn` INTEGER, `clienteId` TEXT, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`cajaId`) REFERENCES `caja`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`formaPagoId`) REFERENCES `forma_pago`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`clienteId`) REFERENCES `cliente`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cajaId",
+            "columnName": "cajaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaHora",
+            "columnName": "fechaHora",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subtotalCentavos",
+            "columnName": "subtotalCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoDescuento",
+            "columnName": "tipoDescuento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "valorDescuento",
+            "columnName": "valorDescuento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "descuentoCentavos",
+            "columnName": "descuentoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalCentavos",
+            "columnName": "totalCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formaPagoId",
+            "columnName": "formaPagoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "montoRecibidoCentavos",
+            "columnName": "montoRecibidoCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cambioCentavos",
+            "columnName": "cambioCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "canceladaEn",
+            "columnName": "canceladaEn",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "clienteId",
+            "columnName": "clienteId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_venta_cajaId",
+            "unique": false,
+            "columnNames": [
+              "cajaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_venta_cajaId` ON `${TABLE_NAME}` (`cajaId`)"
+          },
+          {
+            "name": "index_venta_formaPagoId",
+            "unique": false,
+            "columnNames": [
+              "formaPagoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_venta_formaPagoId` ON `${TABLE_NAME}` (`formaPagoId`)"
+          },
+          {
+            "name": "index_venta_fechaHora",
+            "unique": false,
+            "columnNames": [
+              "fechaHora"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_venta_fechaHora` ON `${TABLE_NAME}` (`fechaHora`)"
+          },
+          {
+            "name": "index_venta_clienteId",
+            "unique": false,
+            "columnNames": [
+              "clienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_venta_clienteId` ON `${TABLE_NAME}` (`clienteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "caja",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cajaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "forma_pago",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "formaPagoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "cliente",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "clienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "venta_detalle",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ventaId` TEXT NOT NULL, `productoId` TEXT, `nombreProducto` TEXT NOT NULL, `tipoVenta` TEXT NOT NULL, `cantidadMilesimas` INTEGER NOT NULL, `precioUnitarioCentavos` INTEGER NOT NULL, `importeCentavos` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`ventaId`) REFERENCES `venta`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`productoId`) REFERENCES `producto`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ventaId",
+            "columnName": "ventaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productoId",
+            "columnName": "productoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nombreProducto",
+            "columnName": "nombreProducto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoVenta",
+            "columnName": "tipoVenta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidadMilesimas",
+            "columnName": "cantidadMilesimas",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precioUnitarioCentavos",
+            "columnName": "precioUnitarioCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importeCentavos",
+            "columnName": "importeCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_venta_detalle_ventaId",
+            "unique": false,
+            "columnNames": [
+              "ventaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_venta_detalle_ventaId` ON `${TABLE_NAME}` (`ventaId`)"
+          },
+          {
+            "name": "index_venta_detalle_productoId",
+            "unique": false,
+            "columnNames": [
+              "productoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_venta_detalle_productoId` ON `${TABLE_NAME}` (`productoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "venta",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "ventaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "producto",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "productoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "movimiento_inventario",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `productoId` TEXT NOT NULL, `fechaHora` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `cantidadMilesimas` INTEGER NOT NULL, `existenciaResultanteMilesimas` INTEGER NOT NULL, `motivo` TEXT, `especificacionMotivo` TEXT, `ventaId` TEXT, `creadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`productoId`) REFERENCES `producto`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productoId",
+            "columnName": "productoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaHora",
+            "columnName": "fechaHora",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidadMilesimas",
+            "columnName": "cantidadMilesimas",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "existenciaResultanteMilesimas",
+            "columnName": "existenciaResultanteMilesimas",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivo",
+            "columnName": "motivo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "especificacionMotivo",
+            "columnName": "especificacionMotivo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ventaId",
+            "columnName": "ventaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_movimiento_inventario_productoId_fechaHora",
+            "unique": false,
+            "columnNames": [
+              "productoId",
+              "fechaHora"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movimiento_inventario_productoId_fechaHora` ON `${TABLE_NAME}` (`productoId`, `fechaHora`)"
+          },
+          {
+            "name": "index_movimiento_inventario_ventaId",
+            "unique": false,
+            "columnNames": [
+              "ventaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movimiento_inventario_ventaId` ON `${TABLE_NAME}` (`ventaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "producto",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "productoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "eliminacion_pendiente",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`coleccion` TEXT NOT NULL, `docId` TEXT NOT NULL, `creadoEn` INTEGER NOT NULL, PRIMARY KEY(`coleccion`, `docId`))",
+        "fields": [
+          {
+            "fieldPath": "coleccion",
+            "columnName": "coleccion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "docId",
+            "columnName": "docId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "coleccion",
+            "docId"
+          ]
+        }
+      },
+      {
+        "tableName": "carga_caja",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cajaId` TEXT NOT NULL, `productoId` TEXT NOT NULL, `cantidadMilesimas` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`cajaId`, `productoId`), FOREIGN KEY(`cajaId`) REFERENCES `caja`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`productoId`) REFERENCES `producto`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "cajaId",
+            "columnName": "cajaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productoId",
+            "columnName": "productoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidadMilesimas",
+            "columnName": "cantidadMilesimas",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cajaId",
+            "productoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_carga_caja_productoId",
+            "unique": false,
+            "columnNames": [
+              "productoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_carga_caja_productoId` ON `${TABLE_NAME}` (`productoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "caja",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cajaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "producto",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "productoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "precarga",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `nombreNormalizado` TEXT NOT NULL, `cantidades` TEXT NOT NULL, `vecesUsada` INTEGER NOT NULL, `ultimoUso` INTEGER, `activa` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreNormalizado",
+            "columnName": "nombreNormalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidades",
+            "columnName": "cantidades",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vecesUsada",
+            "columnName": "vecesUsada",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ultimoUso",
+            "columnName": "ultimoUso",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "activa",
+            "columnName": "activa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_precarga_nombreNormalizado",
+            "unique": true,
+            "columnNames": [
+              "nombreNormalizado"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_precarga_nombreNormalizado` ON `${TABLE_NAME}` (`nombreNormalizado`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cliente",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `nombreNormalizado` TEXT NOT NULL, `telefono` TEXT, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreNormalizado",
+            "columnName": "nombreNormalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cliente_nombreNormalizado",
+            "unique": true,
+            "columnNames": [
+              "nombreNormalizado"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cliente_nombreNormalizado` ON `${TABLE_NAME}` (`nombreNormalizado`)"
+          }
+        ]
+      },
+      {
+        "tableName": "abono",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `clienteId` TEXT NOT NULL, `cajaId` TEXT NOT NULL, `fechaHora` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `montoCentavos` INTEGER NOT NULL, `formaPagoId` TEXT NOT NULL, `ventaId` TEXT, `estado` TEXT NOT NULL, `canceladoEn` INTEGER, `creadoEn` INTEGER NOT NULL, `actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`clienteId`) REFERENCES `cliente`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`cajaId`) REFERENCES `caja`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`formaPagoId`) REFERENCES `forma_pago`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`ventaId`) REFERENCES `venta`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clienteId",
+            "columnName": "clienteId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cajaId",
+            "columnName": "cajaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaHora",
+            "columnName": "fechaHora",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "montoCentavos",
+            "columnName": "montoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formaPagoId",
+            "columnName": "formaPagoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ventaId",
+            "columnName": "ventaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "canceladoEn",
+            "columnName": "canceladoEn",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualizadoEn",
+            "columnName": "actualizadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_abono_clienteId",
+            "unique": false,
+            "columnNames": [
+              "clienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_abono_clienteId` ON `${TABLE_NAME}` (`clienteId`)"
+          },
+          {
+            "name": "index_abono_cajaId",
+            "unique": false,
+            "columnNames": [
+              "cajaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_abono_cajaId` ON `${TABLE_NAME}` (`cajaId`)"
+          },
+          {
+            "name": "index_abono_formaPagoId",
+            "unique": false,
+            "columnNames": [
+              "formaPagoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_abono_formaPagoId` ON `${TABLE_NAME}` (`formaPagoId`)"
+          },
+          {
+            "name": "index_abono_ventaId",
+            "unique": false,
+            "columnNames": [
+              "ventaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_abono_ventaId` ON `${TABLE_NAME}` (`ventaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "cliente",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "clienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "caja",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cajaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "forma_pago",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "formaPagoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "venta",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "ventaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "aplicacion_abono",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `abonoId` TEXT NOT NULL, `ventaId` TEXT NOT NULL, `montoCentavos` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`abonoId`) REFERENCES `abono`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`ventaId`) REFERENCES `venta`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "abonoId",
+            "columnName": "abonoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ventaId",
+            "columnName": "ventaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "montoCentavos",
+            "columnName": "montoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creadoEn",
+            "columnName": "creadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendienteSync",
+            "columnName": "pendienteSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_aplicacion_abono_abonoId",
+            "unique": false,
+            "columnNames": [
+              "abonoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aplicacion_abono_abonoId` ON `${TABLE_NAME}` (`abonoId`)"
+          },
+          {
+            "name": "index_aplicacion_abono_ventaId",
+            "unique": false,
+            "columnNames": [
+              "ventaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aplicacion_abono_ventaId` ON `${TABLE_NAME}` (`ventaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "abono",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "abonoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "venta",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "ventaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd001e8c615101283f572be1e0f3cbd59')"
+    ]
+  }
+}

@@ -32,6 +32,9 @@ object Campos {
     const val MOTIVO = "motivo"
     const val ESPECIFICACION = "especificacion"
     const val DESCUENTO = "descuento"
+    const val CLIENTE = "cliente"
+    const val PAGO_INICIAL = "pagoInicial"
+    const val FORMA_PAGO_INICIAL = "formaPagoInicial"
     const val NOMBRES = "nombres"
     const val APELLIDO_PATERNO = "apellidoPaterno"
     const val APELLIDO_MATERNO = "apellidoMaterno"
@@ -88,6 +91,7 @@ internal fun traducir(falla: Falla, general: String, campoNombre: String = Campo
     FallaDatos.CredencialesIncorrectas -> mensaje(Mensajes.CREDENCIALES_INCORRECTAS)
     FallaDatos.PendientesDeSincronizar -> mensaje(Mensajes.PENDIENTES_AL_CERRAR_SESION)
     is FallaDatos.CargaExcedeExistencia -> mensaje(falla.mensaje)
+    is FallaDatos.Regla -> mensaje(falla.mensaje)
     FallaDatos.NoEncontrado, FallaDatos.CantidadInvalida, FallaDatos.YaHayOtraCuenta -> mensaje(general)
     else -> mensaje(general)
 }

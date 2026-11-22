@@ -12,10 +12,21 @@ data class ProductoConCategoria(
     val categoriaNombre: String,
 )
 
+/** Fiado (v7): una venta fiada no tiene forma de pago y sí cliente. */
 data class VentaConFormaPago(
     @Embedded val venta: Venta,
-    val formaPagoNombre: String,
-)
+    val formaPagoNombre: String?,
+    val clienteNombre: String? = null,
+) {
+    /** Lo que se muestra en historial: la forma de pago o "Fiado · Cliente". */
+    val etiquetaPago: String get() = formaPagoNombre ?: "Fiado · ${clienteNombre.orEmpty()}"
+}
+
+/** Reportes: ventas fiadas (sin forma de pago) y renglones sin producto ("Varios"). */
+const val ID_FIADO = "fiado"
+const val NOMBRE_FIADO = "Fiado"
+const val ID_VARIOS = "varios"
+const val NOMBRE_VARIOS = "Varios"
 
 /** RF 5.2: totales de las ventas no canceladas de una caja. */
 data class ResumenVentas(
