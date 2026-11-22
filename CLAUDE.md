@@ -2,18 +2,24 @@
 
 App Android de punto de venta offline-first para Max Carlotas (venta ambulante, ITZ). Desarrolla: Ambulant Point.
 
-## Fuente de verdad
-- `docs/dfr/DFR_Mis_Ventas_v1.2.md` manda sobre cualquier otra cosa. Si el DFR no lo especifica, pregunta; no inventes reglas, campos ni mensajes.
-- Mensajes al usuario: literales del DFR, centralizados en `core/Mensajes.kt`.
-- Plan y alcance vigentes: `docs/00-PLAN-MVP.md`. Estado de cada RF: `docs/02-TRAZABILIDAD-DFR.md` (actualízalo al terminar un RF).
-- Fuera de alcance (DFR): facturación, terminales bancarias, código de barras, e-commerce, lealtad, multi-vendedor, gráficas, gastos/retiros de caja, comprobantes. Cualquier petición así → Solicitud de Cambio, no código.
+## Etapa actual: desarrollo independiente (desde 2026-11-21)
+- La versión académica ya se entregó en el repo `MaxDev8459/mis-ventas-oficial`, que está **congelado**: no se toca, no se le hace push ni se sincroniza con este repo (hay hooks que lo bloquean).
+- Este repo (`MaxDev8459/mis-ventas`) sigue como desarrollo independiente: se pueden agregar funciones y cambiar lo ya hecho aunque **no esté en el DFR**. El usuario ya usa la app en su negocio, así que los cambios se piensan según su uso real.
+- Antes de un cambio grande, confirma el alcance con el usuario; no inventes reglas de negocio por tu cuenta.
+- Nunca romper los datos ni el respaldo en Firebase: el respaldo en la nube es la forma de recuperar la cuenta si algo falla. Cambios de esquema Room → migración, nunca `fallbackToDestructiveMigration`.
+- El DFR (`docs/dfr/DFR_Mis_Ventas_v1.2.md`, solo local) y `docs/02-TRAZABILIDAD-DFR.md` quedan como referencia de la versión entregada. Mensajes al usuario siguen centralizados en `core/Mensajes.kt`.
 
 ## Stack
 Kotlin · Jetpack Compose + Material 3 · MVVM (`ui` → `domain` → `data`) · Room · DI manual (`AppContainer`) · minSdk 26 · solo vertical.
-**MVP 100 % local (decisión 26-oct-2026):** auth local (`AuthRepoLocal`, hash PBKDF2). Firebase (Auth/Firestore/Storage) entra en Sprint 2 detrás de las mismas interfaces; no agregues dependencias de Firebase antes.
+Offline-first con Room; Firebase (Auth/Firestore) como respaldo en la nube.
 Ruta del proyecto (se trabaja en Windows y en CachyOS; el código viaja solo por git, nunca por Google Drive):
 - Windows: `C:\Users\MaxDev\Documents\SEMESTRE AGOSTO DICIEMBRE 2026\GESTION DE PROYECTOS DE SOFTWARE\documentos del proyecto\mis-ventas`
-- Linux: `~/SEMESTRE AGOSTO DICIEMBRE 2026/GESTION DE PROYECTOS DE SOFTWARE/documentos del proyecto/mis-ventas`
+- Linux: `~/LinuxProjects/mis-ventas` (fuera de la carpeta del semestre, que se sincroniza con Drive). SDK en `~/Android/Sdk`.
+
+Archivos que no están en git y se copian a mano entre sistemas: `app/google-services.json`, `keystore.properties`, `firma/` (llave de liberación) y `docs/dfr/`.
+
+## Instalar en el teléfono sin perder datos
+El teléfono tiene instalada la versión de **liberación** (firmada con la llave de `firma/`). Para actualizarla sin borrar datos, instala siempre un APK firmado con esa misma llave (`assembleRelease` + `adb install -r`). Un APK debug de otra computadora trae otra firma: Android lo rechaza y la única salida sería desinstalar (borra los datos). Si eso pasa, **no desinstales**: avisa al usuario.
 
 Al empezar: `git pull`. Al terminar: commit y `git push`.
 
