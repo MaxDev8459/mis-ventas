@@ -38,11 +38,13 @@ Al empezar: `git pull`. Al terminar: commit y `git push`.
 
 `local.properties` (ruta del SDK) es propio de cada sistema y no se sube.
 
+**Tres apps en el teléfono:** la real (`mx.ambulantpoint.misventas`, liberación, cuenta del negocio), la demo (`.demo`, rama `demo-entrega`) y **Mis Ventas Pruebas** (`.pruebas`). Toda compilación **debug** de main es la app de pruebas (`applicationIdSuffix`), con una cuenta de pruebas (`maxicarlotas+pruebas@gmail.com`) y datos ficticios: cada cambio se prueba ahí antes de instalarlo en la real. `google-services.json` trae las tres apps.
+
 Pruebas en el teléfono: **siempre** con `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`.
 Sin esa opción, `connectedDebugAndroidTest` desinstala la app al terminar y **borra todos sus datos**
 (pasó el 26-oct-2026). Nunca correrlas sin ella después de cargar datos de demo.
 
-Datos de demo: `./gradlew connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+Datos de demo (van a **Mis Ventas Pruebas**; antes hay que registrar ahí la cuenta de pruebas, porque sin cuenta el cargador registraría un correo ajeno): `./gradlew connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 -Pandroid.testInstrumentationRunnerArguments.class=mx.ambulantpoint.misventas.demo.CargarDatosDemo
 -Pandroid.testInstrumentationRunnerArguments.demo=1` (ver `app/src/androidTest/.../demo/`).
 

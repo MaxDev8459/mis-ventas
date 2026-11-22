@@ -44,6 +44,12 @@ android {
     }
 
     buildTypes {
+        // Toda compilación debug es "Mis Ventas Pruebas" (otro paquete): se instala junto a la app
+        // real y nunca puede caer encima de ella. Va con una cuenta de pruebas y datos ficticios.
+        debug {
+            applicationIdSuffix = ".pruebas"
+            versionNameSuffix = "-pruebas"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
