@@ -16,10 +16,10 @@ Ruta del proyecto (se trabaja en Windows y en CachyOS; el código viaja solo por
 - Windows: `C:\Users\MaxDev\Documents\SEMESTRE AGOSTO DICIEMBRE 2026\GESTION DE PROYECTOS DE SOFTWARE\documentos del proyecto\mis-ventas`
 - Linux: `~/LinuxProjects/mis-ventas` (fuera de la carpeta del semestre, que se sincroniza con Drive). SDK en `~/Android/Sdk`.
 
-Archivos que no están en git y se copian a mano entre sistemas: `app/google-services.json`, `keystore.properties`, `firma/` (llave de liberación) y `docs/dfr/`.
+Archivos que no están en git y se copian a mano entre sistemas: `app/google-services.json`, `keystore.properties`, `firma/` (llave de liberación, llave debug de Windows y linaje) y `docs/dfr/`.
 
 ## Instalar en el teléfono sin perder datos
-El teléfono tiene instalada la versión de **liberación** (firmada con la llave de `firma/`). Para actualizarla sin borrar datos, instala siempre un APK firmado con esa misma llave (`assembleRelease` + `adb install -r`). Un APK debug de otra computadora trae otra firma: Android lo rechaza y la única salida sería desinstalar (borra los datos). Si eso pasa, **no desinstales**: avisa al usuario.
+El teléfono tiene instalada la versión de **liberación** (firmada con la llave de `firma/`). Hasta la 1.0.0 tenía un APK debug de Windows; la 1.0.1 (21-nov-2026) se instaló con **rotación de llave** (APK Signature Scheme v3.1, linaje debug → liberación en `firma/linaje-debug-a-liberacion.bin`, llave vieja en `firma/debug-windows.keystore`), así que Android ya acepta la llave de `firma/`. Antes de instalar, compara con `apksigner verify --print-certs` la firma del APK con la instalada. Para actualizarla sin borrar datos, instala siempre un APK firmado con esa misma llave (`assembleRelease` + `adb install -r`). Un APK debug de otra computadora trae otra firma: Android lo rechaza y la única salida sería desinstalar (borra los datos). Si eso pasa, **no desinstales**: avisa al usuario.
 
 Al empezar: `git pull`. Al terminar: commit y `git push`.
 
