@@ -28,7 +28,7 @@ Cambios acordados con el cliente en la entrevista del 21-nov-2026. No vienen del
 | 2b | Carga del día (v1 y v2 con + / −, Máx y precargas) | v4→v5→v6 | ✅ 1.3.0 (21-nov-2026) |
 | 3 | Fiado + venta rápida sin producto | v6→v7 | ✅ 1.4.0 (22-nov-2026) |
 | 4 | Apartados con existencia separada | v7→v8 | ✅ 1.5.0 (22-nov-2026) |
-| 5 | Reportes nuevos | No | Pendiente |
+| 5 | Reportes nuevos | v8→v9 | ✅ 1.6.0 (23-nov-2026) |
 
 ## Fase 1 — detalle
 
