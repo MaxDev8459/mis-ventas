@@ -7,6 +7,7 @@ import mx.ambulantpoint.misventas.core.RelojSistema
 import mx.ambulantpoint.misventas.data.local.MisVentasDb
 import mx.ambulantpoint.misventas.data.repository.CajaRepo
 import mx.ambulantpoint.misventas.data.repository.CargaRepo
+import mx.ambulantpoint.misventas.data.repository.PrecargaRepo
 import mx.ambulantpoint.misventas.data.repository.CategoriaRepo
 import mx.ambulantpoint.misventas.data.repository.ConfiguracionRepo
 import mx.ambulantpoint.misventas.data.repository.FormaPagoRepo
@@ -45,6 +46,7 @@ class AppContainer(private val contexto: Context, val reloj: Reloj = RelojSistem
     val inventarioRepo by lazy { InventarioRepo(db, reloj) }
     val reporteRepo by lazy { ReporteRepo(db) }
     val cargaRepo by lazy { CargaRepo(db, reloj) }
+    val precargaRepo by lazy { PrecargaRepo(db, reloj) }
 
     val conectividad by lazy { Conectividad(contexto) }
 

@@ -5,6 +5,7 @@ import mx.ambulantpoint.misventas.data.local.entity.Categoria
 import mx.ambulantpoint.misventas.data.local.entity.Configuracion
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
 import mx.ambulantpoint.misventas.data.local.entity.CargaCaja
+import mx.ambulantpoint.misventas.data.local.entity.Precarga
 import mx.ambulantpoint.misventas.data.local.entity.FormaPago
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
 import mx.ambulantpoint.misventas.data.local.entity.Perfil
@@ -34,6 +35,7 @@ object Colecciones {
     const val VENTA_DETALLE = "venta_detalle"
     const val MOVIMIENTO = "movimiento_inventario"
     const val CARGA = "carga_caja"
+    const val PRECARGA = "precarga"
 }
 
 /*
@@ -50,7 +52,8 @@ fun Perfil.aDocumento(): Map<String, Any?> = mapOf(
 
 fun Configuracion.aDocumento(): Map<String, Any?> = mapOf(
     "id" to id, "descuentosHabilitados" to descuentosHabilitados,
-    "clabe" to clabe, "beneficiario" to beneficiario, "banco" to banco, "actualizadoEn" to actualizadoEn,
+    "clabe" to clabe, "beneficiario" to beneficiario, "banco" to banco, "pasoKiloMilesimas" to pasoKiloMilesimas,
+    "actualizadoEn" to actualizadoEn,
 )
 
 fun Categoria.aDocumento(): Map<String, Any?> = mapOf(
@@ -77,6 +80,17 @@ fun Caja.aDocumento(): Map<String, Any?> = mapOf(
     "descuentosCentavos" to descuentosCentavos, "efectivoEsperadoCentavos" to efectivoEsperadoCentavos,
     "efectivoContadoCentavos" to efectivoContadoCentavos, "diferenciaCentavos" to diferenciaCentavos,
     "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+fun Precarga.aDocumento(): Map<String, Any?> = mapOf(
+    "id" to id, "nombre" to nombre, "nombreNormalizado" to nombreNormalizado, "cantidades" to cantidades,
+    "vecesUsada" to vecesUsada, "ultimoUso" to ultimoUso, "activa" to activa, "creadoEn" to creadoEn, "actualizadoEn" to actualizadoEn,
+)
+
+fun aPrecarga(d: Map<String, Any?>) = Precarga(
+    id = d.texto("id"), nombre = d.texto("nombre"), nombreNormalizado = d.texto("nombreNormalizado"),
+    cantidades = d.texto("cantidades"), vecesUsada = d.entero("vecesUsada").toInt(), ultimoUso = d.enteroONulo("ultimoUso"),
+    activa = d.logico("activa", true), creadoEn = d.entero("creadoEn"), actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 
 /** Carga del día: llave compuesta (cajaId, productoId) → un solo id de documento. */
@@ -147,6 +161,8 @@ fun aPerfil(d: Map<String, Any?>) = Perfil(
 fun aConfiguracion(d: Map<String, Any?>) = Configuracion(
     id = d.textoONulo("id") ?: Configuracion.ID_UNICA, descuentosHabilitados = d.logico("descuentosHabilitados", false),
     clabe = d.textoONulo("clabe"), beneficiario = d.textoONulo("beneficiario"), banco = d.textoONulo("banco"),
+    // Respaldos anteriores a la v6 no lo tienen: 100 g.
+    pasoKiloMilesimas = d.enteroONulo("pasoKiloMilesimas") ?: Configuracion.PASO_KILO_DEFECTO,
     actualizadoEn = d.entero("actualizadoEn"), pendienteSync = false,
 )
 

@@ -91,7 +91,7 @@ class AuthRepoFirebase(
                     val s = db.syncDao()
                     s.pendienteConfiguracion(); s.pendienteCategorias(); s.pendienteFormasPago()
                     s.marcarProductosPendientes(); s.pendienteCajas(); s.pendienteCortesFormaPago()
-                    s.pendienteVentas(); s.pendienteVentaDetalles(); s.pendienteMovimientos(); s.pendienteCargas()
+                    s.pendienteVentas(); s.pendienteVentaDetalles(); s.pendienteMovimientos(); s.pendienteCargas(); s.pendientePrecargas()
                 }
             }
         } catch (e: Exception) {

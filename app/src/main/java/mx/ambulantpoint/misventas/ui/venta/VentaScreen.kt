@@ -17,6 +17,7 @@ import mx.ambulantpoint.misventas.domain.regla.MotivoAvisoCarga
 import mx.ambulantpoint.misventas.domain.regla.ReglaCarga
 import mx.ambulantpoint.misventas.domain.venta.ProductoListado
 import mx.ambulantpoint.misventas.ui.components.IconoEstrellaVacia
+import mx.ambulantpoint.misventas.ui.components.ControlCantidad
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -304,11 +305,15 @@ private fun DialogoAvisoCarga(a: AvisoCarga, modelo: VentaViewModel) {
                     },
                 )
                 Text("¿Cuánto agregas a la carga?", style = MaterialTheme.typography.bodyLarge)
-                CampoTexto(
-                    modelo.agregarCargaTexto, modelo::cambiarAgregarCarga, "Cantidad", error = modelo.agregarCargaError,
-                    teclado = if (p.tipoVenta == TipoVenta.PESO) KeyboardType.Decimal else KeyboardType.Number,
-                    sufijo = Formato.unidad(p.tipoVenta), imeAction = ImeAction.Done,
-                )
+                val pasoKilo by modelo.pasoKilo.collectAsStateWithLifecycle()
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ControlCantidad(
+                        modelo.agregarCargaMilesimas, p.tipoVenta, pasoKilo, modelo.maximoAgregarCarga(a), p.nombre,
+                        modelo::cambiarAgregarCarga,
+                    )
+                    Text(Formato.unidad(p.tipoVenta), style = MaterialTheme.typography.bodyLarge)
+                }
+                modelo.agregarCargaError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 TextButton(onClick = modelo::venderSinAgregar, modifier = Modifier.heightIn(min = 48.dp)) { Text("Vender sin agregar") }
             }
         },

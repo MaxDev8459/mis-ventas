@@ -43,6 +43,8 @@ import mx.ambulantpoint.misventas.core.Dinero
 import mx.ambulantpoint.misventas.data.repository.FallaDatos
 import mx.ambulantpoint.misventas.domain.regla.MotivoAvisoCarga
 import mx.ambulantpoint.misventas.domain.regla.ReglaCarga
+import mx.ambulantpoint.misventas.domain.regla.ReglaPrecarga
+import mx.ambulantpoint.misventas.core.Formato
 import mx.ambulantpoint.misventas.domain.regla.RenglonCarga
 import mx.ambulantpoint.misventas.domain.venta.FiltroVenta
 import mx.ambulantpoint.misventas.domain.venta.ProductoListado
@@ -113,9 +115,21 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
 
     var avisoCarga by mutableStateOf<AvisoCarga?>(null)
         private set
-    var agregarCargaTexto by mutableStateOf("")
+    /** Cuánto se agrega a la carga en el aviso (con + / −). */
+    var agregarCargaMilesimas by mutableStateOf(0L)
     var agregarCargaError by mutableStateOf<String?>(null)
         private set
+
+    /** Unidad para kilo (a nivel cuenta): paso del + / − en productos por kilo. */
+    val pasoKilo: StateFlow<Long> = c.configuracionRepo.observar()
+        .map { it?.pasoKiloMilesimas ?: mx.ambulantpoint.misventas.data.local.entity.Configuracion.PASO_KILO_DEFECTO }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, mx.ambulantpoint.misventas.data.local.entity.Configuracion.PASO_KILO_DEFECTO)
+
+    /** Lo máximo que se puede agregar a la carga: lo que había al abrir menos lo ya cargado. */
+    fun maximoAgregarCarga(a: AvisoCarga): Long {
+        val r = a.renglon ?: return a.producto.existenciaMilesimas
+        return maxOf(0, a.producto.existenciaMilesimas + r.vendidoMilesimas + r.mermasMilesimas - r.cargadoMilesimas)
+    }
     var agregandoCarga by mutableStateOf(false)
         private set
 
@@ -221,14 +235,16 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         if (motivo == null) {
             carrito = (r as Resultado.Exito).valor
         } else {
-            avisoCarga = AvisoCarga(p, cantidad, motivo, mapa[p.id])
-            agregarCargaTexto = ""
+            val aviso = AvisoCarga(p, cantidad, motivo, mapa[p.id])
+            avisoCarga = aviso
+            // Empieza en lo que se quiere vender (1 pza o el peso capturado), sin pasar del máximo.
+            agregarCargaMilesimas = minOf(maxOf(cantidad, ReglaPrecarga.paso(p.tipoVenta, pasoKilo.value)), maximoAgregarCarga(aviso))
             agregarCargaError = null
         }
         return true
     }
 
-    fun cambiarAgregarCarga(t: String) { agregarCargaTexto = t; agregarCargaError = null }
+    fun cambiarAgregarCarga(m: Long) { agregarCargaMilesimas = m; agregarCargaError = null }
     fun cancelarAvisoCarga() { avisoCarga = null }
 
     /** "Vender sin agregar": se agrega a la venta aunque no esté en la carga. */
@@ -243,10 +259,8 @@ class VentaViewModel(c: AppContainer) : ViewModel() {
         val a = avisoCarga ?: return
         val k = caja.value ?: return
         if (agregandoCarga) return
-        val cantidad = when (val l = LectorNumeros.cantidad(agregarCargaTexto, a.producto.tipoVenta)) {
-            is Lectura.Error -> { agregarCargaError = l.mensaje; return }
-            is Lectura.Valor -> l.valor
-        }
+        val cantidad = agregarCargaMilesimas
+        if (cantidad <= 0) { agregarCargaError = "Agregue al menos ${Formato.cantidad(ReglaPrecarga.paso(a.producto.tipoVenta, pasoKilo.value), a.producto.tipoVenta)}"; return }
         viewModelScope.launch {
             agregandoCarga = true
             when (val r = cargaRepo.agregar(k.id, a.producto.id, cantidad)) {

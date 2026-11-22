@@ -15,6 +15,7 @@ import mx.ambulantpoint.misventas.data.local.entity.Perfil
 import mx.ambulantpoint.misventas.data.local.entity.Producto
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
 import mx.ambulantpoint.misventas.data.local.entity.CargaCaja
+import mx.ambulantpoint.misventas.data.local.entity.Precarga
 import mx.ambulantpoint.misventas.data.local.entity.EstadoVenta
 import mx.ambulantpoint.misventas.data.local.entity.MovimientoInventario
 import mx.ambulantpoint.misventas.data.local.entity.Venta
@@ -268,6 +269,7 @@ interface SyncDao {
           (SELECT COUNT(*) FROM caja WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM corte_forma_pago WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM carga_caja WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM precarga WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta_detalle WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM movimiento_inventario WHERE pendienteSync = 1) +
@@ -285,6 +287,7 @@ interface SyncDao {
     @Query("SELECT * FROM caja WHERE pendienteSync = 1 LIMIT :n") suspend fun cajas(n: Int): List<Caja>
     @Query("SELECT * FROM corte_forma_pago WHERE pendienteSync = 1 LIMIT :n") suspend fun cortesFormaPago(n: Int): List<CorteFormaPago>
     @Query("SELECT * FROM carga_caja WHERE pendienteSync = 1 LIMIT :n") suspend fun cargas(n: Int): List<CargaCaja>
+    @Query("SELECT * FROM precarga WHERE pendienteSync = 1 LIMIT :n") suspend fun precargas(n: Int): List<Precarga>
     @Query("SELECT * FROM venta WHERE pendienteSync = 1 LIMIT :n") suspend fun ventas(n: Int): List<Venta>
     @Query("SELECT * FROM venta_detalle WHERE pendienteSync = 1 LIMIT :n") suspend fun ventaDetalles(n: Int): List<VentaDetalle>
     @Query("SELECT * FROM movimiento_inventario WHERE pendienteSync = 1 LIMIT :n") suspend fun movimientos(n: Int): List<MovimientoInventario>
@@ -310,6 +313,7 @@ interface SyncDao {
     @Query("UPDATE caja SET pendienteSync = 1") suspend fun pendienteCajas()
     @Query("UPDATE corte_forma_pago SET pendienteSync = 1") suspend fun pendienteCortesFormaPago()
     @Query("UPDATE carga_caja SET pendienteSync = 1") suspend fun pendienteCargas()
+    @Query("UPDATE precarga SET pendienteSync = 1") suspend fun pendientePrecargas()
     @Query("UPDATE venta SET pendienteSync = 1") suspend fun pendienteVentas()
     @Query("UPDATE venta_detalle SET pendienteSync = 1") suspend fun pendienteVentaDetalles()
     @Query("UPDATE movimiento_inventario SET pendienteSync = 1") suspend fun pendienteMovimientos()
@@ -325,6 +329,7 @@ interface SyncDao {
           (SELECT COUNT(*) FROM caja WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM corte_forma_pago WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM carga_caja WHERE pendienteSync = 1) +
+          (SELECT COUNT(*) FROM precarga WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM venta_detalle WHERE pendienteSync = 1) +
           (SELECT COUNT(*) FROM movimiento_inventario WHERE pendienteSync = 1) +
@@ -338,6 +343,7 @@ interface SyncDao {
     @Query("DELETE FROM venta") suspend fun borrarVentas()
     @Query("DELETE FROM corte_forma_pago") suspend fun borrarCortesFormaPago()
     @Query("DELETE FROM carga_caja") suspend fun borrarCargas()
+    @Query("DELETE FROM precarga") suspend fun borrarPrecargas()
     @Query("DELETE FROM caja") suspend fun borrarCajas()
     @Query("DELETE FROM producto") suspend fun borrarProductos()
     @Query("DELETE FROM forma_pago") suspend fun borrarFormasPago()
@@ -354,6 +360,7 @@ interface SyncDao {
     @Insert suspend fun insertarCajas(l: List<Caja>)
     @Insert suspend fun insertarCortesFormaPago(l: List<CorteFormaPago>)
     @Insert suspend fun insertarCargas(l: List<CargaCaja>)
+    @Insert suspend fun insertarPrecargas(l: List<Precarga>)
     @Insert suspend fun insertarVentas(l: List<Venta>)
     @Insert suspend fun insertarVentaDetalles(l: List<VentaDetalle>)
     @Insert suspend fun insertarMovimientos(l: List<MovimientoInventario>)

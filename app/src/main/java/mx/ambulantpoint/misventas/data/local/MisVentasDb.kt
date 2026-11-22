@@ -22,6 +22,8 @@ import mx.ambulantpoint.misventas.data.local.entity.Categoria
 import mx.ambulantpoint.misventas.data.local.entity.Configuracion
 import mx.ambulantpoint.misventas.data.local.entity.CorteFormaPago
 import mx.ambulantpoint.misventas.data.local.entity.CargaCaja
+import mx.ambulantpoint.misventas.data.local.entity.Precarga
+import mx.ambulantpoint.misventas.data.local.dao.PrecargaDao
 import mx.ambulantpoint.misventas.data.local.dao.CargaDao
 import mx.ambulantpoint.misventas.data.local.entity.FormaPago
 import androidx.room.migration.Migration
@@ -37,9 +39,9 @@ import mx.ambulantpoint.misventas.data.local.entity.VentaDetalle
     entities = [
         Perfil::class, Configuracion::class, Categoria::class, Producto::class, FormaPago::class,
         Caja::class, CorteFormaPago::class, Venta::class, VentaDetalle::class, MovimientoInventario::class,
-        EliminacionPendiente::class, CargaCaja::class,
+        EliminacionPendiente::class, CargaCaja::class, Precarga::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class MisVentasDb : RoomDatabase() {
@@ -53,6 +55,7 @@ abstract class MisVentasDb : RoomDatabase() {
     abstract fun movimientoDao(): MovimientoDao
     abstract fun reporteDao(): ReporteDao
     abstract fun cargaDao(): CargaDao
+    abstract fun precargaDao(): PrecargaDao
     abstract fun syncDao(): SyncDao
 
     companion object {
@@ -60,8 +63,22 @@ abstract class MisVentasDb : RoomDatabase() {
 
         fun crear(contexto: Context): MisVentasDb =
             Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE)
-                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6)
                 .build()
+
+        /** Precargas y unidad para kilo de la carga del día. Solo agrega; no toca los datos existentes. */
+        val MIGRACION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `precarga` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, " +
+                        "`nombreNormalizado` TEXT NOT NULL, `cantidades` TEXT NOT NULL, `vecesUsada` INTEGER NOT NULL, " +
+                        "`ultimoUso` INTEGER, `activa` INTEGER NOT NULL, `creadoEn` INTEGER NOT NULL, " +
+                        "`actualizadoEn` INTEGER NOT NULL, `pendienteSync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_precarga_nombreNormalizado` ON `precarga` (`nombreNormalizado`)")
+                db.execSQL("ALTER TABLE `configuracion` ADD COLUMN `pasoKiloMilesimas` INTEGER NOT NULL DEFAULT 100")
+            }
+        }
 
         /** Carga del día: tabla nueva. No toca los datos existentes. */
         val MIGRACION_4_5 = object : Migration(4, 5) {

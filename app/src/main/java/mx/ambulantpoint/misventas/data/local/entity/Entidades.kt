@@ -35,10 +35,15 @@ data class Configuracion(
     val clabe: String? = null,
     val beneficiario: String? = null,
     val banco: String? = null,
+    /** Carga del día (v6): paso de + / − y de "N de cada producto" en productos por kilo (100 g por defecto). */
+    @ColumnInfo(defaultValue = "100") val pasoKiloMilesimas: Long = PASO_KILO_DEFECTO,
     val actualizadoEn: Long,
     val pendienteSync: Boolean = true,
 ) {
-    companion object { const val ID_UNICA = "configuracion" }
+    companion object {
+        const val ID_UNICA = "configuracion"
+        const val PASO_KILO_DEFECTO = 100L
+    }
 }
 
 /** RF 2.6 – 2.9. `nombreNormalizado` único: no se repite sin distinguir mayúsculas/espacios. */
@@ -174,6 +179,24 @@ data class CargaCaja(
     val cajaId: String,
     val productoId: String,
     val cantidadMilesimas: Long,
+    val creadoEn: Long,
+    val actualizadoEn: Long,
+    val pendienteSync: Boolean = true,
+)
+
+/**
+ * Precarga (v6): carga ya definida con nombre para aplicarla al capturar la carga del día. Las
+ * cantidades van codificadas ("productoId=milésimas;…", ver ReglaPrecarga). No se borra: `activa`.
+ */
+@Entity(tableName = "precarga", indices = [Index(value = ["nombreNormalizado"], unique = true)])
+data class Precarga(
+    @PrimaryKey val id: String,
+    val nombre: String,
+    val nombreNormalizado: String,
+    val cantidades: String,
+    val vecesUsada: Int = 0,
+    val ultimoUso: Long? = null,
+    val activa: Boolean = true,
     val creadoEn: Long,
     val actualizadoEn: Long,
     val pendienteSync: Boolean = true,

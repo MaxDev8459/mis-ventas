@@ -231,6 +231,9 @@ class ConfiguracionRepo(private val db: MisVentasDb, private val reloj: Reloj) :
     suspend fun guardarDescuentos(habilitados: Boolean): Resultado<Unit> =
         actualizar { it.copy(descuentosHabilitados = habilitados) }
 
+    /** Carga del día: unidad para productos por kilo (a nivel cuenta, se respalda). */
+    suspend fun guardarPasoKilo(milesimas: Long): Resultado<Unit> = actualizar { it.copy(pasoKiloMilesimas = milesimas) }
+
     /** SC-01. */
     override suspend fun guardarDatosTransferencia(datos: DatosTransferencia?): Resultado<Unit> =
         actualizar { it.copy(clabe = datos?.clabe, beneficiario = datos?.beneficiario, banco = datos?.banco) }
