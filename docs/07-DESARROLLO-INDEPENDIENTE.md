@@ -25,9 +25,9 @@ Cambios acordados con el cliente en la entrevista del 21-nov-2026. No vienen del
 | 0 | Correcciones de la revisión contra el DFR y aviso de privacidad | No | ✅ 1.0.1 (21-nov-2026) |
 | 1 | Corregir venta, merma desde la venta, calculadora de billetes, modo oscuro y huella configurable | No | ✅ 1.1.0 (21-nov-2026) |
 | 2a | Encontrar productos: favoritos y chips de categoría | v3→v4 | ✅ 1.2.0 (21-nov-2026) |
-| 2b | Carga del día al abrir caja | v4→v5 | En prueba (Mis Ventas Pruebas) |
-| 3 | Fiado + venta rápida sin producto | v5→v6 | Pendiente |
-| 4 | Apartados con existencia separada | v6→v7 | Pendiente |
+| 2b | Carga del día (v1 y v2 con + / −, Máx y precargas) | v4→v5→v6 | ✅ 1.3.0 (21-nov-2026) |
+| 3 | Fiado + venta rápida sin producto | v6→v7 | Pendiente |
+| 4 | Apartados con existencia separada | v7→v8 | Pendiente |
 | 5 | Reportes nuevos | No | Pendiente |
 
 ## Fase 1 — detalle
@@ -63,3 +63,7 @@ Implementación:
 - `domain/regla/ReglaCarga`, `data/repository/CargaRepo`, `data/local/dao/CargaDao`, `ui/caja/CargaScreen`.
 - Migración verificada con `sqlite3` sobre una copia de la base de Mis Ventas Pruebas (v4): coincide con `5.json`.
 - 12 pruebas nuevas en `CargaTest.kt`, 203 en total.
+
+## Versión 1.3.0 (21-nov-2026)
+
+Instalada en la app real con `install -r` (con el indicador en "Sincronizado" antes de instalar). Incluye la Fase 2 completa, la corrección del modo oscuro en existencias y la del doble toque en "regresar". Antes se probó en Mis Ventas Pruebas, que pasó por las migraciones v4→v5→v6 en el teléfono. La cadena v4→v6 también se verificó con `sqlite3` contra `6.json`, con datos intactos.
