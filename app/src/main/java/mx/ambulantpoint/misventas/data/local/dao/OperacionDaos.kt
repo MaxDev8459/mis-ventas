@@ -214,6 +214,40 @@ interface ReporteDao {
     )
     suspend fun productosVendidos(desde: Long, hasta: Long): List<ProductoVendido>
 
+    /** Fase 5: ventas por hora del día (hora local), no canceladas. */
+    @Query(
+        """
+        SELECT CAST(strftime('%H', fechaHora / 1000, 'unixepoch', 'localtime') AS INTEGER) AS grupo,
+               COUNT(*) AS numeroVentas, SUM(totalCentavos) AS totalCentavos
+        FROM venta WHERE estado = 'REGISTRADA' AND fechaHora BETWEEN :desde AND :hasta
+        GROUP BY grupo ORDER BY grupo
+        """,
+    )
+    suspend fun ventasPorHora(desde: Long, hasta: Long): List<VentasPorGrupo>
+
+    /** Fase 5: ventas por día de la semana (0 = domingo, hora local), no canceladas. */
+    @Query(
+        """
+        SELECT CAST(strftime('%w', fechaHora / 1000, 'unixepoch', 'localtime') AS INTEGER) AS grupo,
+               COUNT(*) AS numeroVentas, SUM(totalCentavos) AS totalCentavos
+        FROM venta WHERE estado = 'REGISTRADA' AND fechaHora BETWEEN :desde AND :hasta
+        GROUP BY grupo ORDER BY grupo
+        """,
+    )
+    suspend fun ventasPorDiaSemana(desde: Long, hasta: Long): List<VentasPorGrupo>
+
+    /** Fase 5: salidas por ajuste (disminuciones) del periodo; qué motivos cuentan lo decide el dominio. */
+    @Query(
+        """
+        SELECT m.productoId AS productoId, p.nombre AS nombre, p.tipoVenta AS tipoVenta,
+               m.cantidadMilesimas AS cantidadMilesimas, m.motivo AS motivo,
+               m.precioUnitarioCentavos AS precioGuardadoCentavos, p.precioCentavos AS precioActualCentavos
+        FROM movimiento_inventario m JOIN producto p ON p.id = m.productoId
+        WHERE m.tipo = 'AJUSTE' AND m.cantidadMilesimas < 0 AND m.fechaHora BETWEEN :desde AND :hasta
+        """,
+    )
+    suspend fun salidasPorAjuste(desde: Long, hasta: Long): List<SalidaAjuste>
+
     /** RF 6.4: importe por categoría, de mayor a menor. */
     @Query(
         """

@@ -10,9 +10,9 @@
 | Dato | Valor |
 |---|---|
 | App real en el teléfono | **1.5.0** (versionCode 7), liberación, cuenta `maxicarlotas@gmail.com` |
-| Versión de la base Room | **8** (siguiente migración: 8→9) |
-| Pruebas JVM | 273 pasan (+ 49 instrumentadas con Room en el teléfono) |
-| Siguiente fase | **Fase 5: reportes nuevos** (sin empezar; no toca la base) |
+| Versión de la base Room | **9** en Mis Ventas Pruebas; la app real sigue en 8 hasta liberar la 1.6.0 |
+| Pruebas JVM | 296 pasan (+ 53 instrumentadas con Room en el teléfono) |
+| Siguiente fase | **Fase 5**: 1.6.0 instalada en Mis Ventas Pruebas, **esperando que el usuario la pruebe y la apruebe** |
 
 ## Checklist de fases
 
@@ -37,7 +37,14 @@
   - [x] Instalada en Mis Ventas Pruebas (1.5.0-pruebas)
   - [x] El usuario la probó (incluidas las notificaciones) y la aprobó
   - [x] Liberada a la app real (1.5.0): firma igual, "Sincronizado" antes, `install -r`, sin fallos
-- [ ] **Fase 5:** reportes nuevos (comparar periodos, ventas por hora/día, fiado y mermas a precio de venta)
+- [ ] **Fase 5:** reportes nuevos (comparar periodos, ventas por hora/día, fiado y mermas a precio de venta) (Room v8→v9)
+  - [x] Preguntas al usuario y respuestas en `docs/07` (23-nov)
+  - [x] Especificación `docs/11-ESPEC-REPORTES.md`, aprobada el 23-nov (mismo tramo, 5 productos)
+  - [x] Programar con pruebas: `ReportesNuevosTest` (23) y `ReportesNuevosRoomTest` (4)
+  - [x] Migración 8→9 (una columna: precio de la merma) verificada con `scripts/verificar_migracion.py` y aplicada en Pruebas
+  - [x] Instalada en Mis Ventas Pruebas (1.6.0-pruebas)
+  - [ ] El usuario la prueba y la aprueba
+  - [ ] Liberar a la app real (1.6.0)
 
 ## Fase 3: lo que ya acordó el usuario (entrevista del 21-nov)
 

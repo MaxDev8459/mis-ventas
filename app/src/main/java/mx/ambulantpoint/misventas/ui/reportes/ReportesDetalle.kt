@@ -315,7 +315,7 @@ private fun FilaInventarioVista(f: FilaInventario) {
 // ───────────────────────── Comunes ─────────────────────────
 
 @Composable
-private fun TarjetaTotal(etiqueta: String, valor: String) {
+internal fun TarjetaTotal(etiqueta: String, valor: String) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         modifier = Modifier.fillMaxWidth(),
@@ -329,7 +329,7 @@ private fun TarjetaTotal(etiqueta: String, valor: String) {
 
 /** Fila de tabla: la primera columna a la izquierda, las demás alineadas a la derecha. */
 @Composable
-private fun Columnas(textos: List<String>, pesos: List<Float>, encabezado: Boolean = false) {
+internal fun Columnas(textos: List<String>, pesos: List<Float>, encabezado: Boolean = false) {
     val estilo = if (encabezado) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodyLarge
     val color = if (encabezado) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {

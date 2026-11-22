@@ -307,6 +307,8 @@ data class MovimientoInventario(
     val motivo: MotivoAjuste? = null,
     val especificacionMotivo: String? = null,
     val ventaId: String? = null,
+    /** Reportes (v9): precio de venta del producto al registrar un ajuste (valor de mermas). Null antes de la 1.6.0. */
+    val precioUnitarioCentavos: Long? = null,
     val creadoEn: Long,
     val pendienteSync: Boolean = true,
 )

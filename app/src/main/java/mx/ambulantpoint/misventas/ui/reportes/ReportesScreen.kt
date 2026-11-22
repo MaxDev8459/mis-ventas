@@ -53,6 +53,9 @@ enum class Reporte(val titulo: String, val descripcion: String) {
     MAS_VENDIDOS("Productos más vendidos", "Cantidad e importe vendido de cada producto"),
     POR_CATEGORIA("Ventas por categoría", "Importe y porcentaje de cada categoría"),
     INVENTARIO("Inventario", "Existencia actual, productos con existencia baja y agotados"),
+    HORA_Y_DIA("Ventas por hora y día", "A qué hora y qué día de la semana vendes más"),
+    FIADO("Fiado y abonos", "Lo fiado y abonado en el periodo, y quién te debe hoy"),
+    MERMAS("Mermas y pérdidas", "Mermas, caducados y consumo propio a precio de venta"),
 }
 
 /** Módulo 6 — Reportes. */
@@ -80,10 +83,12 @@ fun PantallaReportes(alRegresar: () -> Unit, alAbrir: (Reporte) -> Unit) {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReporteVentasViewModel(c: AppContainer) : ViewModel() {
     private val generar = GenerarReporteVentas(c.reporteRepo)
+    private val comparar = mx.ambulantpoint.misventas.domain.usecase.GenerarComparacion(c.reporteRepo) { c.reloj.ahora() }
     val periodo = MutableStateFlow(periodoInicial())
 
-    val reporte: StateFlow<ReporteVentasPeriodo?> = periodo
-        .mapLatest { generar(it) }
+    /** Fase 5: el reporte con su comparación contra el mismo tramo del periodo anterior. */
+    val reporte: StateFlow<Pair<ReporteVentasPeriodo, mx.ambulantpoint.misventas.domain.usecase.ComparacionPeriodo>?> = periodo
+        .mapLatest { generar(it) to comparar(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun cambiar(p: Periodo) { periodo.value = p }
@@ -94,12 +99,14 @@ class ReporteVentasViewModel(c: AppContainer) : ViewModel() {
 fun PantallaReporteVentas(alRegresar: () -> Unit) {
     val modelo = vm { ReporteVentasViewModel(it) }
     val periodo by modelo.periodo.collectAsStateWithLifecycle()
-    val reporte by modelo.reporte.collectAsStateWithLifecycle()
+    val par by modelo.reporte.collectAsStateWithLifecycle()
+    val reporte = par?.first
+    val comparacion = par?.second
 
     val titulo = Reporte.VENTAS_PERIODO.titulo
     Scaffold(topBar = {
         BarraSuperior(titulo, alRegresar) {
-            AccionExportar(reporte?.takeIf { it.periodo == periodo }?.let { ExportarReportes.ventas(it, titulo) })
+            AccionExportar(reporte?.takeIf { it.periodo == periodo }?.let { ExportarReportes.ventas(it, titulo, comparacion) })
         }
     }) { relleno ->
         Column(Modifier.padding(relleno).fillMaxSize()) {
@@ -108,15 +115,16 @@ fun PantallaReporteVentas(alRegresar: () -> Unit) {
             when {
                 // Mientras se calcula, o si el resultado es de un periodo anterior, no se muestra nada.
                 r == null || r.periodo != periodo -> Unit
-                r.sinVentas -> MensajeVacio(Mensajes.SIN_VENTAS_PERIODO)
-                else -> ContenidoReporteVentas(r)
+                // Sin ventas ahora pero sí antes: se muestra la comparación (bajó a cero).
+                r.sinVentas && (comparacion == null || comparacion.total.anterior == 0L) -> MensajeVacio(Mensajes.SIN_VENTAS_PERIODO)
+                else -> ContenidoReporteVentas(r, comparacion)
             }
         }
     }
 }
 
 @Composable
-private fun ContenidoReporteVentas(r: ReporteVentasPeriodo) {
+private fun ContenidoReporteVentas(r: ReporteVentasPeriodo, c: mx.ambulantpoint.misventas.domain.usecase.ComparacionPeriodo?) {
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp)) {
         item {
             Card(
@@ -142,6 +150,7 @@ private fun ContenidoReporteVentas(r: ReporteVentasPeriodo) {
                 Cifra("Ventas canceladas", "${r.numeroCanceladas} · ${Formato.moneda(r.importeCanceladasCentavos)}")
             }
         }
+        c?.let { comp -> item { SeccionComparacion(r, comp) } }
         if (r.porDia.isNotEmpty()) {
             item {
                 Text(
@@ -160,11 +169,50 @@ private fun ContenidoReporteVentas(r: ReporteVentasPeriodo) {
     }
 }
 
+/** Fase 5: comparación con el mismo tramo del periodo anterior y productos que más cambiaron. */
 @Composable
-private fun Cifra(etiqueta: String, valor: String) {
+private fun SeccionComparacion(r: ReporteVentasPeriodo, c: mx.ambulantpoint.misventas.domain.usecase.ComparacionPeriodo) {
+    Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text("Comparado con ${ExportarReportes.nombreAnterior(r.periodo.tipo)}", style = MaterialTheme.typography.titleMedium)
+        Text(ExportarReportes.tramo(c.anterior), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FilaComparada("Total vendido", c.total, dinero = true)
+        FilaComparada("Número de ventas", c.numeroVentas, dinero = false)
+        FilaComparada("Ticket promedio", c.ticketPromedio, dinero = true)
+        if (c.subieron.isNotEmpty()) {
+            Text("Más subieron", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+            c.subieron.forEach { Cifra(it.nombre, "+" + Formato.moneda(it.diferenciaCentavos), MaterialTheme.colorScheme.primary) }
+        }
+        if (c.bajaron.isNotEmpty()) {
+            Text("Más bajaron", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+            c.bajaron.forEach { Cifra(it.nombre, "−" + Formato.moneda(-it.diferenciaCentavos), MaterialTheme.colorScheme.error) }
+        }
+    }
+}
+
+@Composable
+private fun FilaComparada(etiqueta: String, d: mx.ambulantpoint.misventas.domain.regla.Diferencia, dinero: Boolean) {
+    fun fmt(v: Long) = if (dinero) Formato.moneda(kotlin.math.abs(v)) else kotlin.math.abs(v).toString()
+    val signo = when { d.diferencia > 0 -> "+"; d.diferencia < 0 -> "−"; else -> "" }
+    val pct = d.porcentajeDecimas?.let { " (" + (if (it > 0) "+" else if (it < 0) "−" else "") + Formato.porcentaje(kotlin.math.abs(it)) + ")" } ?: " (sin ventas antes)"
+    val color = when {
+        d.diferencia > 0 -> MaterialTheme.colorScheme.primary
+        d.diferencia < 0 -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(etiqueta, style = MaterialTheme.typography.bodyLarge)
+            Text("Antes: ${fmt(d.anterior)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Text("$signo${fmt(d.diferencia)}$pct", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = color)
+    }
+}
+
+@Composable
+private fun Cifra(etiqueta: String, valor: String, color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified) {
     Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(etiqueta, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(valor, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        Text(valor, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = color)
     }
 }
 

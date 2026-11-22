@@ -129,3 +129,116 @@ data class ReporteInventario(val filas: List<FilaInventario>) {
             )
     }
 }
+
+// ───────────────────────── Fase 5 (docs/11-ESPEC-REPORTES.md) ─────────────────────────
+
+/** Ventas por periodo comparado con el mismo tramo del periodo anterior. */
+data class ComparacionPeriodo(
+    val anterior: mx.ambulantpoint.misventas.domain.regla.Periodo,
+    val total: mx.ambulantpoint.misventas.domain.regla.Diferencia,
+    val numeroVentas: mx.ambulantpoint.misventas.domain.regla.Diferencia,
+    val ticketPromedio: mx.ambulantpoint.misventas.domain.regla.Diferencia,
+    val subieron: List<mx.ambulantpoint.misventas.domain.regla.CambioProducto>,
+    val bajaron: List<mx.ambulantpoint.misventas.domain.regla.CambioProducto>,
+)
+
+class GenerarComparacion(private val reportes: PuertoReportes, private val ahora: () -> Long) {
+    suspend operator fun invoke(periodo: Periodo, zona: java.util.TimeZone = java.util.TimeZone.getDefault()): ComparacionPeriodo {
+        val ant = mx.ambulantpoint.misventas.domain.regla.ReglaComparacion.periodoAnterior(periodo, ahora(), zona)
+        // El periodo actual también se corta en "ahora" (no hay ventas futuras, pero así los dos tramos son iguales).
+        val hasta = minOf(periodo.hasta, ahora())
+        val a = reportes.resumenPeriodo(periodo.desde, hasta)
+        val b = reportes.resumenPeriodo(ant.desde, ant.hasta)
+        val (subieron, bajaron) = mx.ambulantpoint.misventas.domain.regla.ReglaComparacion.cambiosProductos(
+            reportes.productosVendidos(periodo.desde, hasta), reportes.productosVendidos(ant.desde, ant.hasta),
+        )
+        return ComparacionPeriodo(
+            anterior = ant,
+            total = mx.ambulantpoint.misventas.domain.regla.Diferencia(a.totalVendidoCentavos, b.totalVendidoCentavos),
+            numeroVentas = mx.ambulantpoint.misventas.domain.regla.Diferencia(a.numeroVentas.toLong(), b.numeroVentas.toLong()),
+            ticketPromedio = mx.ambulantpoint.misventas.domain.regla.Diferencia(
+                ReglaTicketPromedio.calcular(a.totalVendidoCentavos, a.numeroVentas),
+                ReglaTicketPromedio.calcular(b.totalVendidoCentavos, b.numeroVentas),
+            ),
+            subieron = subieron,
+            bajaron = bajaron,
+        )
+    }
+}
+
+/** Ventas por hora del día y por día de la semana. */
+data class ReporteHorario(
+    val periodo: Periodo,
+    val porHora: List<mx.ambulantpoint.misventas.domain.regla.Barra>,
+    val porDia: List<mx.ambulantpoint.misventas.domain.regla.Barra>,
+) {
+    val sinVentas: Boolean get() = porHora.isEmpty()
+}
+
+class GenerarReporteHorario(private val r: mx.ambulantpoint.misventas.domain.puertos.PuertoReportesExtra) {
+    suspend operator fun invoke(periodo: Periodo) = ReporteHorario(
+        periodo,
+        mx.ambulantpoint.misventas.domain.regla.ReglaHorario.porHora(r.ventasPorHora(periodo.desde, periodo.hasta)),
+        mx.ambulantpoint.misventas.domain.regla.ReglaHorario.porDiaSemana(r.ventasPorDiaSemana(periodo.desde, periodo.hasta)),
+    )
+}
+
+/** Fiado y abonos: del periodo y, aparte, lo que se debe hoy. */
+data class ReporteFiado(
+    val periodo: Periodo,
+    val ventasFiadas: Int,
+    val fiadoCentavos: Long,
+    val abonosPorForma: List<FilaPorcentaje>,
+    val abonosCentavos: Long,
+    val devolucionesCentavos: Long,
+    val porCobrarCentavos: Long,
+    /** Clientes con saldo, del que más debe al que menos. */
+    val clientes: List<mx.ambulantpoint.misventas.data.local.dao.ClienteConSaldo>,
+    val avisoSaldoCentavos: Long,
+) {
+    val sinDatos: Boolean get() = ventasFiadas == 0 && abonosPorForma.isEmpty() && devolucionesCentavos == 0L && clientes.isEmpty()
+}
+
+class GenerarReporteFiado(private val r: mx.ambulantpoint.misventas.domain.puertos.PuertoReportesExtra) {
+    suspend operator fun invoke(periodo: Periodo): ReporteFiado {
+        val fiado = r.fiadoEnPeriodo(periodo.desde, periodo.hasta)
+        val abonos = r.abonosEnPeriodo(periodo.desde, periodo.hasta)
+        val totalAbonos = abonos.sumOf { it.totalCentavos }
+        val clientes = r.clientesConSaldo().filter { it.saldoCentavos > 0 }
+            .sortedWith(compareByDescending<mx.ambulantpoint.misventas.data.local.dao.ClienteConSaldo> { it.saldoCentavos }.thenBy { it.cliente.nombreNormalizado })
+        return ReporteFiado(
+            periodo = periodo,
+            ventasFiadas = fiado.numeroVentas,
+            fiadoCentavos = fiado.totalVendidoCentavos,
+            abonosPorForma = abonos.map { FilaPorcentaje(it.nombreFormaPago, it.numeroVentas, it.totalCentavos, ReglaPorcentaje.decimas(it.totalCentavos, totalAbonos)) },
+            abonosCentavos = totalAbonos,
+            devolucionesCentavos = r.devolucionesEnPeriodo(periodo.desde, periodo.hasta),
+            porCobrarCentavos = clientes.sumOf { it.saldoCentavos },
+            clientes = clientes,
+            avisoSaldoCentavos = r.avisoSaldo(),
+        )
+    }
+}
+
+/** Mermas y pérdidas valoradas a precio de venta. */
+data class ReporteMermas(
+    val periodo: Periodo,
+    val totalCentavos: Long,
+    val porMotivo: List<mx.ambulantpoint.misventas.domain.regla.FilaMotivo>,
+    val porProducto: List<mx.ambulantpoint.misventas.domain.regla.FilaPerdidaProducto>,
+) {
+    val sinMermas: Boolean get() = porProducto.isEmpty()
+    val algunaConPrecioActual: Boolean get() = porProducto.any { it.conPrecioActual }
+}
+
+class GenerarReporteMermas(private val r: mx.ambulantpoint.misventas.domain.puertos.PuertoReportesExtra) {
+    suspend operator fun invoke(periodo: Periodo): ReporteMermas {
+        val salidas = r.salidasPorAjuste(periodo.desde, periodo.hasta)
+        return ReporteMermas(
+            periodo,
+            mx.ambulantpoint.misventas.domain.regla.ReglaMermas.total(salidas),
+            mx.ambulantpoint.misventas.domain.regla.ReglaMermas.porMotivo(salidas),
+            mx.ambulantpoint.misventas.domain.regla.ReglaMermas.porProducto(salidas),
+        )
+    }
+}

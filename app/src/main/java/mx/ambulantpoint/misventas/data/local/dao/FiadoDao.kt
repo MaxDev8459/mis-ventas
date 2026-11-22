@@ -158,6 +158,47 @@ interface FiadoDao {
     )
     fun observarAbonosPorFormaDeCaja(cajaId: String): Flow<List<TotalFormaPago>>
 
+    // ── Reporte de fiado (Fase 5) ──
+
+    @Query(
+        """
+        SELECT COUNT(*) AS numeroVentas, COALESCE(SUM(totalCentavos), 0) AS totalVendidoCentavos,
+               COALESCE(SUM(descuentoCentavos), 0) AS descuentosCentavos
+        FROM venta WHERE clienteId IS NOT NULL AND estado = 'REGISTRADA' AND fechaHora BETWEEN :desde AND :hasta
+        """,
+    )
+    suspend fun fiadoEnPeriodo(desde: Long, hasta: Long): ResumenVentas
+
+    @Query(
+        """
+        SELECT f.id AS formaPagoId, f.nombre AS nombreFormaPago, f.esEfectivo AS esEfectivo,
+               COUNT(a.id) AS numeroVentas, COALESCE(SUM(a.montoCentavos), 0) AS totalCentavos
+        FROM abono a JOIN forma_pago f ON f.id = a.formaPagoId
+        WHERE a.tipo = 'ABONO' AND a.estado = 'REGISTRADO' AND a.fechaHora BETWEEN :desde AND :hasta
+        GROUP BY f.id ORDER BY totalCentavos DESC
+        """,
+    )
+    suspend fun abonosEnPeriodo(desde: Long, hasta: Long): List<TotalFormaPago>
+
+    @Query(
+        """
+        SELECT COALESCE(SUM(montoCentavos), 0) FROM abono
+        WHERE tipo = 'DEVOLUCION' AND estado = 'REGISTRADO' AND fechaHora BETWEEN :desde AND :hasta
+        """,
+    )
+    suspend fun devolucionesEnPeriodo(desde: Long, hasta: Long): Long
+
+    @Query(
+        """
+        SELECT c.*, COALESCE((
+          SELECT SUM(v.totalCentavos - $ABONADO_A_VENTA) FROM venta v
+          WHERE v.clienteId = c.id AND v.estado = 'REGISTRADA'
+        ), 0) AS saldoCentavos
+        FROM cliente c
+        """,
+    )
+    suspend fun clientesConSaldo(): List<ClienteConSaldo>
+
     /** Devoluciones (siempre en efectivo) registradas en la caja. */
     @Query("SELECT COALESCE(SUM(montoCentavos), 0) FROM abono WHERE cajaId = :cajaId AND tipo = 'DEVOLUCION' AND estado = 'REGISTRADO'")
     suspend fun devolucionesDeCaja(cajaId: String): Long

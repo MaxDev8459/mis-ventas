@@ -60,6 +60,25 @@ data class TotalPorDia(
     val totalCentavos: Long,
 )
 
+/** Reportes (Fase 5): ventas agrupadas por hora del día (0–23) o día de la semana (0 = domingo … 6 = sábado). */
+data class VentasPorGrupo(
+    val grupo: Int,
+    val numeroVentas: Int,
+    val totalCentavos: Long,
+)
+
+/** Reportes (Fase 5): una salida de inventario por ajuste, con el precio guardado (v9) y el actual. */
+data class SalidaAjuste(
+    val productoId: String,
+    val nombre: String,
+    val tipoVenta: TipoVenta,
+    /** Negativa (es una salida). */
+    val cantidadMilesimas: Long,
+    val motivo: mx.ambulantpoint.misventas.data.local.entity.MotivoAjuste?,
+    val precioGuardadoCentavos: Long?,
+    val precioActualCentavos: Long,
+)
+
 /** RF 6.3. */
 data class ProductoVendido(
     val productoId: String,

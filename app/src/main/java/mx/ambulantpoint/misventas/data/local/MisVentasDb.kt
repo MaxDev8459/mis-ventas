@@ -50,7 +50,7 @@ import mx.ambulantpoint.misventas.data.local.entity.ApartadoDetalle
         Cliente::class, Abono::class, AplicacionAbono::class,
         Apartado::class, ApartadoDetalle::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class MisVentasDb : RoomDatabase() {
@@ -74,8 +74,15 @@ abstract class MisVentasDb : RoomDatabase() {
 
         fun crear(contexto: Context): MisVentasDb =
             Room.databaseBuilder(contexto, MisVentasDb::class.java, NOMBRE)
-                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8, MIGRACION_8_9)
                 .build()
+
+        /** Reportes: precio de venta al registrar un ajuste (valor de mermas). Solo agrega una columna opcional. */
+        val MIGRACION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `movimiento_inventario` ADD COLUMN `precioUnitarioCentavos` INTEGER")
+            }
+        }
 
         /** Apartados (SQL tomado de 8.json). Solo tablas nuevas: no toca los datos existentes. */
         val MIGRACION_7_8 = object : Migration(7, 8) {

@@ -82,6 +82,8 @@ class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) : Pu
                 existenciaResultanteMilesimas = resultante,
                 motivo = motivo,
                 especificacionMotivo = especificacion?.trim()?.takeIf { motivo == MotivoAjuste.OTRO && it.isNotEmpty() },
+                // Reportes (v9): para valorar la merma con el precio de este día.
+                precioUnitarioCentavos = producto.precioCentavos,
                 creadoEn = ahora,
             ),
         )
@@ -90,8 +92,21 @@ class InventarioRepo(private val db: MisVentasDb, private val reloj: Reloj) : Pu
 }
 
 /** Módulo 6 y RF 4.5: lectura de agregados; los cálculos (promedios, porcentajes) son del dominio. */
-class ReporteRepo(db: MisVentasDb) : PuertoVentasRecientes, PuertoReportes {
+class ReporteRepo(private val db: MisVentasDb) : PuertoVentasRecientes, PuertoReportes,
+    mx.ambulantpoint.misventas.domain.puertos.PuertoReportesExtra {
     private val dao = db.reporteDao()
+    private val fiado = db.fiadoDao()
+
+    // ── Fase 5 ──
+    override suspend fun ventasPorHora(desde: Long, hasta: Long) = dao.ventasPorHora(desde, hasta)
+    override suspend fun ventasPorDiaSemana(desde: Long, hasta: Long) = dao.ventasPorDiaSemana(desde, hasta)
+    override suspend fun salidasPorAjuste(desde: Long, hasta: Long) = dao.salidasPorAjuste(desde, hasta)
+    override suspend fun fiadoEnPeriodo(desde: Long, hasta: Long) = fiado.fiadoEnPeriodo(desde, hasta)
+    override suspend fun abonosEnPeriodo(desde: Long, hasta: Long) = fiado.abonosEnPeriodo(desde, hasta)
+    override suspend fun devolucionesEnPeriodo(desde: Long, hasta: Long) = fiado.devolucionesEnPeriodo(desde, hasta)
+    override suspend fun clientesConSaldo() = fiado.clientesConSaldo()
+    override suspend fun avisoSaldo(): Long =
+        db.configuracionDao().obtener()?.avisoSaldoCentavos ?: mx.ambulantpoint.misventas.data.local.entity.Configuracion.AVISO_SALDO_DEFECTO
 
     override suspend fun resumenPeriodo(desde: Long, hasta: Long): ResumenPeriodo = dao.resumenPeriodo(desde, hasta)
     override suspend fun totalesPorDia(desde: Long, hasta: Long): List<TotalPorDia> = dao.totalesPorDia(desde, hasta)

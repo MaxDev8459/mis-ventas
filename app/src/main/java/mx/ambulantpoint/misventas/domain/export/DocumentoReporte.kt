@@ -9,6 +9,13 @@ import mx.ambulantpoint.misventas.domain.usecase.ReporteInventario
 import mx.ambulantpoint.misventas.domain.usecase.ReporteMasVendidos
 import mx.ambulantpoint.misventas.domain.usecase.ReportePorcentajes
 import mx.ambulantpoint.misventas.domain.usecase.ReporteVentasPeriodo
+import mx.ambulantpoint.misventas.domain.usecase.ComparacionPeriodo
+import mx.ambulantpoint.misventas.domain.usecase.ReporteHorario
+import mx.ambulantpoint.misventas.domain.usecase.ReporteFiado
+import mx.ambulantpoint.misventas.domain.usecase.ReporteMermas
+import mx.ambulantpoint.misventas.domain.regla.Barra
+import mx.ambulantpoint.misventas.domain.regla.Diferencia
+import mx.ambulantpoint.misventas.domain.regla.ReglaMermas
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -80,8 +87,19 @@ object ExportarReportes {
         return if (p.tipo == TipoPeriodo.RANGO) fechas else "${p.tipo.etiqueta} ($fechas)"
     }
 
-    /** RF 6.1. */
-    fun ventas(r: ReporteVentasPeriodo, titulo: String): DocumentoReporte = DocumentoReporte(
+    /** Fase 5: "ayer", "la semana pasada"… para el periodo con el que se compara. */
+    fun nombreAnterior(tipo: TipoPeriodo): String = when (tipo) {
+        TipoPeriodo.HOY -> "ayer"
+        TipoPeriodo.SEMANA -> "la semana pasada"
+        TipoPeriodo.MES -> "el mes pasado"
+        TipoPeriodo.RANGO -> "los mismos días antes"
+    }
+
+    /** "16/11/2026 00:00 – 18/11/2026 15:30". */
+    fun tramo(p: Periodo): String = "${Formato.fechaHora(p.desde)} – ${Formato.fechaHora(p.hasta)}"
+
+    /** RF 6.1 + Fase 5 (comparación con el mismo tramo del periodo anterior). */
+    fun ventas(r: ReporteVentasPeriodo, titulo: String, comparacion: ComparacionPeriodo? = null): DocumentoReporte = DocumentoReporte(
         nombreReporte = titulo,
         nombreArchivo = "ventas_por_periodo",
         periodo = textoPeriodo(r.periodo),
@@ -99,9 +117,95 @@ object ExportarReportes {
                 "Desglose por día", listOf("Día", "Ventas", "Total"),
                 r.porDia.map { listOf(Valor.Texto(dia(it.dia)), Valor.Entero(it.numeroVentas), Valor.Dinero(it.totalCentavos)) },
             ),
-        ),
+        ) + comparacion?.let { c ->
+            fun pct(d: Diferencia): Valor = d.porcentajeDecimas?.let { Valor.Porcentaje(it) } ?: Valor.Texto("sin ventas antes")
+            listOf(
+                TablaReporte(
+                    "Comparado con ${nombreAnterior(r.periodo.tipo)} (${tramo(c.anterior)})",
+                    listOf("Dato", "Actual", "Anterior", "Diferencia", "%"),
+                    listOf(
+                        listOf(Valor.Texto("Total vendido"), Valor.Dinero(c.total.actual), Valor.Dinero(c.total.anterior), Valor.Dinero(c.total.diferencia), pct(c.total)),
+                        listOf(Valor.Texto("Número de ventas"), Valor.Entero(c.numeroVentas.actual.toInt()), Valor.Entero(c.numeroVentas.anterior.toInt()), Valor.Entero(c.numeroVentas.diferencia.toInt()), pct(c.numeroVentas)),
+                        listOf(Valor.Texto("Ticket promedio"), Valor.Dinero(c.ticketPromedio.actual), Valor.Dinero(c.ticketPromedio.anterior), Valor.Dinero(c.ticketPromedio.diferencia), pct(c.ticketPromedio)),
+                    ),
+                ),
+                TablaReporte(
+                    "Productos que más subieron", listOf("Producto", "Actual", "Anterior", "Diferencia"),
+                    c.subieron.map { listOf(Valor.Texto(it.nombre), Valor.Dinero(it.actualCentavos), Valor.Dinero(it.anteriorCentavos), Valor.Dinero(it.diferenciaCentavos)) },
+                ),
+                TablaReporte(
+                    "Productos que más bajaron", listOf("Producto", "Actual", "Anterior", "Diferencia"),
+                    c.bajaron.map { listOf(Valor.Texto(it.nombre), Valor.Dinero(it.actualCentavos), Valor.Dinero(it.anteriorCentavos), Valor.Dinero(it.diferenciaCentavos)) },
+                ),
+            )
+        }.orEmpty(),
         vacio = r.sinVentas,
     )
+
+    /** Fase 5: ventas por hora del día y por día de la semana. */
+    fun horario(r: ReporteHorario, titulo: String): DocumentoReporte {
+        fun tabla(t: String, col: String, b: List<Barra>) = TablaReporte(
+            t, listOf(col, "Ventas", "Importe", "%"),
+            b.map { listOf(Valor.Texto(it.etiqueta + if (it.mejor) " (mejor)" else ""), Valor.Entero(it.numeroVentas), Valor.Dinero(it.totalCentavos), Valor.Porcentaje(it.porcentajeDecimas)) },
+        )
+        return DocumentoReporte(
+            nombreReporte = titulo, nombreArchivo = "ventas_por_hora_y_dia", periodo = textoPeriodo(r.periodo), filtros = null,
+            resumen = listOfNotNull(
+                r.porHora.firstOrNull { it.mejor }?.let { "Mejor hora" to Valor.Texto(it.etiqueta) },
+                r.porDia.firstOrNull { it.mejor }?.let { "Mejor día" to Valor.Texto(it.etiqueta) },
+            ),
+            tablas = listOf(tabla("Por hora del día", "Hora", r.porHora), tabla("Por día de la semana", "Día", r.porDia)),
+            vacio = r.sinVentas,
+        )
+    }
+
+    /** Fase 5: fiado y abonos del periodo y lo que se debe hoy. */
+    fun fiado(r: ReporteFiado, titulo: String): DocumentoReporte = DocumentoReporte(
+        nombreReporte = titulo, nombreArchivo = "fiado_y_abonos", periodo = textoPeriodo(r.periodo), filtros = null,
+        resumen = listOf(
+            "Ventas fiadas" to Valor.Entero(r.ventasFiadas),
+            "Total fiado" to Valor.Dinero(r.fiadoCentavos),
+            "Abonos recibidos" to Valor.Dinero(r.abonosCentavos),
+            "Devoluciones en efectivo" to Valor.Dinero(r.devolucionesCentavos),
+            "Total por cobrar (hoy)" to Valor.Dinero(r.porCobrarCentavos),
+        ),
+        tablas = listOf(
+            TablaReporte(
+                "Abonos por forma de pago", listOf("Forma de pago", "Abonos", "Importe", "%"),
+                r.abonosPorForma.map { listOf(Valor.Texto(it.nombre), Valor.Entero(it.numeroVentas ?: 0), Valor.Dinero(it.importeCentavos), Valor.Porcentaje(it.porcentajeDecimas)) },
+            ),
+            TablaReporte(
+                "Clientes con saldo (hoy)", listOf("Cliente", "Teléfono", "Saldo"),
+                r.clientes.map { listOf(Valor.Texto(it.cliente.nombre), Valor.Texto(it.cliente.telefono.orEmpty()), Valor.Dinero(it.saldoCentavos)) },
+            ),
+        ),
+        vacio = r.sinDatos,
+    )
+
+    /** Fase 5: mermas y pérdidas a precio de venta. */
+    fun mermas(r: ReporteMermas, titulo: String): DocumentoReporte = DocumentoReporte(
+        nombreReporte = titulo, nombreArchivo = "mermas_y_perdidas", periodo = textoPeriodo(r.periodo),
+        filtros = if (r.algunaConPrecioActual) NOTA_PRECIO_ACTUAL else null,
+        resumen = listOf("Total perdido" to Valor.Dinero(r.totalCentavos)),
+        tablas = listOf(
+            TablaReporte(
+                "Por motivo", listOf("Motivo", "Registros", "Valor", "%"),
+                r.porMotivo.map { listOf(Valor.Texto(ReglaMermas.etiqueta(it.motivo)), Valor.Entero(it.registros), Valor.Dinero(it.valorCentavos), Valor.Porcentaje(it.porcentajeDecimas)) },
+            ),
+            TablaReporte(
+                "Por producto", listOf("Producto", "Cantidad", "Unidad", "Valor"),
+                r.porProducto.map {
+                    listOf(
+                        Valor.Texto(it.nombre + if (it.conPrecioActual) " *" else ""), Valor.Cantidad(it.cantidadMilesimas, it.tipoVenta),
+                        Valor.Texto(Formato.unidad(it.tipoVenta)), Valor.Dinero(it.valorCentavos),
+                    )
+                },
+            ),
+        ),
+        vacio = r.sinMermas,
+    )
+
+    const val NOTA_PRECIO_ACTUAL = "* Valorado con el precio actual (merma registrada antes de la versión 1.6.0)"
 
     /** RF 6.2 (por forma de pago) y RF 6.4 (por categoría). */
     fun porcentajes(r: ReportePorcentajes, titulo: String, porCategoria: Boolean): DocumentoReporte = DocumentoReporte(

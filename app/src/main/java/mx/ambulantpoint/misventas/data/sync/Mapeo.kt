@@ -160,7 +160,8 @@ fun VentaDetalle.aDocumento(): Map<String, Any?> = mapOf(
 fun MovimientoInventario.aDocumento(): Map<String, Any?> = mapOf(
     "id" to id, "productoId" to productoId, "fechaHora" to fechaHora, "tipo" to tipo.name,
     "cantidadMilesimas" to cantidadMilesimas, "existenciaResultanteMilesimas" to existenciaResultanteMilesimas,
-    "motivo" to motivo?.name, "especificacionMotivo" to especificacionMotivo, "ventaId" to ventaId, "creadoEn" to creadoEn,
+    "motivo" to motivo?.name, "especificacionMotivo" to especificacionMotivo, "ventaId" to ventaId,
+    "precioUnitarioCentavos" to precioUnitarioCentavos, "creadoEn" to creadoEn,
 )
 
 /*
@@ -304,5 +305,7 @@ fun aMovimiento(d: Map<String, Any?>) = MovimientoInventario(
     tipo = d.enumO("tipo", TipoMovimiento.AJUSTE), cantidadMilesimas = d.entero("cantidadMilesimas"),
     existenciaResultanteMilesimas = d.entero("existenciaResultanteMilesimas"), motivo = d.enumONulo<MotivoAjuste>("motivo"),
     especificacionMotivo = d.textoONulo("especificacionMotivo"), ventaId = d.textoONulo("ventaId"),
+    // Respaldos anteriores a la v9 no lo tienen: la merma se valora con el precio actual.
+    precioUnitarioCentavos = d.enteroONulo("precioUnitarioCentavos"),
     creadoEn = d.entero("creadoEn"), pendienteSync = false,
 )

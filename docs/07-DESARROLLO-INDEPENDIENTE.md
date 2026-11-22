@@ -116,6 +116,23 @@ entregar; el producto se separa (existencia apartada). Preguntas nuevas:
 | 7 | Avisos | **En Inicio y notificaciones**: una **15 minutos antes** ("en 15 minutos tienes que entregar…") y otra **a la hora exacta** ("es hora de entregar…"), con cliente, productos, lugar y hora. |
 | 8 | Merma o ajuste por debajo de lo apartado | **No se permite**: primero hay que cancelar o cambiar el apartado. |
 
+## Fase 5 — respuestas del cliente (23-nov-2026)
+
+Ya acordado el 21-nov: comparar periodos, ventas por hora y día, fiado y mermas a precio de venta; "Más vendidos" no se toca.
+
+| # | Pregunta | Respuesta |
+|---|---|---|
+| 1 | Cómo comparar | **Contra el periodo anterior**, automático en "Ventas por periodo" (hoy vs. ayer, semana vs. semana pasada, mes vs. mes pasado, rango vs. los mismos días antes). |
+| 2 | Qué comparar | **Totales y productos**: total, número de ventas y ticket promedio con su diferencia, y los productos que más subieron y bajaron. |
+| 3 | Por hora y día | **A qué hora y qué día de la semana se vende más** en el periodo elegido. |
+| 4 | Vista | **Barras con su número** (la mejor hora o día resaltada). |
+| 5 | Reporte de fiado | **Completo**: del periodo, fiado, abonos (por forma de pago) y devoluciones; además el total por cobrar de hoy y los clientes con saldo. |
+| 6 | Precio de las mermas | **El del día de la merma**: se empieza a guardar al registrarla (migración 8→9, una columna). Las anteriores se valoran con el precio actual y se marcan así. |
+| 7 | Qué salidas cuentan | **Todas por motivo**: merma, caducado, consumo propio y otro (no la corrección de conteo). |
+| 8 | Exportar | **Sí**, PDF y CSV como los demás reportes. |
+
+Aviso dado al cliente: las mermas ya registradas no tienen precio guardado; se valoran con el precio actual.
+
 ## Versión 1.4.0 (22-nov-2026)
 
 Instalada en la app real con `install -r` (firma igual a la 1.3.0, indicador en "Sincronizado" antes de instalar).

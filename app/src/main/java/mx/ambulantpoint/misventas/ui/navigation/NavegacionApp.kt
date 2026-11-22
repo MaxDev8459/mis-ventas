@@ -251,6 +251,9 @@ private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
                 Reporte.POR_CATEGORIA -> PantallaReportePorcentajes(Reporte.POR_CATEGORIA, regresar)
                 Reporte.MAS_VENDIDOS -> PantallaReporteMasVendidos(regresar)
                 Reporte.INVENTARIO -> PantallaReporteInventario(regresar)
+                Reporte.HORA_Y_DIA -> mx.ambulantpoint.misventas.ui.reportes.PantallaReporteHorario(regresar)
+                Reporte.FIADO -> mx.ambulantpoint.misventas.ui.reportes.PantallaReporteFiado(regresar)
+                Reporte.MERMAS -> mx.ambulantpoint.misventas.ui.reportes.PantallaReporteMermas(regresar)
                 null -> LaunchedEffect(Unit) { regresar() }
             }
         }

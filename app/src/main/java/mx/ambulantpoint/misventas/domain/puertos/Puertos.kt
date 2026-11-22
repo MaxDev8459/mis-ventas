@@ -109,6 +109,18 @@ interface PuertoReportes {
     suspend fun totalesPorCategoria(desde: Long, hasta: Long): List<TotalCategoria>
 }
 
+/** Fase 5: consultas de los reportes nuevos (hora y día, mermas, fiado). */
+interface PuertoReportesExtra {
+    suspend fun ventasPorHora(desde: Long, hasta: Long): List<mx.ambulantpoint.misventas.data.local.dao.VentasPorGrupo>
+    suspend fun ventasPorDiaSemana(desde: Long, hasta: Long): List<mx.ambulantpoint.misventas.data.local.dao.VentasPorGrupo>
+    suspend fun salidasPorAjuste(desde: Long, hasta: Long): List<mx.ambulantpoint.misventas.data.local.dao.SalidaAjuste>
+    suspend fun fiadoEnPeriodo(desde: Long, hasta: Long): mx.ambulantpoint.misventas.data.local.dao.ResumenVentas
+    suspend fun abonosEnPeriodo(desde: Long, hasta: Long): List<TotalFormaPago>
+    suspend fun devolucionesEnPeriodo(desde: Long, hasta: Long): Long
+    suspend fun clientesConSaldo(): List<mx.ambulantpoint.misventas.data.local.dao.ClienteConSaldo>
+    suspend fun avisoSaldo(): Long
+}
+
 interface PuertoVentasRecientes {
     suspend fun ventasRecientes(productoId: String): VentasRecientes
 }
