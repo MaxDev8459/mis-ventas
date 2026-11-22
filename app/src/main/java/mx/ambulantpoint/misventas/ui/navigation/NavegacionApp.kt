@@ -194,7 +194,15 @@ private fun GrafoAcceso(inicioEnRegistro: Boolean) {
 @Composable
 private fun GrafoPrincipal(alVenderSinCaja: () -> Unit) {
     val nav = rememberNavController()
-    val regresar: () -> Unit = { nav.popBackStack() }
+    // Doble toque en "regresar": el segundo llegaba durante la animación y sacaba también la pantalla
+    // principal (pantalla en blanco sin salida). Solo se regresa desde la pantalla ya visible y si
+    // hay una anterior; los toques de más se ignoran.
+    val regresar: () -> Unit = {
+        val actual = nav.currentBackStackEntry
+        if (actual?.lifecycle?.currentState == Lifecycle.State.RESUMED && nav.previousBackStackEntry != null) {
+            nav.popBackStack()
+        }
+    }
     val c = contenedor()
 
     // RF 5.4: "La aplicación solicitará al vendedor el permiso de notificaciones del teléfono" (Android 13+).
