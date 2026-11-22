@@ -76,6 +76,10 @@ Las respuestas están en `docs/07` y la regla completa en `docs/09-ESPEC-FIADO.m
 
 ## Notas
 
+- **Historial de demostración** para probar reportes en Mis Ventas Pruebas (23-nov, ya cargado: 28-sep a 22-nov, 860 ventas):
+  `app/src/androidTest/.../demo/CargarHistorialDemo.kt`. Solo corre en `.pruebas`, sin caja abierta, una sola vez, y
+  no toca días que ya tienen caja. Comando en el encabezado del archivo (siempre con `leaveApksInstalledAfterRun=true`).
+
 - La llave debug de Linux (`~/.android/debug.keystore`) es la de Windows, con copia en `firma/debug-windows.keystore`.
 - En Windows hay que copiar a mano `firma/` (completa), `keystore.properties` y el `google-services.json` nuevo (trae las tres apps).
 - Pendiente menor: en el teléfono quedó el paquete viejo `mx.ambulantpoint.misventas.test`. Es inofensivo; se puede desinstalar si el usuario lo pide.
