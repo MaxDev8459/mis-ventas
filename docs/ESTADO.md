@@ -9,10 +9,10 @@
 
 | Dato | Valor |
 |---|---|
-| App real en el teléfono | **1.4.0** (versionCode 6), liberación, cuenta `maxicarlotas@gmail.com` |
-| Versión de la base Room | **8** en Mis Ventas Pruebas; la app real sigue en 7 hasta liberar la 1.5.0 |
+| App real en el teléfono | **1.5.0** (versionCode 7), liberación, cuenta `maxicarlotas@gmail.com` |
+| Versión de la base Room | **8** (siguiente migración: 8→9) |
 | Pruebas JVM | 273 pasan (+ 49 instrumentadas con Room en el teléfono) |
-| Siguiente fase | **Fase 4**: 1.5.0 instalada en Mis Ventas Pruebas, **esperando que el usuario la pruebe y la apruebe** |
+| Siguiente fase | **Fase 5: reportes nuevos** (sin empezar; no toca la base) |
 
 ## Checklist de fases
 
@@ -29,14 +29,14 @@
   - [x] Instalada en Mis Ventas Pruebas (1.4.0-pruebas)
   - [x] El usuario la probó y la aprobó (con dos ajustes: cierre en Vender con monto libre + carga; ocultar la carga al calcular el corte)
   - [x] Liberada a la app real (1.4.0) con `install -r`, firma comparada y "Sincronizado" antes y después
-- [ ] **Fase 4:** apartados con existencia separada (Room v7→v8)
+- [x] **Fase 4:** apartados con existencia separada (1.5.0, Room v8, 22-nov-2026)
   - [x] Preguntas al usuario y respuestas en `docs/07` (22-nov)
   - [x] Especificación `docs/10-ESPEC-APARTADOS.md`, aprobada el 22-nov (apartar sin caja, teléfono opcional, lugar ≤ 60)
   - [x] Programar con pruebas: `ApartadoTest` (18) y `ApartadoRoomTest` (11); alarmas exactas 15 min antes y a la hora
   - [x] Migración 7→8 verificada con `scripts/verificar_migracion.py` (sintética v6→v8 y copia de Pruebas v7) y aplicada en Pruebas
   - [x] Instalada en Mis Ventas Pruebas (1.5.0-pruebas)
-  - [ ] El usuario la prueba (incluidas las notificaciones con la app cerrada) y la aprueba
-  - [ ] Liberar a la app real (1.5.0)
+  - [x] El usuario la probó (incluidas las notificaciones) y la aprobó
+  - [x] Liberada a la app real (1.5.0): firma igual, "Sincronizado" antes, `install -r`, sin fallos
 - [ ] **Fase 5:** reportes nuevos (comparar periodos, ventas por hora/día, fiado y mermas a precio de venta)
 
 ## Fase 3: lo que ya acordó el usuario (entrevista del 21-nov)
