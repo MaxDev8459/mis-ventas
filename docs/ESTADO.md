@@ -76,6 +76,13 @@ Las respuestas están en `docs/07` y la regla completa en `docs/09-ESPEC-FIADO.m
 
 ## Notas
 
+- **Proyectar el teléfono en la exposición** (22-nov): `scripts/proyectar-telefono.sh` usa scrcpy por cable USB
+  (sin red). Por defecto abre la demo en pantalla completa y manda el audio del teléfono a la laptop (Android 11+);
+  opciones `--ventana`, `--app real|pruebas|demo|ninguna`, `--apagar`, `--sin-audio`, `--audio-doble`
+  (ver `--help`). Muestra todo el teléfono, no solo la demo (sirve para compartir a WhatsApp). La salida de audio
+  se elige en el ícono de volumen de KDE. **Pendiente:** instalar scrcpy (`sudo pacman -S scrcpy`) y probarlo con
+  el teléfono antes del 27-nov.
+
 - **Historial de demostración** para probar reportes en Mis Ventas Pruebas (23-nov, ya cargado: 28-sep a 22-nov, 860 ventas):
   `app/src/androidTest/.../demo/CargarHistorialDemo.kt`. Solo corre en `.pruebas`, sin caja abierta, una sola vez, y
   no toca días que ya tienen caja. Comando en el encabezado del archivo (siempre con `leaveApksInstalledAfterRun=true`).
